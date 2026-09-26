@@ -1,10 +1,16 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
-export function PageTransition() {
+interface PageTransitionProps {
+  children: ReactNode;
+}
+
+export function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation();
+
   return (
     <div key={location.pathname} className="page-transition">
-      <Outlet />
+      {children}
     </div>
   );
 }
