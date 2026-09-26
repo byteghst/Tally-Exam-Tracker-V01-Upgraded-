@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: 250 251 253;
+  --surface-raised: 255 255 255;
+  --ink: 20 24 33;
+  --ink-muted: 90 99 116;
+  --ink-faint: 150 158 173;
+  --accent: 40 78 254;
+  --accent2: 124 58 237;
+  --accent-soft: 229 234 255;
+  --border: 224 228 235;
+
+  --radius-card: 22px;
+  --radius-control: 12px;
+  --blur: 22px;
+  --glass-alpha: 0.72;
+}
+
+.dark {
+  --surface: 9 12 22;
+  --surface-raised: 18 23 38;
+  --ink: 236 239 244;
+  --ink-muted: 158 167 184;
+  --ink-faint: 100 109 128;
+  --accent: 99 129 255;
+  --accent2: 167 139 250;
+  --accent-soft: 26 42 92;
+  --border: 36 44 64;
+  --glass-alpha: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* manual equivalent of the media query above, driven by Settings → Appearance */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  transition-duration: 80ms !important;
+  animation-duration: 80ms !important;
+}
+
+.no-motion *,
+.no-motion *::before,
+.no-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 180ms ease-out;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: page-fade-in 220ms ease-out;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-surface text-ink antialiased;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+* {
+  @apply border-border;
+}
+
+/* tabular numbers for anything showing scores/stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Soft, fixed gradient wash behind the whole app — sits under everything,
+   never scrolls, and stays subtle enough not to fight readability. Used as
+   a full-viewport backdrop; the `bg-app-gradient` Tailwind utility (see
+   tailwind.config.ts) covers non-fixed, in-flow uses like the Login card. */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(120% 90% at 15% -10%, rgb(var(--accent) / 0.14), transparent 55%),
+    radial-gradient(110% 90% at 100% 0%, rgb(var(--accent2) / 0.12), transparent 60%),
+    radial-gradient(140% 100% at 50% 120%, rgb(var(--accent) / 0.07), transparent 60%);
+}
+
+/* Thin gradient hairline along the top edge of glass surfaces — the
+   "premium glass" detail that a flat border can't give you. */
+.glass-edge {
+  position: relative;
+}
+.glass-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgb(var(--accent) / 0.35), rgb(255 255 255 / 0.06) 40%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}

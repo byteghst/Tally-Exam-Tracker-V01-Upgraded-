@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Maskable variant: no baked-in corner radius (the OS applies its own
+       mask shape), same brand mark scaled slightly smaller to stay inside
+       the ~80% safe zone maskable icons require. -->
+  <rect width="512" height="512" fill="#F2F3F6"/>
+
+  <g transform="translate(88 96) scale(1.0)">
+    <rect x="69" y="50" width="38" height="205" fill="#0F1216"/>
+    <rect x="135" y="50" width="38" height="205" fill="#0F1216"/>
+    <rect x="201" y="50" width="38" height="205" fill="#0F1216"/>
+    <line x1="27" y1="202" x2="294" y2="83" stroke="#284EFE" stroke-width="34" stroke-linecap="square"/>
+  </g>
+</svg>

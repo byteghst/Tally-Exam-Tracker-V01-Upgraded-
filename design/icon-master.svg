@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tally brand mark: 3 dark bars + 1 blue diagonal stroke.
+       Geometry and colors measured directly from the supplied branding file:
+       bars #0F1216, diagonal stroke #284EFE, card background #F2F3F6. -->
+  <rect width="512" height="512" rx="112" fill="#F2F3F6"/>
+
+  <g transform="translate(52.2 62.3) scale(1.27)">
+    <rect x="69" y="50" width="38" height="205" fill="#0F1216"/>
+    <rect x="135" y="50" width="38" height="205" fill="#0F1216"/>
+    <rect x="201" y="50" width="38" height="205" fill="#0F1216"/>
+    <line x1="27" y1="202" x2="294" y2="83" stroke="#284EFE" stroke-width="34" stroke-linecap="square"/>
+  </g>
+</svg>
