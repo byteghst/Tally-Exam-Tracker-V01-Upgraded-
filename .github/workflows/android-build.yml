@@ -24,7 +24,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+        # No `cache: npm` here on purpose: actions/setup-node hashes an
+        # existing lockfile to build its cache key, so on a fresh repo with
+        # no package-lock.json yet, enabling the cache makes this step fail
+        # outright before the "Install dependencies" step below ever runs
+        # (the one that actually generates the lockfile). Once a lockfile
+        # exists and stays committed, caching can be re-added safely if
+        # faster builds are worth the added complexity.
 
       - name: Install dependencies
         # npm install (not npm ci) so a package.json edited directly on
