@@ -5,11 +5,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'android/**'
       - 'src/**'
       - 'public/**'
       - 'capacitor.config.ts'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/android-build.yml'
 
 jobs:
@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,19 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-        # No `cache: npm` here on purpose: actions/setup-node hashes an
-        # existing lockfile to build its cache key, so on a fresh repo with
-        # no package-lock.json yet, enabling the cache makes this step fail
-        # outright before the "Install dependencies" step below ever runs
-        # (the one that actually generates the lockfile). Once a lockfile
-        # exists and stays committed, caching can be re-added safely if
-        # faster builds are worth the added complexity.
+          cache: npm
 
       - name: Install dependencies
-        # npm install (not npm ci) so a package.json edited directly on
-        # GitHub's web UI doesn't hard-fail the whole build over a
-        # momentarily out-of-sync lock file — see the step below, which
-        # commits the corrected lock file back automatically.
         run: npm install
 
       - name: Commit updated lock file if it changed
@@ -60,6 +51,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+
+      - name: Add Capacitor Android platform
+        run: npx cap add android
 
       - name: Generate branded icons and splash screen
         run: npx --yes @capacitor/assets generate --android
