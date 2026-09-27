@@ -11,7 +11,6 @@ interface ExamRow {
   type: Exam['type'];
   date: string;
   start_time: string | null;
-  end_time: string | null;
   status: ExamStatus;
   mcq_count: number;
   mcq_marks_each: number;
@@ -39,7 +38,6 @@ function mapExam(row: ExamRow): Exam {
     type: row.type,
     date: row.date,
     startTime: row.start_time ?? undefined,
-    endTime: row.end_time ?? undefined,
     status: row.status,
     mcqCount: row.mcq_count,
     mcqMarksEach: Number(row.mcq_marks_each),
@@ -82,7 +80,6 @@ function toRow(data: ExamPayload) {
   if (data.type !== undefined) row.type = data.type;
   if (data.date !== undefined) row.date = data.date;
   if (data.startTime !== undefined) row.start_time = data.startTime;
-  if (data.endTime !== undefined) row.end_time = data.endTime;
   if (data.status !== undefined) row.status = data.status;
   if (data.mcqCount !== undefined) row.mcq_count = data.mcqCount;
   if (data.mcqMarksEach !== undefined) row.mcq_marks_each = data.mcqMarksEach;
