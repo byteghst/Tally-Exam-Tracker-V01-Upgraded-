@@ -40,7 +40,6 @@ export interface Exam extends BaseEntity {
   type: ExamType;
   date: string; // ISO date (yyyy-mm-dd), local
   startTime?: string; // HH:mm
-  endTime?: string;
   status: ExamStatus;
 
   // Scoring structure — snapshotted from the chosen config at creation time
