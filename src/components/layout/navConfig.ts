@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard,
+  Home,
   FileSpreadsheet,
   ListChecks,
   CalendarDays,
@@ -18,7 +18,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, primary: true },
+  { label: 'Dashboard', path: '/dashboard', icon: Home, primary: true },
   { label: 'Exams', path: '/exams', icon: FileSpreadsheet, primary: true },
   { label: 'Tasks', path: '/tasks', icon: ListChecks, primary: true },
   { label: 'Calendar', path: '/calendar', icon: CalendarDays, primary: true },
