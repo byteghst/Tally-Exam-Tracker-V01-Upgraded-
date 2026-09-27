@@ -36,7 +36,6 @@ function toFormState(exam: Exam | undefined, defaultDate: string | undefined, de
     type: exam?.type ?? defaultType,
     date: exam?.date ?? defaultDate ?? todayISO(),
     startTime: exam?.startTime ?? '',
-    endTime: exam?.endTime ?? '',
     status: exam?.status ?? ('upcoming' as ExamStatus),
 
     mcqCount: exam?.mcqCount?.toString() ?? '',
@@ -47,7 +46,6 @@ function toFormState(exam: Exam | undefined, defaultDate: string | undefined, de
 
     mcqCorrect: exam?.mcqCorrect?.toString() ?? '',
     mcqWrong: exam?.mcqWrong?.toString() ?? '',
-    mcqUnanswered: exam?.mcqUnanswered?.toString() ?? '',
     writtenMarksObtained: exam?.writtenMarksObtained?.toString() ?? '',
     manualScoreOverride: exam?.manualScoreOverride?.toString() ?? '',
     rank: exam?.rank?.toString() ?? '',
@@ -123,6 +121,13 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
     if (form.configId) applyConfigStructure(form.configId, type);
   }
 
+  // Unanswered is derived, never typed in directly: whatever's left after
+  // correct + wrong is however many were left blank on the actual sheet.
+  const mcqCountNum = Number(form.mcqCount || 0);
+  const mcqCorrectNum = form.mcqCorrect === '' ? 0 : Number(form.mcqCorrect);
+  const mcqWrongNum = form.mcqWrong === '' ? 0 : Number(form.mcqWrong);
+  const unansweredComputed = Math.max(mcqCountNum - mcqCorrectNum - mcqWrongNum, 0);
+
   const preview = useMemo(() => {
     const mcqCount = Number(form.mcqCount || 0);
     const mcqMarksEach = Number(form.mcqMarksEach || 0);
@@ -138,7 +143,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       negativeMarkPerWrong,
       mcqCorrect: form.mcqCorrect === '' ? undefined : Number(form.mcqCorrect),
       mcqWrong: form.mcqWrong === '' ? undefined : Number(form.mcqWrong),
-      mcqUnanswered: form.mcqUnanswered === '' ? undefined : Number(form.mcqUnanswered),
       writtenMarksObtained: form.writtenMarksObtained === '' ? undefined : Number(form.writtenMarksObtained),
       manualScore: form.manualScoreOverride === '' ? undefined : Number(form.manualScoreOverride)
     });
@@ -151,7 +155,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       configId: form.configId,
       date: form.date,
       startTime: form.startTime,
-      endTime: form.endTime,
       status: form.status,
       mcqCount: Number(form.mcqCount || 0),
       mcqMarksEach: Number(form.mcqMarksEach || 0),
@@ -160,7 +163,7 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       negativeMarkPerWrong: Number(form.negativeMarkPerWrong || 0),
       mcqCorrect: form.mcqCorrect === '' ? '' : Number(form.mcqCorrect),
       mcqWrong: form.mcqWrong === '' ? '' : Number(form.mcqWrong),
-      mcqUnanswered: form.mcqUnanswered === '' ? '' : Number(form.mcqUnanswered),
+      mcqUnanswered: unansweredComputed,
       writtenMarksObtained: form.writtenMarksObtained === '' ? '' : Number(form.writtenMarksObtained),
       manualScoreOverride: form.manualScoreOverride === '' ? '' : Number(form.manualScoreOverride),
       rank: form.rank === '' ? '' : Number(form.rank),
@@ -191,7 +194,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       type: v.type,
       date: v.date,
       startTime: v.startTime || null,
-      endTime: v.endTime || null,
       status: v.status,
       mcqCount: v.mcqCount,
       mcqMarksEach: v.mcqMarksEach,
@@ -290,10 +292,9 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Input label="Date" type="date" value={form.date} onChange={(e) => set('date', e.target.value)} error={errors.date} />
           <Input label="Start" type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} />
-          <Input label="End" type="time" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} />
         </div>
 
         <fieldset className="flex flex-col gap-1.5">
@@ -399,12 +400,11 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
               error={errors.mcqWrong}
             />
             <Input
-              label="Unanswered"
+              label="Unanswered (auto)"
               type="number"
               inputMode="numeric"
-              value={form.mcqUnanswered}
-              onChange={(e) => set('mcqUnanswered', e.target.value)}
-              error={errors.mcqUnanswered}
+              disabled
+              value={unansweredComputed}
             />
           </div>
           <Input
