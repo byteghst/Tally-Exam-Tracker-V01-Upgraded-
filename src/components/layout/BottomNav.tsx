@@ -70,7 +70,7 @@ export function BottomNav() {
                 <X size={20} className="text-ink-muted" />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3">
               {secondary.map((item) => (
                 <NavLink
                   key={item.path}
