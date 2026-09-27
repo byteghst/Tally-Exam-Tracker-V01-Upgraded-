@@ -5,11 +5,11 @@ on:
   push:
     branches: [main]
     paths:
+      - 'android/**'
       - 'src/**'
       - 'public/**'
       - 'capacitor.config.ts'
       - 'package.json'
-      - 'package-lock.json'
       - '.github/workflows/android-build.yml'
 
 jobs:
@@ -17,43 +17,37 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
 
-      # Bootstrap the lockfile if this repository does not have one yet.
-      # This step intentionally does not use npm caching because setup-node
-      # requires package-lock.json to exist before caching can be enabled.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+        # No `cache: npm` here on purpose: actions/setup-node hashes an
+        # existing lockfile to build its cache key, so on a fresh repo with
+        # no package-lock.json yet, enabling the cache makes this step fail
+        # outright before the "Install dependencies" step below ever runs
+        # (the one that actually generates the lockfile). Once a lockfile
+        # exists and stays committed, caching can be re-added safely if
+        # faster builds are worth the added complexity.
 
-      - name: Generate lockfile if missing
-        run: |
-          if [ ! -f package-lock.json ]; then
-            npm install --package-lock-only
-          fi
+      - name: Install dependencies
+        # npm install (not npm ci) so a package.json edited directly on
+        # GitHub's web UI doesn't hard-fail the whole build over a
+        # momentarily out-of-sync lock file — see the step below, which
+        # commits the corrected lock file back automatically.
+        run: npm install
 
-      - name: Commit lockfile if it was generated
+      - name: Commit updated lock file if it changed
         run: |
           if ! git diff --quiet -- package-lock.json; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
-            git commit -m "chore: add package-lock.json [skip ci]"
+            git commit -m "chore: sync package-lock.json [skip ci]"
             git push
           fi
-
-      # package-lock.json now exists, so npm caching is safe.
-      - name: Enable npm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Build web app
         run: npm run build
@@ -67,8 +61,20 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Add Capacitor Android platform
-        run: npx cap add android
+      - name: Use stable debug keystore
+        # Without this, every CI run gets its own fresh, randomly-generated
+        # debug.keystore (each runner is a brand-new machine), so every
+        # build is signed with a different key. Android refuses to install
+        # an update over an already-installed app unless the signing
+        # certificate matches exactly — that's the "conflicts with an
+        # existing package" install error. Using the same committed
+        # keystore on every run keeps every build's signature identical, so
+        # updates install cleanly from here on. It's stored as base64 text
+        # (ci/debug.keystore.b64) rather than a raw binary file so it can be
+        # created by pasting into GitHub's web "Create new file" editor.
+        run: |
+          mkdir -p ~/.android
+          base64 -d ci/debug.keystore.b64 > ~/.android/debug.keystore
 
       - name: Generate branded icons and splash screen
         run: npx --yes @capacitor/assets generate --android
