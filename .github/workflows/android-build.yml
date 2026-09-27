@@ -21,23 +21,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Bootstrap the lockfile if this repository does not have one yet.
+      # This step intentionally does not use npm caching because setup-node
+      # requires package-lock.json to exist before caching can be enabled.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - name: Generate lockfile if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only
+          fi
 
-      - name: Commit updated lock file if it changed
+      - name: Commit lockfile if it was generated
         run: |
           if ! git diff --quiet -- package-lock.json; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
-            git commit -m "chore: sync package-lock.json [skip ci]"
+            git commit -m "chore: add package-lock.json [skip ci]"
             git push
           fi
+
+      # package-lock.json now exists, so npm caching is safe.
+      - name: Enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build web app
         run: npm run build
