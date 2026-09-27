@@ -76,11 +76,27 @@ jobs:
           mkdir -p ~/.android
           base64 -d ci/debug.keystore.b64 > ~/.android/debug.keystore
 
+      - name: Add or sync Capacitor Android platform
+        # `cap sync` only updates an android/ project that already exists —
+        # it can't create one. Since android/ isn't committed to this repo
+        # (it's a generated native project, regenerated fresh every run),
+        # a plain `cap sync android` fails on every clean checkout with
+        # "android platform has not been added yet." `cap add` both creates
+        # the platform AND performs an initial sync, so it's the right call
+        # the first time; plain `cap sync` is only needed if android/ was
+        # somehow already present (e.g. a self-hosted runner reusing state).
+        # This has to run before icon/splash generation below — that step
+        # writes into android/app/src/main/res, which doesn't exist until
+        # this step creates it.
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap sync android
+          fi
+
       - name: Generate branded icons and splash screen
         run: npx --yes @capacitor/assets generate --android
-
-      - name: Sync Capacitor native project
-        run: npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
