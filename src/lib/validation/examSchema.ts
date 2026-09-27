@@ -12,7 +12,6 @@ export const examFormSchema = z
     configId: z.string().optional().or(z.literal('')),
     date: z.string().min(1, 'Date is required'),
     startTime: z.string().optional(),
-    endTime: z.string().optional(),
     status: z.enum(['upcoming', 'completed', 'missed']),
 
     mcqCount: z.coerce.number().int().min(0, 'Cannot be negative'),
@@ -21,28 +20,27 @@ export const examFormSchema = z
     writtenMarksEach: z.coerce.number().min(0, 'Cannot be negative'),
     negativeMarkPerWrong: z.coerce.number().min(0, 'Cannot be negative'),
 
-    mcqCorrect: z.coerce.number().int().min(0, 'Cannot be negative').optional().or(z.literal('')),
-    mcqWrong: z.coerce.number().int().min(0, 'Cannot be negative').optional().or(z.literal('')),
-    mcqUnanswered: z.coerce.number().int().min(0, 'Cannot be negative').optional().or(z.literal('')),
-    writtenMarksObtained: z.coerce.number().min(0, 'Cannot be negative').optional().or(z.literal('')),
-    manualScoreOverride: z.coerce.number().optional().or(z.literal('')),
-    rank: z.coerce.number().int().min(1, 'Rank must be at least 1').optional().or(z.literal('')),
-    participants: z.coerce.number().int().min(1, 'Must be at least 1').optional().or(z.literal('')),
+    mcqCorrect: z.literal('').or(z.coerce.number().int().min(0, 'Cannot be negative')).optional(),
+    mcqWrong: z.literal('').or(z.coerce.number().int().min(0, 'Cannot be negative')).optional(),
+    mcqUnanswered: z.literal('').or(z.coerce.number().int().min(0, 'Cannot be negative')).optional(),
+    writtenMarksObtained: z.literal('').or(z.coerce.number().min(0, 'Cannot be negative')).optional(),
+    manualScoreOverride: z.literal('').or(z.coerce.number()).optional(),
+    rank: z.literal('').or(z.coerce.number().int().min(1, 'Rank must be at least 1')).optional(),
+    participants: z.literal('').or(z.coerce.number().int().min(1, 'Must be at least 1')).optional(),
     notes: z.string().max(2000, 'Keep notes under 2000 characters').optional(),
-    reminderMinutesBefore: z.coerce.number().int().min(0, 'Cannot be negative').optional().or(z.literal(''))
+    reminderMinutesBefore: z.literal('').or(z.coerce.number().int().min(0, 'Cannot be negative')).optional()
   })
   .superRefine((data, ctx) => {
     const c = toNum(data.mcqCorrect);
     const w = toNum(data.mcqWrong);
-    const u = toNum(data.mcqUnanswered);
 
-    if (c !== undefined || w !== undefined || u !== undefined) {
-      const sum = (c ?? 0) + (w ?? 0) + (u ?? 0);
+    if (c !== undefined || w !== undefined) {
+      const sum = (c ?? 0) + (w ?? 0);
       if (sum > data.mcqCount) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['mcqUnanswered'],
-          message: `Correct + wrong + unanswered (${sum}) exceeds the MCQ count (${data.mcqCount}).`
+          path: ['mcqWrong'],
+          message: `Correct + wrong (${sum}) exceeds the MCQ count (${data.mcqCount}).`
         });
       }
     }
