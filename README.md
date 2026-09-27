@@ -71,11 +71,11 @@ than shipped broken).
   next exam) — show/hide, reorder, comfortable/compact density, all from
   Settings.
 - **Exams** — add against a reusable config (structure auto-fills) or fully
-  custom. Records MCQ correct/wrong/unanswered, written marks obtained,
-  manual score override, rank, participants, notes, reminder. Live score
-  preview while entering results. The detail page compares the exam
-  against the previous exam of the same type when one exists. Edit,
-  duplicate, and archive (with undo).
+  custom. Records MCQ correct/wrong (unanswered is calculated automatically
+  from the MCQ count), written marks obtained, manual score override, rank,
+  participants, notes, reminder. Live score preview while entering results.
+  The detail page compares the exam against the previous exam of the same
+  type when one exists. Edit, duplicate, and delete.
 - **Exam configs** — manage your reusable scoring templates: name,
   negative-marking rate, and per-type (daily/weekly/monthly) MCQ + written
   breakdown.
