@@ -6,6 +6,7 @@ import {
   BarChart3,
   Settings,
   SlidersHorizontal,
+  Timer,
   type LucideIcon
 } from 'lucide-react';
 
@@ -21,8 +22,9 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: Home, primary: true },
   { label: 'Exams', path: '/exams', icon: FileSpreadsheet, primary: true },
   { label: 'Tasks', path: '/tasks', icon: ListChecks, primary: true },
+  { label: 'Study', path: '/study', icon: Timer, primary: true },
   { label: 'Calendar', path: '/calendar', icon: CalendarDays, primary: true },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
   { label: 'Exam configs', path: '/configs', icon: SlidersHorizontal },
-  { label: 'Settings', path: '/settings', icon: Settings, primary: true }
+  { label: 'Settings', path: '/settings', icon: Settings }
 ];
