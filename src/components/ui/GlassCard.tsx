@@ -12,14 +12,17 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
  * The single glass-surface primitive used everywhere. Intensity/blur are
  * driven by CSS variables set from Settings, so this component never
  * hardcodes opacity values.
+ *
+ * Balanced glass: a tight two-layer drop shadow (soft contact + gentle
+ * ambient) plus a 1px inner top highlight, instead of one big heavy shadow.
  */
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
   ({ interactive, accented, className, ...props }, ref) => (
     <div
       ref={ref}
       className={clsx(
-        'glass-edge relative rounded-card border border-border/60 bg-surface-raised/[var(--glass-alpha)] backdrop-blur-glass shadow-glass-lg transition-shadow duration-200',
-        interactive && 'cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-12px_rgb(0_0_0/0.32)] active:scale-[0.99] active:translate-y-0',
+        'glass-edge relative rounded-card border border-border/60 bg-surface-raised/[var(--glass-alpha)] backdrop-blur-glass shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_28px_-14px_rgb(0_0_0/0.22),inset_0_1px_0_rgb(255_255_255/var(--glass-hi-a))] transition-shadow duration-200',
+        interactive && 'cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-14px_rgb(0_0_0/0.3)] active:scale-[0.99] active:translate-y-0',
         accented && 'shadow-[0_1px_2px_rgb(0_0_0/0.04),0_14px_38px_-12px_rgb(var(--accent)/0.4)] ring-1 ring-accent/20',
         className
       )}
