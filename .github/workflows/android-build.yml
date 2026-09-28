@@ -101,6 +101,9 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Force stable signing
+        run: bash ci/force-signing.sh
+      
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
