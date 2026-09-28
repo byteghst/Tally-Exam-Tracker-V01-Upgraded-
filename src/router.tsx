@@ -6,6 +6,7 @@ import { Exams } from '@/pages/Exams';
 import { ExamDetail } from '@/pages/ExamDetail';
 import { ExamConfigs } from '@/pages/ExamConfigs';
 import { Tasks } from '@/pages/Tasks';
+import { Study } from '@/pages/Study';
 import { Calendar } from '@/pages/Calendar';
 import { Analytics } from '@/pages/Analytics';
 import { Settings } from '@/pages/Settings';
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'exams/:id', element: <ExamDetail /> },
       { path: 'configs', element: <ExamConfigs /> },
       { path: 'tasks', element: <Tasks /> },
+      { path: 'study', element: <Study /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'analytics', element: <Analytics /> },
       { path: 'settings', element: <Settings /> },
