@@ -26,7 +26,7 @@ export function BottomNav() {
               className={({ isActive }) =>
                 clsx(
                   'flex flex-1 flex-col items-center gap-0.5 rounded-full px-1 py-2 text-[11px] font-semibold tracking-tight transition-colors duration-200',
-                  isActive ? 'bg-accent/12 text-accent' : 'text-ink-muted active:bg-white/5'
+                  isActive ? 'bg-accent/[0.12] text-accent' : 'text-ink-muted active:bg-white/5'
                 )
               }
             >
