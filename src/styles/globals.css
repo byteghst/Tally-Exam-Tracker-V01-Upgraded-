@@ -15,8 +15,9 @@
 
   --radius-card: 22px;
   --radius-control: 12px;
-  --blur: 22px;
-  --glass-alpha: 0.72;
+  --blur: 20px;
+  --glass-alpha: 0.78;
+  --glass-hi-a: 0.55;
 }
 
 .dark {
@@ -29,7 +30,8 @@
   --accent2: 167 139 250;
   --accent-soft: 26 42 92;
   --border: 36 44 64;
-  --glass-alpha: 0.5;
+  --glass-alpha: 0.58;
+  --glass-hi-a: 0.07;
 }
 
 @media (prefers-reduced-motion: reduce) {
