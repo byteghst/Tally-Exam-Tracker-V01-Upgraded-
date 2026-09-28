@@ -28,8 +28,14 @@ export default {
         danger: '#E0645E'
       },
       fontFamily: {
+        // UI + body text
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        display: ['"Sora"', 'system-ui', 'sans-serif']
+        // headings (existing `font-display` usages pick this up everywhere)
+        display: ['"Fraunces"', 'Georgia', 'serif'],
+        // numerals: scores, countdowns, stats
+        numeric: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        // quiet accent: italic taglines, small flourishes
+        serif: ['"Instrument Serif"', 'Georgia', 'serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',
