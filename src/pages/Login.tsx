@@ -45,7 +45,8 @@ export function Login() {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-app-gradient" />
       <GlassCard className="w-full max-w-sm p-6">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <TallyMark className="h-10 w-10 text-accent" />
+          {/* Brand colors: bars #0F1216 (light bg #F2F3F6 in dark mode), diagonal stroke #284EFE (set inside TallyMark) */}
+          <TallyMark className="h-10 w-10 text-[#0F1216] dark:text-[#F2F3F6]" />
           <h1 className="text-xl font-semibold text-ink">Tally</h1>
           <p className="text-sm text-ink-muted">
             {mode === 'signIn' ? 'Sign in to sync across your devices.' : 'Create an account to get started.'}
