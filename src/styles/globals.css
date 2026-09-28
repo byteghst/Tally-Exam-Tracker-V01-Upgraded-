@@ -105,8 +105,11 @@ body {
   @apply border-border;
 }
 
-/* tabular numbers for anything showing scores/stats */
+/* Numerals for anything showing scores/stats: tabular figures in a
+   dedicated numeric face (Space Grotesk) so digits line up and read as
+   data, distinct from body text and serif headings. */
 .tabular-nums {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
