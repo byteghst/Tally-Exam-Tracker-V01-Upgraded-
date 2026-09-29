@@ -3,10 +3,10 @@ import { ExamForm } from '@/components/features/exams/ExamForm';
 import { TaskForm } from '@/components/features/tasks/TaskForm';
 import { DashboardGreeting } from '@/components/features/dashboard/DashboardGreeting';
 import { MomentumCard } from '@/components/features/dashboard/MomentumCard';
-import { FocusNowCard } from '@/components/features/dashboard/FocusNowCard';
 import { DailyMission } from '@/components/features/dashboard/DailyMission';
 import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
+import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -45,14 +45,16 @@ export function Dashboard() {
 
       {settings.streaksEnabled && <MomentumCard exams={exams} tasks={tasks} />}
 
-      {settings.showFocusNow && <FocusNowCard exams={exams} tasks={tasks} />}
-
       {showMission && (
         <DailyMission
           items={missionItems}
           onDismiss={() => updateSettings({ dailyMissionDismissedDate: todayISO() })}
         />
       )}
+
+      {/* Always shown, above the customizable widgets below — no longer part
+          of the show/hide/reorder list, so it can't be hidden or moved. */}
+      <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
 
       {visibleIds.length === 0 ? (
         <p className="text-sm text-ink-muted">
@@ -71,8 +73,8 @@ export function Dashboard() {
                     onAddTask={() => setTaskFormOpen(true)}
                   />
                 );
-              case 'upcoming-exam':
-                return <ExamCountdownHero key={id} exam={nextExam} onAddExam={() => setExamFormOpen(true)} />;
+              case 'study-time':
+                return <StudyTimeWidget key={id} />;
               default:
                 return null;
             }
