@@ -38,7 +38,11 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
 
   return (
     <Link to={`/exams/${exam.id}`}>
-      <GlassCard interactive accented className="p-5">
+      {/* Plain glass card, same weight as Momentum/Today's tasks — no
+          accent ring or glow. That ring used to sit right at the top edge
+          and visually fused with the card above it despite normal spacing;
+          this card doesn't need special emphasis now that it's always shown. */}
+      <GlassCard interactive className="p-5">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Next exam</p>
