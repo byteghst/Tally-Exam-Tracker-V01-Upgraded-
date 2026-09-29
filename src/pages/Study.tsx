@@ -48,16 +48,25 @@ function useNow(enabled: boolean): number {
   return now;
 }
 
+/**
+ * Shows the subject's full picture (no cropping) letterboxed on a tinted
+ * backdrop of the subject's own color, so portrait/landscape/square photos
+ * of a book cover or notes page are all fully visible instead of being
+ * cropped to fill the frame.
+ */
 function SubjectCover({ subject, className }: { subject: StudySubject; className?: string }) {
   return (
     <div
       className={clsx('relative overflow-hidden', className)}
-      style={subject.image ? undefined : { background: `linear-gradient(135deg, ${subject.color}, ${subject.color}AA)` }}
+      style={{ background: `linear-gradient(135deg, ${subject.color}33, ${subject.color}11)` }}
     >
       {subject.image ? (
-        <img src={subject.image} alt="" className="h-full w-full object-cover" />
+        <img src={subject.image} alt="" className="h-full w-full object-contain" />
       ) : (
-        <span className="grid h-full w-full place-items-center font-display text-3xl font-bold text-white/90">
+        <span
+          className="grid h-full w-full place-items-center font-display text-3xl font-bold text-white/90"
+          style={{ background: `linear-gradient(135deg, ${subject.color}, ${subject.color}AA)` }}
+        >
           {subject.name.charAt(0).toUpperCase()}
         </span>
       )}
@@ -314,7 +323,7 @@ export function Study() {
                   onClick={() => (isActive && running ? pause() : start(subject.id))}
                 >
                   <div className="relative">
-                    <SubjectCover subject={subject} className="h-24 w-full" />
+                    <SubjectCover subject={subject} className="h-28 w-full" />
                     {isActive && (
                       <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white">
                         {running ? 'Studying' : 'Paused'}
