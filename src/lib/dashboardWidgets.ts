@@ -1,12 +1,15 @@
 import type { WidgetConfig } from '@/types';
 
-export const DASHBOARD_WIDGET_IDS = ['todays-tasks', 'upcoming-exam'] as const;
+// 'upcoming-exam' is no longer part of this list: the Next Exam card is now
+// always shown, pinned above these customizable widgets (see Dashboard.tsx),
+// so it can no longer be hidden or reordered.
+export const DASHBOARD_WIDGET_IDS = ['todays-tasks', 'study-time'] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
 export const WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'todays-tasks': "Today's tasks",
-  'upcoming-exam': 'Next exam'
+  'study-time': 'Study time today'
 };
 
 function isKnownWidgetId(id: string): id is DashboardWidgetId {
@@ -15,8 +18,10 @@ function isKnownWidgetId(id: string): id is DashboardWidgetId {
 
 /**
  * Merges the user's saved layout with the current set of real widgets:
- * drops ids that no longer correspond to an implemented widget, and appends
- * any implemented widget the saved layout doesn't know about yet.
+ * drops ids that no longer correspond to an implemented widget (e.g. a
+ * previously-saved 'upcoming-exam' entry), and appends any implemented
+ * widget the saved layout doesn't know about yet (e.g. 'study-time' for
+ * anyone who saved a layout before it existed).
  */
 export function normalizeLayout(layout: WidgetConfig[]): (WidgetConfig & { id: DashboardWidgetId })[] {
   const known = layout.filter((w): w is WidgetConfig & { id: DashboardWidgetId } => isKnownWidgetId(w.id));
