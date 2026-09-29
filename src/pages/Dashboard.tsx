@@ -40,7 +40,7 @@ export function Dashboard() {
   const compact = settings.density === 'compact';
 
   return (
-    <div className={compact ? 'space-y-3 py-4' : 'space-y-5 py-6'}>
+    <div className={compact ? 'space-y-4 py-4' : 'space-y-7 py-6'}>
       <DashboardGreeting userName={settings.userName} exams={exams} tasks={tasks} />
 
       {settings.streaksEnabled && <MomentumCard exams={exams} tasks={tasks} />}
