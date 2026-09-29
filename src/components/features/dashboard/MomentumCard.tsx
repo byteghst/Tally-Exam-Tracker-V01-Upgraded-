@@ -7,14 +7,14 @@ export function MomentumCard({ exams, tasks }: { exams: Exam[]; tasks: Task[] })
   const { days, productiveCount } = computeMomentum({ exams, tasks }, 7);
 
   return (
-    <GlassCard className="p-4">
+    <GlassCard className="p-5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-ink-muted">7-day momentum</p>
         <p className="text-sm font-semibold tabular-nums text-ink">
           {productiveCount} productive day{productiveCount === 1 ? '' : 's'}
         </p>
       </div>
-      <div className="mt-3 flex justify-between gap-1.5">
+      <div className="mt-4 flex justify-between gap-1.5">
         {days.map((d) => (
           <div key={d.iso} className="flex flex-1 flex-col items-center gap-1.5">
             <span className={`text-xs ${d.isToday ? 'font-semibold text-accent' : 'text-ink-faint'}`}>{d.label}</span>
