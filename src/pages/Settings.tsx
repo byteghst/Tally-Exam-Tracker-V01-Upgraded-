@@ -139,15 +139,6 @@ export function Settings() {
             />
           </label>
           <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
-            Focus Now
-            <input
-              type="checkbox"
-              checked={settings.showFocusNow}
-              onChange={(e) => updateSettings({ showFocusNow: e.target.checked })}
-              className="h-4 w-4 rounded accent-accent"
-            />
-          </label>
-          <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
             Daily Mission
             <input
               type="checkbox"
@@ -157,6 +148,10 @@ export function Settings() {
             />
           </label>
         </div>
+
+        <p className="text-xs text-ink-faint">
+          The Next Exam card always shows above the widgets below and can't be hidden or reordered.
+        </p>
 
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-ink-muted">Density</span>
