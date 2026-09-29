@@ -120,54 +120,9 @@ export function Settings() {
             </button>
           ))}
         </div>
-
-        <label className="flex flex-col gap-1.5 text-sm text-ink-muted">
-          Glass intensity
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={settings.glassIntensity}
-            onChange={(e) => updateSettings({ glassIntensity: Number(e.target.value) })}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-sm text-ink-muted">
-          Blur intensity
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={settings.blurIntensity}
-            onChange={(e) => updateSettings({ blurIntensity: Number(e.target.value) })}
-          />
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-ink-muted">
-          <input
-            type="checkbox"
-            checked={settings.reducedTransparency}
-            onChange={(e) => updateSettings({ reducedTransparency: e.target.checked })}
-          />
-          Reduce transparency
-        </label>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-ink-muted">Motion</span>
-          <div className="flex gap-2">
-            {(['full', 'reduced', 'none'] as const).map((level) => (
-              <button
-                key={level}
-                onClick={() => updateSettings({ animationLevel: level })}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium capitalize ${
-                  settings.animationLevel === level ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-                }`}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
-        </div>
+        <p className="text-xs text-ink-faint">
+          Glass, blur and motion are tuned for a consistent look and are no longer adjustable here.
+        </p>
       </GlassCard>
 
       <GlassCard className="space-y-3 p-5">
