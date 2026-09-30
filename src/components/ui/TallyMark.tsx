@@ -4,25 +4,25 @@ interface TallyMarkProps {
 }
 
 /**
- * The Tally brand mark (3 bars + diagonal stroke), transparent background,
- * for use inline against the app's own surface color — e.g. the sidebar
- * header or onboarding screen. The boxed/backgrounded version lives in
- * design/icon-master.svg and public/icons/ for OS-level app icons.
+ * The Tally logo, shown exactly as designed: the navy tile with the four
+ * white bars and the blue diagonal stroke. It uses the same PNG files as the
+ * app icon (public/icons/), so the logo inside the app can never drift from
+ * the icon on the home screen — replace those files and both change together.
+ *
+ * icon-192.png is plenty for anything up to ~64px (even on 3x screens);
+ * larger sizes use icon-512.png so the artwork stays sharp.
  */
 export function TallyMark({ size = 32, className }: TallyMarkProps) {
+  const src = size > 64 ? '/icons/icon-512.png' : '/icons/icon-192.png';
   return (
-    <svg
+    <img
+      src={src}
       width={size}
       height={size}
-      viewBox="0 0 320 290"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
+      alt=""
       aria-hidden
-    >
-      <rect x="69" y="50" width="38" height="205" fill="currentColor" />
-      <rect x="135" y="50" width="38" height="205" fill="currentColor" />
-      <rect x="201" y="50" width="38" height="205" fill="currentColor" />
-      <line x1="27" y1="202" x2="294" y2="83" stroke="#284EFE" strokeWidth="34" strokeLinecap="square" />
-    </svg>
+      draggable={false}
+      className={className}
+    />
   );
 }
