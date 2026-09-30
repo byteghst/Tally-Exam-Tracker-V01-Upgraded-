@@ -6,7 +6,6 @@ export interface ExamComparison {
   previousPercentage: number | null;
   currentPercentage: number | null;
   percentageDiff: number | null;
-  rankDiff: number | null;
 }
 
 function scoreOf(exam: Exam) {
@@ -39,7 +38,7 @@ export function compareToPrevious(exam: Exam, allExams: Exam[]): ExamComparison 
   const currentPercentage = scoreOf(exam).percentage;
 
   if (!previousExam) {
-    return { previousExam: undefined, previousPercentage: null, currentPercentage, percentageDiff: null, rankDiff: null };
+    return { previousExam: undefined, previousPercentage: null, currentPercentage, percentageDiff: null };
   }
 
   const previousPercentage = scoreOf(previousExam).percentage;
@@ -48,8 +47,5 @@ export function compareToPrevious(exam: Exam, allExams: Exam[]): ExamComparison 
       ? Math.round((currentPercentage - previousPercentage) * 10) / 10
       : null;
 
-  const rankDiff =
-    exam.rank !== undefined && previousExam.rank !== undefined ? previousExam.rank - exam.rank : null;
-
-  return { previousExam, previousPercentage, currentPercentage, percentageDiff, rankDiff };
+  return { previousExam, previousPercentage, currentPercentage, percentageDiff };
 }
