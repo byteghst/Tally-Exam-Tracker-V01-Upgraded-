@@ -37,11 +37,14 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
   const hasScore = exam.mcqCorrect !== undefined || exam.manualScoreOverride !== undefined;
 
   return (
-    <Link to={`/exams/${exam.id}`}>
-      {/* Plain glass card, same weight as Momentum/Today's tasks — no
-          accent ring or glow. That ring used to sit right at the top edge
-          and visually fused with the card above it despite normal spacing;
-          this card doesn't need special emphasis now that it's always shown. */}
+    // className="block": <Link> renders an <a>, which is `display: inline`
+    // by default. An inline element's margin-top is ignored by the browser
+    // entirely, so the space-y gap the Dashboard applies above this card
+    // was being silently dropped — that's why this specific card sat flush
+    // against Momentum while every other (plain <div>) gap on the page
+    // looked correct. Forcing it to `block` makes it a normal box that
+    // actually respects margin-top.
+    <Link to={`/exams/${exam.id}`} className="block">
       <GlassCard interactive className="p-5">
         <div className="flex items-start justify-between">
           <div>
