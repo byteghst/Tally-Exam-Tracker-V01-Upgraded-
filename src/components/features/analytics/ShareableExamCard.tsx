@@ -5,7 +5,12 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/store/uiStore';
-import { drawExamTrendCard, CARD_WIDTH, CARD_HEIGHT } from '@/lib/shareCard/drawExamTrendCard';
+import {
+  drawExamTrendCard,
+  prepareCardAssets,
+  CARD_WIDTH,
+  CARD_HEIGHT
+} from '@/lib/shareCard/drawExamTrendCard';
 import type { ExamTrendPoint } from '@/lib/examTrend';
 
 interface ShareableExamCardProps {
@@ -32,6 +37,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 export function ShareableExamCard({ open, onClose, points }: ShareableExamCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>();
+  const logoRef = useRef<HTMLImageElement | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
   const [busyAction, setBusyAction] = useState<'download' | 'share' | null>(null);
   const { pushToast } = useUIStore();
@@ -61,21 +67,16 @@ export function ShareableExamCard({ open, onClose, points }: ShareableExamCardPr
     let start: number | null = null;
 
     async function run() {
-      // wait for the brand fonts to be ready so canvas text doesn't fall
-      // back to a system font for the first frame or two
-      if ('fonts' in document) {
-        try {
-          await document.fonts.ready;
-        } catch {
-          // proceed with whatever's loaded — a fallback font beats no card
-        }
-      }
+      // Wait for the brand fonts AND the logo image before the first frame,
+      // so the card never draws with fallback fonts or without the logo.
+      const logo = await prepareCardAssets();
       if (cancelled) return;
+      logoRef.current = logo;
 
       const step = (timestamp: number) => {
         if (start === null) start = timestamp;
         const progress = (timestamp - start) / ANIMATION_MS;
-        drawExamTrendCard(ctx!, points, progress);
+        drawExamTrendCard(ctx!, points, progress, logo);
         if (progress < 1 && !cancelled) {
           rafRef.current = requestAnimationFrame(step);
         }
@@ -102,7 +103,7 @@ export function ShareableExamCard({ open, onClose, points }: ShareableExamCardPr
       const ctx = canvas.getContext('2d');
       if (!ctx) return reject(new Error('Canvas not ready'));
       // force the crisp final frame regardless of where the animation was
-      drawExamTrendCard(ctx, points, 1);
+      drawExamTrendCard(ctx, points, 1, logoRef.current);
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
         else reject(new Error('Could not generate image'));
