@@ -48,8 +48,6 @@ function toFormState(exam: Exam | undefined, defaultDate: string | undefined, de
     mcqWrong: exam?.mcqWrong?.toString() ?? '',
     writtenMarksObtained: exam?.writtenMarksObtained?.toString() ?? '',
     manualScoreOverride: exam?.manualScoreOverride?.toString() ?? '',
-    rank: exam?.rank?.toString() ?? '',
-    participants: exam?.participants?.toString() ?? '',
     notes: exam?.notes ?? '',
     reminderMinutesBefore: exam?.reminderMinutesBefore?.toString() ?? '',
 
@@ -166,8 +164,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       mcqUnanswered: unansweredComputed,
       writtenMarksObtained: form.writtenMarksObtained === '' ? '' : Number(form.writtenMarksObtained),
       manualScoreOverride: form.manualScoreOverride === '' ? '' : Number(form.manualScoreOverride),
-      rank: form.rank === '' ? '' : Number(form.rank),
-      participants: form.participants === '' ? '' : Number(form.participants),
       notes: form.notes,
       reminderMinutesBefore: form.reminderMinutesBefore === '' ? '' : Number(form.reminderMinutesBefore)
     };
@@ -188,6 +184,9 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
     // Blank optional fields become `null` here — the store treats `null` as
     // "clear this field" and plain `undefined`/an omitted key as "leave it
     // alone". A real 0 is a normal number and passes straight through.
+    // rank/participants are intentionally left out entirely (not sent as
+    // null) — this form no longer collects them, so any value an exam
+    // already had is left untouched rather than cleared.
     const payload = {
       configId: v.configId || null,
       name: v.name.trim(),
@@ -205,8 +204,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
       mcqUnanswered: v.mcqUnanswered === '' ? null : v.mcqUnanswered,
       writtenMarksObtained: v.writtenMarksObtained === '' ? null : v.writtenMarksObtained,
       manualScoreOverride: v.manualScoreOverride === '' ? null : v.manualScoreOverride,
-      rank: v.rank === '' ? null : v.rank,
-      participants: v.participants === '' ? null : v.participants,
       notes: v.notes?.trim() ? v.notes.trim() : null,
       reminderMinutesBefore: v.reminderMinutesBefore === '' ? null : v.reminderMinutesBefore
     };
@@ -437,17 +434,6 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
               </p>
             </div>
           )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Rank (optional)" type="number" inputMode="numeric" value={form.rank} onChange={(e) => set('rank', e.target.value)} error={errors.rank} />
-          <Input
-            label="Participants (optional)"
-            type="number"
-            inputMode="numeric"
-            value={form.participants}
-            onChange={(e) => set('participants', e.target.value)}
-          />
         </div>
 
         <Input
