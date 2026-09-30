@@ -18,6 +18,65 @@ const COLOR = {
   white: '#FFFFFF'
 };
 
+// Same font roles as the app itself (bundled via @fontsource in main.tsx).
+const FONT_DISPLAY = "'Fraunces', Georgia, serif";
+const FONT_NUMERIC = "'Space Grotesk', system-ui, sans-serif";
+const FONT_UI = "'Plus Jakarta Sans', system-ui, sans-serif";
+
+// Every font spec the card draws with. Canvas text does NOT trigger web-font
+// loading by itself (only text in the page does), so these are loaded
+// explicitly before the first frame — otherwise the card can silently fall
+// back to a system font.
+const CARD_FONT_SPECS = [
+  `600 34px ${FONT_DISPLAY}`,
+  `700 48px ${FONT_DISPLAY}`,
+  `700 64px ${FONT_NUMERIC}`,
+  `400 26px ${FONT_UI}`,
+  `500 19px ${FONT_UI}`,
+  `500 20px ${FONT_UI}`,
+  `600 20px ${FONT_UI}`,
+  `600 22px ${FONT_UI}`
+];
+
+// Header logo: the real Tally logo image, drawn as-is (not redrawn from shapes).
+const LOGO_SIZE = 56;
+const LOGO_GAP = 18;
+
+let logoPromise: Promise<HTMLImageElement | null> | null = null;
+
+/**
+ * Loads the Tally logo once (the same PNG used for the app icon, so the
+ * card can never drift from the real logo). Resolves to null if it can't be
+ * loaded, so the card still renders instead of failing.
+ */
+export function loadTallyLogo(): Promise<HTMLImageElement | null> {
+  if (!logoPromise) {
+    logoPromise = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        logoPromise = null; // allow a retry next time the card is opened
+        resolve(null);
+      };
+      img.src = '/icons/icon-512.png';
+    });
+  }
+  return logoPromise;
+}
+
+/** Loads fonts + logo needed to draw the card. Call once before the first frame. */
+export async function prepareCardAssets(): Promise<HTMLImageElement | null> {
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    try {
+      await Promise.all(CARD_FONT_SPECS.map((spec) => document.fonts.load(spec)));
+      await document.fonts.ready;
+    } catch {
+      // proceed with whatever's loaded — a fallback font beats no card
+    }
+  }
+  return loadTallyLogo();
+}
+
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
@@ -28,27 +87,6 @@ function clamp01(n: number): number {
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
-}
-
-/** Draws the Tally brand mark (3 bars + diagonal) at the given top-left position and size. */
-function drawTallyMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, barColor: string) {
-  // geometry matches design/icon-master.svg's inner group (local box ~320x290)
-  const s = size / 290;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = barColor;
-  const bars = [69, 135, 201];
-  for (const bx of bars) {
-    ctx.fillRect(bx * s, 50 * s, 38 * s, 205 * s);
-  }
-  ctx.strokeStyle = COLOR.accent;
-  ctx.lineWidth = 34 * s;
-  ctx.lineCap = 'square';
-  ctx.beginPath();
-  ctx.moveTo(27 * s, 202 * s);
-  ctx.lineTo(294 * s, 83 * s);
-  ctx.stroke();
-  ctx.restore();
 }
 
 export interface ExamTrendCardStats {
@@ -84,7 +122,8 @@ export function pickLabelIndices(count: number, maxLabels: number): Set<number> 
 export function drawExamTrendCard(
   ctx: CanvasRenderingContext2D,
   points: ExamTrendPoint[],
-  rawProgress: number
+  rawProgress: number,
+  logo?: HTMLImageElement | null
 ) {
   const p = clamp01(rawProgress);
   const stats = computeCardStats(points);
@@ -95,18 +134,24 @@ export function drawExamTrendCard(
 
   const pad = 64;
 
-  // ---- Header: brand mark + wordmark ----
+  // ---- Header: logo + wordmark ----
   const headerOpacity = clamp01(p / 0.12);
+  const headerMidY = pad + 22;
   ctx.save();
   ctx.globalAlpha = headerOpacity;
-  drawTallyMark(ctx, pad, pad, 44, COLOR.ink);
+  if (logo) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(logo, pad, headerMidY - LOGO_SIZE / 2, LOGO_SIZE, LOGO_SIZE);
+  }
+  const wordX = pad + LOGO_SIZE + LOGO_GAP;
   ctx.fillStyle = COLOR.ink;
-  ctx.font = "600 34px 'Sora', system-ui, sans-serif";
+  ctx.font = `600 34px ${FONT_DISPLAY}`;
   ctx.textBaseline = 'middle';
-  ctx.fillText('Tally', pad + 62, pad + 22);
+  ctx.fillText('Tally', wordX, headerMidY);
   const tallyWidth = ctx.measureText('Tally').width;
   ctx.fillStyle = COLOR.accent;
-  ctx.fillText('.', pad + 62 + tallyWidth, pad + 22);
+  ctx.fillText('.', wordX + tallyWidth, headerMidY);
   ctx.restore();
 
   // ---- Title + subtitle ----
@@ -114,12 +159,12 @@ export function drawExamTrendCard(
   ctx.save();
   ctx.globalAlpha = titleOpacity;
   ctx.fillStyle = COLOR.ink;
-  ctx.font = "700 48px 'Sora', system-ui, sans-serif";
+  ctx.font = `700 48px ${FONT_DISPLAY}`;
   ctx.textBaseline = 'alphabetic';
   ctx.fillText('Exam Score Trend', pad, 210);
 
   ctx.fillStyle = COLOR.inkMuted;
-  ctx.font = "400 26px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `400 26px ${FONT_UI}`;
   const rangeLabel = `${formatDate(points[0].date)} – ${formatDate(points[points.length - 1].date)}`;
   ctx.fillText(rangeLabel, pad, 250);
   ctx.restore();
@@ -139,11 +184,11 @@ export function drawExamTrendCard(
     const cx = pad + colWidth * i;
     const animatedValue = Math.round(col.value * statsProgress * 10) / 10;
     ctx.fillStyle = COLOR.inkFaint;
-    ctx.font = "600 20px 'Plus Jakarta Sans', system-ui, sans-serif";
+    ctx.font = `600 20px ${FONT_UI}`;
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(col.label, cx, statY);
     ctx.fillStyle = col.color;
-    ctx.font = "700 64px 'Sora', system-ui, sans-serif";
+    ctx.font = `700 64px ${FONT_NUMERIC}`;
     ctx.fillText(`${animatedValue}%`, cx, statY + 66);
     if (i > 0) {
       ctx.strokeStyle = COLOR.border;
@@ -169,7 +214,7 @@ export function drawExamTrendCard(
   ctx.globalAlpha = gridOpacity;
   ctx.strokeStyle = COLOR.border;
   ctx.fillStyle = COLOR.inkFaint;
-  ctx.font = "500 20px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `500 20px ${FONT_UI}`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'right';
   [0, 25, 50, 75, 100].forEach((tick) => {
@@ -188,14 +233,14 @@ export function drawExamTrendCard(
   ctx.translate(pad - 34, chartTop + chartHeight / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.font = "600 22px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `600 22px ${FONT_UI}`;
   ctx.fillStyle = COLOR.inkMuted;
   ctx.fillText('Score (%)', 0, 0);
   ctx.restore();
 
   // X-axis label
   ctx.textAlign = 'center';
-  ctx.font = "600 22px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `600 22px ${FONT_UI}`;
   ctx.fillStyle = COLOR.inkMuted;
   ctx.fillText('Exam date (chronological)', chartLeft + chartWidth / 2, chartBottom + 74);
   ctx.textAlign = 'left';
@@ -275,7 +320,7 @@ export function drawExamTrendCard(
   ctx.save();
   ctx.globalAlpha = gridOpacity;
   ctx.fillStyle = COLOR.inkFaint;
-  ctx.font = "500 19px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `500 19px ${FONT_UI}`;
   ctx.textAlign = 'center';
   const labelIndices = pickLabelIndices(n, 6);
   points.forEach((pt, i) => {
@@ -296,7 +341,7 @@ export function drawExamTrendCard(
   ctx.stroke();
 
   ctx.fillStyle = COLOR.inkFaint;
-  ctx.font = "500 20px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = `500 20px ${FONT_UI}`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillText('Generated by Tally', pad, CARD_HEIGHT - 50);
