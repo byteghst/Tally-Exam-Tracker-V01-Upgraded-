@@ -92,24 +92,14 @@ export function ExamDetail() {
         </Button>
       </div>
 
-      {comparison?.previousExam && (comparison.percentageDiff !== null || comparison.rankDiff !== null) && (
+      {comparison?.previousExam && comparison.percentageDiff !== null && (
         <GlassCard className="flex flex-wrap gap-6 p-5">
-          {comparison.percentageDiff !== null && (
-            <ComparisonStat
-              label="Score vs. previous"
-              diff={comparison.percentageDiff}
-              unit="%"
-              detail={`${comparison.previousPercentage}% → ${comparison.currentPercentage}%`}
-            />
-          )}
-          {comparison.rankDiff !== null && (
-            <ComparisonStat
-              label="Rank vs. previous"
-              diff={comparison.rankDiff}
-              unit=" places"
-              detail={`${comparison.previousExam.rank} → ${exam.rank}`}
-            />
-          )}
+          <ComparisonStat
+            label="Score vs. previous"
+            diff={comparison.percentageDiff}
+            unit="%"
+            detail={`${comparison.previousPercentage}% → ${comparison.currentPercentage}%`}
+          />
         </GlassCard>
       )}
 
@@ -118,10 +108,6 @@ export function ExamDetail() {
         <Stat label="Out of" raw={`${score.totalMarks}`} />
         <Stat label="Percentage" value={score.percentage} suffix="%" decimals={1} />
         <Stat label="Accuracy" value={score.accuracy} suffix="%" decimals={1} />
-        <Stat
-          label="Rank"
-          raw={exam.rank ? `${exam.rank}${exam.participants ? ` / ${exam.participants}` : ''}` : '—'}
-        />
         <Stat label="Correct" value={exam.mcqCorrect ?? null} />
         <Stat label="Wrong" value={exam.mcqWrong ?? null} />
         <Stat label="Attempt rate" value={score.attemptRate} suffix="%" decimals={1} />
