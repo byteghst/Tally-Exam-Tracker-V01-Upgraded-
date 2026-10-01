@@ -27,6 +27,15 @@ const DENSITY_OPTIONS: DensityLevel[] = ['comfortable', 'compact'];
 
 type PermissionState = 'unknown' | 'granted' | 'denied' | 'unsupported';
 
+// Which build is installed: the short commit id (compare with the latest
+// commit on GitHub) and when it was built. Injected by vite.config.ts.
+const BUILD_LABEL = `Build ${__APP_COMMIT__} · ${new Date(__APP_BUILT__).toLocaleString(undefined, {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit'
+})}`;
+
 export function Settings() {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
   const { user, signOut } = useAuthStore();
@@ -276,6 +285,8 @@ export function Settings() {
           Reset settings to default
         </Button>
       </GlassCard>
+
+      <p className="pb-2 text-center text-xs text-ink-faint">{BUILD_LABEL}</p>
 
       <ConfirmDialog
         open={resetConfirmOpen}
