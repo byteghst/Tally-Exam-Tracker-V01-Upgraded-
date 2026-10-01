@@ -94,6 +94,10 @@ export function Settings() {
           onChange={(e) => updateSettings({ userName: e.target.value || undefined })}
           placeholder="Used for the Dashboard greeting"
         />
+        <p className="-mt-1 text-xs text-ink-faint">
+          Saved to your account, so it stays the same after app updates and on all your devices. Change it here any
+          time.
+        </p>
         <Select
           label="Default exam type when adding"
           value={settings.defaultExamType}
@@ -278,7 +282,7 @@ export function Settings() {
         onClose={() => setResetConfirmOpen(false)}
         onConfirm={resetSettings}
         title="Reset all settings?"
-        description="Theme, dashboard layout, and every preference here goes back to default. Your exams, tasks and configs are not affected."
+        description="Theme, dashboard layout and preferences go back to default. Your name, exams, tasks and configs are kept."
         confirmLabel="Reset"
       />
 
