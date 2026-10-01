@@ -6,13 +6,14 @@ export const CARD_HEIGHT = 1350;
 
 // Brand tokens (kept as literal hex here rather than reading CSS variables,
 // since canvas drawing happens outside the CSS cascade entirely).
+// accent = the logo's blue (#0055FE).
 const COLOR = {
   bg: '#F2F3F6',
   ink: '#0F1216',
   inkMuted: '#5A6374',
   inkFaint: '#96A0AD',
-  accent: '#284EFE',
-  accentSoft: '#E5EAFF',
+  accent: '#0055FE',
+  accentSoft: '#E6EEFF',
   success: '#3EBD7E',
   border: '#E0E4EB',
   white: '#FFFFFF'
@@ -274,7 +275,7 @@ export function drawExamTrendCard(
     // area fill
     const gradient = ctx.createLinearGradient(0, chartTop, 0, chartBottom);
     gradient.addColorStop(0, COLOR.accentSoft);
-    gradient.addColorStop(1, 'rgba(229,234,255,0)');
+    gradient.addColorStop(1, 'rgba(230,238,255,0)');
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(visiblePoints[0].x, chartBottom);
