@@ -71,7 +71,7 @@ export function ExamScoreTrendChart({ exams }: { exams: Exam[] }) {
                   fontSize: 12
                 }}
               />
-              <Line type="monotone" dataKey="percentage" stroke="#284EFE" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="percentage" stroke="#0055FE" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </>
