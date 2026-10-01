@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 
-const COLORS = ['#284EFE', '#3EBD7E', '#E0A93E', '#0F1216'];
+// Logo blue, success green, warning gold, logo navy.
+const COLORS = ['#0055FE', '#3EBD7E', '#E0A93E', '#030C21'];
 const DURATION_MS = 2200;
 
 interface Particle {
