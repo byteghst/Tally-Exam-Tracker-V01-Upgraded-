@@ -2,15 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accent palette is derived from the Tally logo itself (one hue, ~220°):
+     logo blue  #0055FE  -> --accent (light)
+     navy       #030C21  -> used for the icon/splash background
+   --accent2 is a close neighbour (azure, ~205°) so gradients and glows read
+   as "blue into lighter blue" — never purple. Dark mode uses lighter tints of
+   the same hues so accent text stays readable (>= 4.5:1) on dark surfaces. */
 :root {
   --surface: 250 251 253;
   --surface-raised: 255 255 255;
   --ink: 20 24 33;
   --ink-muted: 90 99 116;
   --ink-faint: 150 158 173;
-  --accent: 40 78 254;
-  --accent2: 124 58 237;
-  --accent-soft: 229 234 255;
+  --accent: 0 85 254;
+  --accent2: 0 149 255;
+  --accent-soft: 230 238 255;
   --border: 224 228 235;
 
   --radius-card: 22px;
@@ -26,9 +32,9 @@
   --ink: 236 239 244;
   --ink-muted: 158 167 184;
   --ink-faint: 100 109 128;
-  --accent: 99 129 255;
-  --accent2: 167 139 250;
-  --accent-soft: 26 42 92;
+  --accent: 61 126 255;
+  --accent2: 66 176 255;
+  --accent-soft: 27 44 81;
   --border: 36 44 64;
   --glass-alpha: 0.58;
   --glass-hi-a: 0.07;
