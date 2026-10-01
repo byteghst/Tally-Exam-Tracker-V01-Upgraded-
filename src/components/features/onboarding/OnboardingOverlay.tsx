@@ -22,9 +22,12 @@ const HIGHLIGHTS = [
 ];
 
 export function OnboardingOverlay() {
-  const { settings, updateSettings } = useSettingsStore();
+  const { settings, updateSettings, loaded } = useSettingsStore();
 
-  if (settings.onboardingCompleted) return null;
+  // Wait until the real saved settings are known. Before that, `settings` only
+  // holds placeholder defaults (where "intro seen" is false), which is what made
+  // this popup appear on every launch even though it had already been dismissed.
+  if (!loaded || settings.onboardingCompleted) return null;
 
   function finish() {
     updateSettings({ onboardingCompleted: true });
