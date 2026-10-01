@@ -19,8 +19,9 @@ export default defineConfig({
         name: 'Tally',
         short_name: 'Tally',
         description: 'Tally — a manual-first exam and task tracker, synced across your devices',
-        theme_color: '#284EFE',
-        background_color: '#F2F3F6',
+        // Logo blue for the browser/app chrome, logo navy behind the icon on the launch screen.
+        theme_color: '#0055FE',
+        background_color: '#030C21',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
