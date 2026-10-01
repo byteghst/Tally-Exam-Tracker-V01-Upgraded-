@@ -8,7 +8,7 @@ import { computeMilestones, type Milestone } from '@/lib/milestones';
 export function useMilestoneCelebration() {
   const exams = useExamStore((s) => s.exams);
   const tasks = useTaskStore((s) => s.tasks);
-  const { settings, updateSettings } = useSettingsStore();
+  const { settings, updateSettings, loaded } = useSettingsStore();
   const pushToast = useUIStore((s) => s.pushToast);
 
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
@@ -18,6 +18,11 @@ export function useMilestoneCelebration() {
 
   useEffect(() => {
     if (checkedRef.current) return;
+    // Wait for the saved settings to load first. This check reads
+    // `celebrationBaselineDone` and writes back to settings; if it ran while
+    // `settings` was still the placeholder defaults, it would save those
+    // defaults over the real ones (wiping the saved name and the intro flag).
+    if (!loaded) return;
     // Wait for stores to actually be hydrated (or genuinely confirmed
     // empty) before computing — an app with real history that just hasn't
     // finished its first read yet would otherwise look "empty" for a tick.
@@ -45,7 +50,7 @@ export function useMilestoneCelebration() {
     setCelebrating(newOnes[0]);
     updateSettings({ celebratedMilestoneIds: [...settings.celebratedMilestoneIds, ...newOnes.map((m) => m.id)] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAnyData]);
+  }, [hasAnyData, loaded]);
 
   function finishCelebrating() {
     if (celebrating) pushToast(`🎉 ${celebrating.label}`);
