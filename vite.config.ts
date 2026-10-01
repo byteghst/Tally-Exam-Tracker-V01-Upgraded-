@@ -4,6 +4,14 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
+  // Stamped into the app at build time and shown at the bottom of Settings, so
+  // it is always possible to tell exactly which build is installed (compare the
+  // short commit id with the latest commit on GitHub). GITHUB_SHA is set
+  // automatically by GitHub Actions; local builds show "dev".
+  define: {
+    __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? 'dev').slice(0, 7)),
+    __APP_BUILT__: JSON.stringify(new Date().toISOString())
+  },
   plugins: [
     react(),
     VitePWA({
