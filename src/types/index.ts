@@ -107,6 +107,14 @@ export interface WidgetConfig {
 export interface NotificationPrefs {
   exams: boolean;
   tasks: boolean;
+  /**
+   * Automatic heads-up at 8 PM the evening before each upcoming exam.
+   * Optional so settings saved before this existed still load; a missing
+   * value counts as ON.
+   */
+  examEveningBefore?: boolean;
+  /** Automatic 8 AM briefing on days with an exam or tasks due. Missing = ON. */
+  morningBriefing?: boolean;
 }
 
 export interface AppSettings {
