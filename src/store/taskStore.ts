@@ -65,6 +65,8 @@ function toRow(data: Partial<TaskPayload>) {
 interface TaskStore {
   tasks: Task[];
   loading: boolean;
+  /** true once tasks have been read successfully at least once (an empty list is then genuinely empty). */
+  loaded: boolean;
   subscribed: boolean;
   hydrate: () => Promise<void>;
   subscribe: () => void;
@@ -110,12 +112,23 @@ async function ensureRecurringInstances(seriesTask: Task, fromISO: string, toISO
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   loading: false,
+  loaded: false,
   subscribed: false,
 
   hydrate: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('tasks').select('*').order('date', { ascending: true, nullsFirst: false });
-    set({ tasks: (data ?? []).map((r) => mapTask(r as TaskRow)), loading: false });
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('date', { ascending: true, nullsFirst: false });
+    // A failed read (offline, expired session...) must not look like "no tasks":
+    // keep what we already have and leave `loaded` as it was, so nothing
+    // downstream (such as reminder scheduling) acts on missing data.
+    if (error || !data) {
+      set({ loading: false });
+      return;
+    }
+    set({ tasks: data.map((r) => mapTask(r as TaskRow)), loading: false, loaded: true });
   },
 
   subscribe: () => {
