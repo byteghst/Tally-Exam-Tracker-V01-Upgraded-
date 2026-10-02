@@ -101,6 +101,8 @@ function toRow(data: ExamPayload) {
 interface ExamStore {
   exams: Exam[];
   loading: boolean;
+  /** true once exams have been read successfully at least once (an empty list is then genuinely empty). */
+  loaded: boolean;
   subscribed: boolean;
   hydrate: () => Promise<void>;
   subscribe: () => void;
@@ -116,12 +118,20 @@ let channel: ReturnType<typeof supabase.channel> | null = null;
 export const useExamStore = create<ExamStore>((set, get) => ({
   exams: [],
   loading: false,
+  loaded: false,
   subscribed: false,
 
   hydrate: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('exams').select('*').order('date', { ascending: true });
-    set({ exams: (data ?? []).map((r) => mapExam(r as ExamRow)), loading: false });
+    const { data, error } = await supabase.from('exams').select('*').order('date', { ascending: true });
+    // A failed read (offline, expired session...) must not look like "no exams":
+    // keep what we already have and leave `loaded` as it was, so nothing
+    // downstream (such as reminder scheduling) acts on missing data.
+    if (error || !data) {
+      set({ loading: false });
+      return;
+    }
+    set({ exams: data.map((r) => mapExam(r as ExamRow)), loading: false, loaded: true });
   },
 
   subscribe: () => {
