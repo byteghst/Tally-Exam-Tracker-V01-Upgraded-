@@ -8,7 +8,9 @@
 #     an earlier workflow step). Without this, builds were signed with a fresh
 #     random key every run, which makes Android reject updates ("conflicts
 #     with an existing package").
-#  2. Sharp launch screen on Android 12+ (see the second half of this file).
+#  2. Sharp launch screen on Android 12+.
+#  3. Reliable reminders: the permissions Android needs to show notifications
+#     and fire them on time, plus a proper Tally status-bar icon.
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
@@ -76,3 +78,46 @@ XML
 else
   echo "resources/icon.png not found - skipping Android 12+ launch screen patch"
 fi
+
+# ---------------------------------------------------------------------------
+# 3. Reliable reminders
+#
+#  - POST_NOTIFICATIONS: without it Android 13+ never shows the "allow
+#    notifications?" prompt, so every reminder is silently blocked.
+#  - USE_EXACT_ALARM (Android 13+) / SCHEDULE_EXACT_ALARM (Android 12): without
+#    one of them Android may deliver reminders minutes late. On Android 13+
+#    USE_EXACT_ALARM is granted automatically at install.
+#  - ic_stat_tally: the white Tally glyph shown in the status bar and on the
+#    notification (Android requires a single-colour icon there; without one it
+#    falls back to a generic "i" bubble).
+# ---------------------------------------------------------------------------
+MANIFEST=android/app/src/main/AndroidManifest.xml
+
+add_permission() {
+  local name="$1"
+  local attrs="${2:-}"
+  if ! grep -q "android:name=\"$name\"" "$MANIFEST"; then
+    sed -i "s|<application|<uses-permission android:name=\"$name\"$attrs />\n    <application|" "$MANIFEST"
+    echo "Added permission $name"
+  fi
+}
+
+add_permission "android.permission.POST_NOTIFICATIONS"
+add_permission "android.permission.USE_EXACT_ALARM"
+add_permission "android.permission.SCHEDULE_EXACT_ALARM" " android:maxSdkVersion=\"32\""
+
+mkdir -p "$RES/drawable"
+cat > "$RES/drawable/ic_stat_tally.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M5.26,4.1 L7.68,4.1 L7.68,10.57 L5.26,11.61 Z M5.26,16.49 L7.68,15.45 L7.68,19.93 L5.26,19.93 Z M8.97,4.1 L11.33,4.1 L11.33,9.0 L8.97,10.01 Z M8.97,14.9 L11.33,13.88 L11.33,19.93 L8.97,19.93 Z M12.62,4.1 L15.0,4.1 L15.0,7.41 L12.62,8.44 Z M12.62,13.33 L15.0,12.3 L15.0,19.93 L12.62,19.93 Z M16.27,4.1 L18.65,4.1 L18.65,5.84 L16.27,6.87 Z M16.27,11.75 L18.65,10.73 L18.65,19.93 L16.27,19.93 Z M2.0,14.11 L2.0,16.8 L22.0,8.19 L22.0,5.5 Z" />
+</vector>
+XML
+
+echo "Reminder permissions and notification icon configured"
