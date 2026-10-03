@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ChevronUp, ChevronDown, Bell, BellOff, LogOut } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronUp, ChevronDown, Bell, BellOff, LogOut, AlertTriangle } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
@@ -8,11 +8,16 @@ import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import { normalizeLayout, WIDGET_LABELS } from '@/lib/dashboardWidgets';
 import {
+  RESYNC_EVENT,
   requestNativeNotificationPermission,
   getNativeNotificationPermission,
-  sendTestNativeNotification
+  getNativeReminderStatus,
+  openExactAlarmSettings,
+  sendTestNativeNotification,
+  type NativeReminderStatus
 } from '@/lib/notifications/nativeScheduler';
 import {
   requestWebNotificationPermission,
@@ -36,17 +41,31 @@ const BUILD_LABEL = `Build ${__APP_COMMIT__} · ${new Date(__APP_BUILT__).toLoca
   minute: '2-digit'
 })}`;
 
+function formatWhen(d: Date): string {
+  return d.toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
 export function Settings() {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
   const { user, signOut } = useAuthStore();
+  const pushToast = useUIStore((s) => s.pushToast);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [permission, setPermission] = useState<PermissionState>('unknown');
+  const [native, setNative] = useState<NativeReminderStatus | null>(null);
   const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     if (isNative) {
-      getNativeNotificationPermission().then((granted) => setPermission(granted ? 'granted' : 'denied'));
+      getNativeNotificationPermission()
+        .then((granted) => setPermission(granted ? 'granted' : 'denied'))
+        .catch(() => setPermission('denied'));
     } else if (isWebNotificationSupported()) {
       const p = getWebNotificationPermission();
       setPermission(p === 'granted' ? 'granted' : p === 'denied' ? 'denied' : 'unknown');
@@ -55,14 +74,59 @@ export function Settings() {
     }
   }, [isNative]);
 
+  // Live reminder status (permission, exact timing, how many are scheduled).
+  const refreshNative = useCallback(async () => {
+    if (!isNative) return;
+    try {
+      const status = await getNativeReminderStatus();
+      setNative(status);
+      setPermission(status.permission ? 'granted' : 'denied');
+    } catch {
+      // purely informational
+    }
+  }, [isNative]);
+
+  useEffect(() => {
+    if (!isNative) return;
+    void refreshNative();
+    const id = setInterval(() => void refreshNative(), 3000);
+    return () => clearInterval(id);
+  }, [isNative, refreshNative]);
+
   async function handleEnableNotifications() {
-    const granted = isNative ? await requestNativeNotificationPermission() : await requestWebNotificationPermission();
-    setPermission(granted ? 'granted' : 'denied');
+    try {
+      const granted = isNative ? await requestNativeNotificationPermission() : await requestWebNotificationPermission();
+      setPermission(granted ? 'granted' : 'denied');
+    } catch {
+      setPermission('denied');
+    }
+    if (isNative) {
+      // schedule right away instead of waiting for the next data change
+      window.dispatchEvent(new Event(RESYNC_EVENT));
+      setTimeout(() => void refreshNative(), 1500);
+    }
   }
 
-  function handleTestNotification() {
-    if (isNative) sendTestNativeNotification();
-    else sendTestWebNotification();
+  async function handleTestNotification() {
+    try {
+      if (isNative) {
+        await sendTestNativeNotification();
+        pushToast('Test sent — it should appear in a few seconds');
+      } else {
+        sendTestWebNotification();
+      }
+    } catch {
+      pushToast(
+        "Couldn't send the test. Make sure notifications are allowed for Tally in your phone's settings.",
+        undefined,
+        'error'
+      );
+    }
+  }
+
+  async function handleFixExactAlarms() {
+    await openExactAlarmSettings();
+    setTimeout(() => void refreshNative(), 1500);
   }
 
   const widgetItems = normalizeLayout(settings.dashboardLayout);
@@ -79,6 +143,8 @@ export function Settings() {
     [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
     updateSettings({ dashboardLayout: reordered.map((w, i) => ({ ...w, order: i })) });
   }
+
+  const prefs = settings.notificationPrefs;
 
   return (
     <div className="space-y-6 py-6">
@@ -242,14 +308,41 @@ export function Settings() {
               )}
             </div>
 
+            {isNative && permission !== 'granted' && (
+              <p className="text-xs text-ink-faint">
+                If no prompt appears, open your phone's Settings → Apps → Tally → Notifications and turn them on.
+              </p>
+            )}
+
+            {isNative && permission === 'granted' && native?.exactAlarms === 'denied' && (
+              <div className="rounded-control border border-warning/40 bg-warning/10 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+                  <AlertTriangle size={14} className="text-warning" /> Exact timing is off
+                </p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Android may deliver reminders several minutes late. Allow "Alarms &amp; reminders" for Tally to fix
+                  it.
+                </p>
+                <Button size="sm" variant="secondary" className="mt-2" onClick={handleFixExactAlarms}>
+                  Open setting
+                </Button>
+              </div>
+            )}
+
+            {isNative && permission === 'granted' && native && (
+              <p className="text-xs text-ink-muted">
+                {native.scheduledCount === 0 || !native.next
+                  ? 'No reminders scheduled right now.'
+                  : `${native.scheduledCount} reminder${native.scheduledCount === 1 ? '' : 's'} scheduled. Next: ${native.next.title} — ${formatWhen(native.next.at)}`}
+              </p>
+            )}
+
             <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
               Exam reminders
               <input
                 type="checkbox"
-                checked={settings.notificationPrefs.exams}
-                onChange={(e) =>
-                  updateSettings({ notificationPrefs: { ...settings.notificationPrefs, exams: e.target.checked } })
-                }
+                checked={prefs.exams}
+                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, exams: e.target.checked } })}
                 className="h-4 w-4 rounded accent-accent"
               />
             </label>
@@ -257,11 +350,33 @@ export function Settings() {
               Task reminders
               <input
                 type="checkbox"
-                checked={settings.notificationPrefs.tasks}
-                onChange={(e) =>
-                  updateSettings({ notificationPrefs: { ...settings.notificationPrefs, tasks: e.target.checked } })
-                }
+                checked={prefs.tasks}
+                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, tasks: e.target.checked } })}
                 className="h-4 w-4 rounded accent-accent"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-control border border-border p-3 text-sm text-ink">
+              <span>
+                Evening-before exam heads-up
+                <span className="block text-xs text-ink-faint">8:00 PM the night before each exam</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs.examEveningBefore !== false}
+                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, examEveningBefore: e.target.checked } })}
+                className="h-4 w-4 shrink-0 rounded accent-accent"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-control border border-border p-3 text-sm text-ink">
+              <span>
+                Morning briefing
+                <span className="block text-xs text-ink-faint">8:00 AM on days with an exam or tasks due</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs.morningBriefing !== false}
+                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, morningBriefing: e.target.checked } })}
+                className="h-4 w-4 shrink-0 rounded accent-accent"
               />
             </label>
 
@@ -273,7 +388,7 @@ export function Settings() {
 
             <p className="text-xs text-ink-faint">
               {isNative
-                ? "Set a reminder time on any exam or task and the app will notify you, even if it's closed."
+                ? 'The two automatic reminders above need no setup. You can also set a reminder time on any exam or task. Android delivers them even when Tally is closed.'
                 : "Set a reminder time on any exam or task. In a browser, this can only notify you while the tab or installed app is actually open — there's no way for a website to wake up on its own to fire a notification while fully closed."}
             </p>
           </>
