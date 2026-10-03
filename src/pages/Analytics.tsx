@@ -1,11 +1,14 @@
-import { useEffect, useMemo } from 'react';
-import { Award, BarChart3 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Award, BarChart3, FileText } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Badge';
 import { ExamScoreTrendChart } from '@/components/features/analytics/ExamScoreTrendChart';
 import { TaskCompletionTrendChart } from '@/components/features/analytics/TaskCompletionTrendChart';
+import { MonthlyReportSheet } from '@/components/features/analytics/MonthlyReportSheet';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
+import { useStudyStore } from '@/store/studyStore';
 import { calculateScore } from '@/lib/scoring';
 import { computeMilestones } from '@/lib/milestones';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -13,6 +16,8 @@ import { useCountUp } from '@/hooks/useCountUp';
 export function Analytics() {
   const { exams, hydrate: hydrateExams } = useExamStore();
   const { tasks, hydrate: hydrateTasks } = useTaskStore();
+  const studySessions = useStudyStore((s) => s.sessions);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     hydrateExams();
@@ -51,7 +56,7 @@ export function Analytics() {
 
   const milestones = useMemo(() => computeMilestones({ exams, tasks }), [exams, tasks]);
 
-  if (completedExams.length === 0 && tasks.length === 0) {
+  if (completedExams.length === 0 && tasks.length === 0 && studySessions.length === 0) {
     return (
       <div className="py-6">
         <h1 className="font-display text-2xl font-semibold text-ink">Analytics</h1>
@@ -69,6 +74,20 @@ export function Analytics() {
   return (
     <div className="space-y-5 py-6">
       <h1 className="font-display text-2xl font-semibold text-ink">Analytics</h1>
+
+      <GlassCard className="flex items-center gap-4 p-4">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-accent/[0.12] text-accent">
+          <FileText size={22} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-ink">Monthly report</p>
+          <p className="text-sm text-ink-muted">Download a detailed breakdown of any month.</p>
+        </div>
+        <Button size="sm" onClick={() => setReportOpen(true)}>
+          Open
+        </Button>
+      </GlassCard>
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <MetricCard label="Total exams" value={exams.length} />
         <MetricCard label="Average percentage" value={avgPercentage} suffix="%" />
@@ -97,6 +116,8 @@ export function Analytics() {
           </ul>
         </GlassCard>
       )}
+
+      <MonthlyReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );
 }
