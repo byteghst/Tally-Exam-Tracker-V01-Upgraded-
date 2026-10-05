@@ -9,16 +9,24 @@ import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useStudyStore } from '@/store/studyStore';
 import { computeMonthlyReport, earliestReportMonth } from '@/lib/monthlyReport';
-import { drawMonthlyReport, REPORT_WIDTH } from '@/lib/shareCard/drawMonthlyReport';
+import {
+  layoutMonthlyReport,
+  PAGE_WIDTH,
+  PAGE_HEIGHT,
+  type ReportLayout
+} from '@/lib/shareCard/monthlyReportPages';
 import { prepareCardAssets } from '@/lib/shareCard/drawExamTrendCard';
+import { buildPdf, canvasToPdfPage, type PdfImagePage } from '@/lib/pdf/imagePdf';
 
 interface MonthlyReportSheetProps {
   open: boolean;
   onClose: () => void;
 }
 
-/** Phones cap how large a canvas can be; stay safely under that for tall reports. */
-const MAX_PIXELS = 9_000_000;
+/** On-screen preview resolution (the PDF itself is rendered at EXPORT_SCALE). */
+const PREVIEW_SCALE = 0.7;
+/** 1.5x of the 1080px-wide page = about 195 dpi on A4: sharp text, modest file size. */
+const EXPORT_SCALE = 1.5;
 
 const monthIndex = (m: { year: number; month: number }) => m.year * 12 + m.month;
 
@@ -30,7 +38,7 @@ function blobToBase64(blob: Blob): Promise<string> {
       const result = reader.result as string;
       resolve(result.slice(result.indexOf(',') + 1));
     };
-    reader.onerror = () => reject(reader.error ?? new Error('Could not read image data'));
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read file data'));
     reader.readAsDataURL(blob);
   });
 }
@@ -46,9 +54,10 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
   const current = { year: today.getFullYear(), month: today.getMonth() };
   const [cursor, setCursor] = useState(current);
   const [assetsReady, setAssetsReady] = useState(false);
+  const [layout, setLayout] = useState<ReportLayout | null>(null);
   const [busy, setBusy] = useState<'download' | 'share' | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const logoRef = useRef<HTMLImageElement | null>(null);
 
   const earliest = useMemo(() => earliestReportMonth(exams, tasks, sessions), [exams, tasks, sessions]);
@@ -69,12 +78,12 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
     setCanShareFiles(
       typeof navigator !== 'undefined' &&
         'canShare' in navigator &&
-        navigator.canShare?.({ files: [new File([], 'test.png', { type: 'image/png' })] }) === true
+        navigator.canShare?.({ files: [new File([], 'test.pdf', { type: 'application/pdf' })] }) === true
     );
   }, []);
 
-  // Fonts and the logo must be ready before the first draw, or the report
-  // would silently fall back to system fonts / miss the logo.
+  // Fonts and the logo must be ready before drawing, or the report would
+  // silently fall back to system fonts / miss the logo.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -88,48 +97,63 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
     };
   }, [open]);
 
-  // Draw: once on a scratch canvas to learn the height (it depends on the
-  // data), then on the real canvas sized to fit.
+  // Lay the report out across A4 pages.
   useEffect(() => {
-    if (!open || !assetsReady || report.isEmpty) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const scratch = document.createElement('canvas').getContext('2d');
-    if (!ctx || !scratch) return;
-
-    const height = drawMonthlyReport(scratch, report, logoRef.current);
-    const dpr = window.devicePixelRatio || 1;
-    const scale = Math.max(0.75, Math.min(2, dpr, Math.sqrt(MAX_PIXELS / (REPORT_WIDTH * height))));
-    canvas.width = Math.round(REPORT_WIDTH * scale);
-    canvas.height = Math.round(height * scale);
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    drawMonthlyReport(ctx, report, logoRef.current, height);
+    if (!open || !assetsReady || report.isEmpty) {
+      setLayout(null);
+      return;
+    }
+    const measure = document.createElement('canvas').getContext('2d');
+    if (!measure) return;
+    setLayout(layoutMonthlyReport(report, logoRef.current, measure));
   }, [open, assetsReady, report]);
 
-  function getBlob(): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return reject(new Error('Report not ready'));
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('Could not generate the image'));
-      }, 'image/png');
-    });
-  }
+  // Draw the on-screen page previews.
+  useEffect(() => {
+    if (!layout) return;
+    for (let i = 0; i < layout.pageCount; i++) {
+      const canvas = previewRefs.current[i];
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) continue;
+      canvas.width = Math.round(PAGE_WIDTH * PREVIEW_SCALE);
+      canvas.height = Math.round(PAGE_HEIGHT * PREVIEW_SCALE);
+      ctx.setTransform(PREVIEW_SCALE, 0, 0, PREVIEW_SCALE, 0, 0);
+      layout.drawPage(ctx, i);
+    }
+  }, [layout]);
 
-  const fileName = `tally-report-${cursor.year}-${String(cursor.month + 1).padStart(2, '0')}.png`;
+  const fileName = `tally-report-${cursor.year}-${String(cursor.month + 1).padStart(2, '0')}.pdf`;
+
+  /** Renders every page at full quality, one at a time (keeps memory low), and packs them into a PDF. */
+  async function buildReportPdf(): Promise<Blob> {
+    if (!layout) throw new Error('Report not ready');
+    const pages: PdfImagePage[] = [];
+    for (let i = 0; i < layout.pageCount; i++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(PAGE_WIDTH * EXPORT_SCALE);
+      canvas.height = Math.round(PAGE_HEIGHT * EXPORT_SCALE);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not draw the report');
+      ctx.setTransform(EXPORT_SCALE, 0, 0, EXPORT_SCALE, 0, 0);
+      layout.drawPage(ctx, i);
+      pages.push(await canvasToPdfPage(canvas));
+      canvas.width = 0; // release the page's memory before drawing the next
+      canvas.height = 0;
+    }
+    const bytes = buildPdf(pages, { title: `Tally Monthly Report - ${report.label}`, created: new Date() });
+    return new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
+  }
 
   async function handleDownload() {
     setBusy('download');
     try {
-      const blob = await getBlob();
+      const blob = await buildReportPdf();
       if (Capacitor.isNativePlatform()) {
-        // A plain <a download> does nothing inside the Android app, so the file
-        // is written to the phone's Documents folder instead.
+        // A plain <a download> does nothing inside the Android app, so the PDF is
+        // written to the phone's Documents folder instead.
         const base64 = await blobToBase64(blob);
         await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Documents });
-        pushToast('Saved to Documents on your device');
+        pushToast(`Saved to Documents: ${fileName}`);
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -142,7 +166,7 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
         pushToast('Report downloaded');
       }
     } catch {
-      pushToast("Couldn't save the report. Please try again.", undefined, 'error');
+      pushToast("Couldn't create the PDF. Please try again.", undefined, 'error');
     } finally {
       setBusy(null);
     }
@@ -151,8 +175,8 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
   async function handleShare() {
     setBusy('share');
     try {
-      const blob = await getBlob();
-      const file = new File([blob], fileName, { type: 'image/png' });
+      const blob = await buildReportPdf();
+      const file = new File([blob], fileName, { type: 'application/pdf' });
       await navigator.share({ files: [file], title: `Tally report — ${report.label}` });
     } catch (err) {
       // AbortError just means the share sheet was closed, which isn't a failure
@@ -165,7 +189,7 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
     }
   }
 
-  const disabled = busy !== null || !assetsReady || report.isEmpty;
+  const disabled = busy !== null || !layout;
 
   return (
     <Sheet
@@ -177,15 +201,15 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
           {busy && (
             <span className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
               <Loader2 size={12} className="animate-spin" />
-              {busy === 'share' ? 'Preparing to share…' : 'Saving…'}
+              {busy === 'share' ? 'Preparing PDF…' : 'Creating PDF…'}
             </span>
           )}
-          <Button variant="secondary" onClick={handleDownload} disabled={disabled}>
+          <Button onClick={handleDownload} disabled={disabled}>
             <Download size={16} />
-            Download
+            Download PDF
           </Button>
           {canShareFiles && (
-            <Button onClick={handleShare} disabled={disabled}>
+            <Button variant="secondary" onClick={handleShare} disabled={disabled}>
               <Share2 size={16} />
               Share
             </Button>
@@ -218,16 +242,29 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
           <p className="rounded-control border border-border p-4 text-sm text-ink-muted">
             Nothing recorded in {report.label} yet. Use the arrows to pick a month with exams, tasks or study time.
           </p>
-        ) : !assetsReady ? (
+        ) : !layout ? (
           <p className="flex items-center gap-2 py-8 text-sm text-ink-muted">
             <Loader2 size={14} className="animate-spin" /> Preparing report…
           </p>
         ) : (
-          <canvas
-            ref={canvasRef}
-            style={{ width: '100%', height: 'auto' }}
-            aria-label={`Monthly report for ${report.label}`}
-          />
+          <>
+            <p className="text-xs text-ink-faint">
+              A4 PDF · {layout.pageCount} page{layout.pageCount === 1 ? '' : 's'} · every exam and subject included
+            </p>
+            <div className="space-y-4">
+              {Array.from({ length: layout.pageCount }, (_, i) => (
+                <div key={i} className="overflow-hidden rounded-control border border-border shadow-glass">
+                  <canvas
+                    ref={(el) => {
+                      previewRefs.current[i] = el;
+                    }}
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                    aria-label={`Report page ${i + 1} of ${layout.pageCount}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </Sheet>
