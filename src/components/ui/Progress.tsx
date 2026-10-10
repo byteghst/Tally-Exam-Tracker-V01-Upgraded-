@@ -3,9 +3,9 @@ import { clsx } from 'clsx';
 export function ProgressBar({ value, className }: { value: number; className?: string }) {
   const clamped = Math.min(100, Math.max(0, value));
   return (
-    <div className={clsx('h-2 w-full overflow-hidden rounded-full bg-white/10', className)}>
+    <div className={clsx('h-1.5 w-full overflow-hidden rounded-full bg-ink/10', className)}>
       <div
-        className="h-full rounded-full bg-accent transition-all duration-500"
+        className="h-full rounded-full bg-accent transition-all duration-700"
         style={{ width: `${clamped}%` }}
         role="progressbar"
         aria-valuenow={clamped}
@@ -19,7 +19,7 @@ export function ProgressBar({ value, className }: { value: number; className?: s
 export function ProgressRing({
   value,
   size = 56,
-  strokeWidth = 6,
+  strokeWidth = 5,
   label
 }: {
   value: number;
@@ -40,7 +40,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           strokeWidth={strokeWidth}
-          className="stroke-white/10"
+          className="stroke-ink/10"
           fill="none"
         />
         <circle
@@ -51,11 +51,11 @@ export function ProgressRing({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="stroke-accent transition-all duration-500"
+          className="stroke-accent transition-all duration-700"
           fill="none"
         />
       </svg>
-      <span className="absolute text-sm font-semibold text-ink tabular-nums">
+      <span className="absolute font-numeric text-sm font-semibold tabular-nums text-ink">
         {label ?? `${Math.round(clamped)}%`}
       </span>
     </div>
