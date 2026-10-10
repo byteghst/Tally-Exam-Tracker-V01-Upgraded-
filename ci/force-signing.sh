@@ -3,11 +3,12 @@
 # and before `./gradlew assembleDebug` (android/ is regenerated every build,
 # so anything native has to be applied here).
 #
-#  1. Stable signing: forces Gradle to sign the debug APK with the committed
-#     keystore (ci/debug.keystore.b64, decoded to ~/.android/debug.keystore by
-#     an earlier workflow step). Without this, builds were signed with a fresh
-#     random key every run, which makes Android reject updates ("conflicts
-#     with an existing package").
+#  1. Stable signing: forces Gradle to sign the APK with the private release
+#     keystore, which the workflow decodes from the TALLY_KEYSTORE_B64 secret
+#     to ~/.android/debug.keystore. Its password and alias come from the
+#     TALLY_KEYSTORE_PASSWORD / TALLY_KEY_ALIAS secrets. Without a stable key,
+#     builds were signed with a fresh random key every run, which makes Android
+#     reject updates ("conflicts with an existing package").
 #  2. Sharp launch screen on Android 12+.
 #  3. Reliable reminders: the permissions Android needs to show notifications
 #     and fire them on time, plus a proper Tally status-bar icon.
@@ -16,17 +17,23 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # 1. Stable signing
 # ---------------------------------------------------------------------------
+: "${TALLY_KEYSTORE_PASSWORD:?TALLY_KEYSTORE_PASSWORD secret is missing}"
+: "${TALLY_KEY_ALIAS:?TALLY_KEY_ALIAS secret is missing}"
+
 cp ~/.android/debug.keystore android/app/debug-stable.keystore
 
-cat >> android/app/build.gradle <<'EOF'
+# Unquoted heredoc on purpose: the shell fills in the two values below. The
+# android/ folder is generated fresh on the runner each build and never
+# committed, so the password is not written anywhere in the repository.
+cat >> android/app/build.gradle <<EOF
 
 android {
     signingConfigs {
         debug {
             storeFile file('debug-stable.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            storePassword '${TALLY_KEYSTORE_PASSWORD}'
+            keyAlias '${TALLY_KEY_ALIAS}'
+            keyPassword '${TALLY_KEYSTORE_PASSWORD}'
             storeType 'pkcs12'
         }
     }
