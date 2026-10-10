@@ -50,6 +50,10 @@ jobs:
           fi
 
       - name: Build web app
+        # APP_BUILD is baked into the app (see vite.config.ts) and is what the
+        # in-app update check compares against the newest `build-N` release.
+        env:
+          APP_BUILD: ${{ github.run_number }}
         run: npm run build
 
       - name: Set up JDK
@@ -103,7 +107,18 @@ jobs:
 
       - name: Force stable signing
         run: bash ci/force-signing.sh
-      
+
+      - name: Stamp Android version
+        # Android only lets an APK install over an existing one if its
+        # versionCode is not lower, and the generated project always starts at
+        # 1. Tying it to the run number makes every build strictly newer than
+        # the last, and keeps it identical to the app's __APP_BUILD__ and the
+        # `build-N` release tag.
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"0.1.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -nE "versionCode|versionName" android/app/build.gradle
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
@@ -114,3 +129,29 @@ jobs:
           name: tally-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Prepare release files
+        # The commit message goes through an env var (never straight into the
+        # script) so odd characters in it can't break or inject into the shell.
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk tally.apk
+          if [ -n "$COMMIT_MSG" ]; then
+            printf '%s\n' "$COMMIT_MSG" > release-notes.txt
+          else
+            echo "Manual build" > release-notes.txt
+          fi
+
+      - name: Publish GitHub release
+        # This is what the in-app update check reads. Because the repo is
+        # public, the release and its APK are downloadable by anyone, and
+        # releases/latest/download/tally.apk is a permanent link to the newest.
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Tally build ${{ github.run_number }}
+          body_path: release-notes.txt
+          target_commitish: ${{ github.sha }}
+          files: tally.apk
+          make_latest: 'true'
