@@ -8,9 +8,13 @@ export default defineConfig({
   // it is always possible to tell exactly which build is installed (compare the
   // short commit id with the latest commit on GitHub). GITHUB_SHA is set
   // automatically by GitHub Actions; local builds show "dev".
+  // __APP_BUILD__ is the CI run number (APP_BUILD is set by the workflow). It
+  // is what the in-app update check compares against the newest `build-N`
+  // GitHub release; local builds get 0, which turns the update check off.
   define: {
     __APP_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? 'dev').slice(0, 7)),
-    __APP_BUILT__: JSON.stringify(new Date().toISOString())
+    __APP_BUILT__: JSON.stringify(new Date().toISOString()),
+    __APP_BUILD__: JSON.stringify(Number(process.env.APP_BUILD) || 0)
   },
   plugins: [
     react(),
