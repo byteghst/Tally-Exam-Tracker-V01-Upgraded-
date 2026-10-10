@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { UpdateCard } from '@/components/features/update/UpdateCard';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -394,6 +395,8 @@ export function Settings() {
           </>
         )}
       </GlassCard>
+
+      <UpdateCard />
 
       <GlassCard className="p-5">
         <Button variant="danger" size="sm" onClick={() => setResetConfirmOpen(true)}>
