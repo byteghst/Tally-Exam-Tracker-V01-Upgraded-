@@ -7,6 +7,7 @@ import { DailyMission } from '@/components/features/dashboard/DailyMission';
 import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
+import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -40,10 +41,13 @@ export function Dashboard() {
   const compact = settings.density === 'compact';
 
   return (
-    <div className={compact ? 'space-y-4 py-4' : 'space-y-7 py-6'}>
+    // Everything below reveals one block after another (see components/motion).
+    <Stagger className={compact ? 'space-y-8 py-4' : 'space-y-12 py-8'}>
       <DashboardGreeting userName={settings.userName} exams={exams} tasks={tasks} />
 
-      {settings.streaksEnabled && <MomentumCard exams={exams} tasks={tasks} />}
+      {/* Always shown, above the customizable widgets below — not part of the
+          show/hide/reorder list, so it can't be hidden or moved. */}
+      <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
 
       {showMission && (
         <DailyMission
@@ -52,16 +56,14 @@ export function Dashboard() {
         />
       )}
 
-      {/* Always shown, above the customizable widgets below — no longer part
-          of the show/hide/reorder list, so it can't be hidden or moved. */}
-      <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
+      {settings.streaksEnabled && <MomentumCard exams={exams} tasks={tasks} />}
 
       {visibleIds.length === 0 ? (
         <p className="text-sm text-ink-muted">
           All dashboard widgets are hidden. Turn some back on from Settings → Dashboard.
         </p>
       ) : (
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? 'gap-3' : 'gap-4'}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? 'gap-8' : 'gap-12'} md:gap-x-14`}>
           {visibleIds.map((id) => {
             switch (id) {
               case 'todays-tasks':
@@ -84,6 +86,6 @@ export function Dashboard() {
 
       <ExamForm open={examFormOpen} onClose={() => setExamFormOpen(false)} />
       <TaskForm open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
-    </div>
+    </Stagger>
   );
 }
