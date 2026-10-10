@@ -39,22 +39,20 @@ export function ToastStack() {
   if (visible.length === 0) return null;
 
   return (
-    <div className="fixed bottom-20 left-1/2 z-50 flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 md:bottom-6">
+    <div className="fixed bottom-24 left-1/2 z-[70] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 md:bottom-6">
       {visible.map((toast) => {
         const Icon = toast.tone === 'error' ? AlertCircle : CheckCircle2;
         return (
+          // Inverted flat toast: ink background, paper text, no shadow.
           <div
             key={toast.id}
             role="status"
-            className={`flex items-center gap-3 rounded-control border border-border bg-surface-raised px-4 py-3 shadow-glass transition-all duration-200 ${
+            className={`flex items-center gap-3 rounded-control bg-ink px-4 py-3 text-surface transition-all duration-200 ${
               toast.leaving ? 'translate-y-1 opacity-0' : 'toast-enter translate-y-0 opacity-100'
             }`}
           >
-            <Icon
-              size={18}
-              className={`shrink-0 ${toast.tone === 'error' ? 'text-danger' : 'text-success'}`}
-            />
-            <span className="flex-1 text-sm text-ink">{toast.message}</span>
+            <Icon size={18} className={`shrink-0 ${toast.tone === 'error' ? 'text-rose' : 'text-forest'}`} />
+            <span className="flex-1 text-sm">{toast.message}</span>
             {toast.action && (
               <button
                 onClick={() => {
