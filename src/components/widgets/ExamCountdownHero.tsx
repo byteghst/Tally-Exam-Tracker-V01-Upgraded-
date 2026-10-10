@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Badge, EmptyState } from '@/components/ui/Badge';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Rise, Rule } from '@/components/motion/Reveal';
+import { maskUp } from '@/lib/motion';
 import { useCountUp } from '@/hooks/useCountUp';
 import { daysBetween, todayISO, formatDate } from '@/lib/dates';
 import type { Exam } from '@/types';
@@ -14,63 +15,60 @@ interface ExamCountdownHeroProps {
 
 export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
   const days = exam ? Math.max(daysBetween(todayISO(), exam.date), 0) : 0;
-  const animatedDays = useCountUp(days, 700);
+  const animatedDays = useCountUp(days, 1400);
 
   if (!exam) {
     return (
-      <GlassCard className="p-5">
-        <p className="text-sm font-medium text-ink-muted">Next exam</p>
-        <EmptyState
-          title="No upcoming exams"
-          description="Exams you add will show up here."
-          icon={CalendarClock}
-          action={
-            <Button size="sm" variant="secondary" onClick={onAddExam}>
-              Add exam
-            </Button>
-          }
-        />
-      </GlassCard>
+      <Rise>
+        <p className="eyebrow">Next exam</p>
+        <Rule strong className="mt-3" />
+        <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">Nothing ahead.</p>
+        <p className="mt-3 max-w-xs text-ink-muted">Exams you add will show up here with a live countdown.</p>
+        <Button size="sm" variant="secondary" className="mt-5" onClick={onAddExam}>
+          Add exam
+        </Button>
+      </Rise>
     );
   }
 
   const hasScore = exam.mcqCorrect !== undefined || exam.manualScoreOverride !== undefined;
 
   return (
-    // className="block" on the Link is load-bearing, independent of the glow
-    // below: <Link> renders an <a>, which is `display: inline` by default,
-    // and an inline element's margin-top is ignored by the browser
-    // entirely — that's what caused this card to sit flush against Momentum
-    // regardless of spacing values. Keep this even if the accented styling
-    // below is ever changed again.
-    <Link to={`/exams/${exam.id}`} className="block">
-      <GlassCard interactive accented className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Next exam</p>
-            <p className="mt-0.5 font-display text-lg font-semibold text-ink">{exam.name}</p>
-          </div>
-          <Badge tone={exam.type === 'daily' ? 'accent' : 'neutral'}>{exam.type}</Badge>
+    <Rise>
+      {/* className="block" on the Link is load-bearing: <Link> renders an <a>,
+          which is display:inline by default, and an inline element ignores
+          its own margin-top. */}
+      <Link to={`/exams/${exam.id}`} className="group block">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">Next exam</p>
+          <p className="eyebrow">{exam.type}</p>
         </div>
+        <Rule strong className="mt-3" />
 
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="font-display text-5xl font-bold tabular-nums text-accent">
+        <div className="mt-5 overflow-hidden pb-2">
+          <motion.p
+            variants={maskUp}
+            className="font-serif text-[clamp(6.5rem,38vw,11rem)] leading-[0.82] tracking-tight text-ink"
+          >
             {animatedDays}
-          </span>
-          <span className="text-sm font-medium uppercase tracking-wide text-ink-muted">
-            {days === 0 ? 'today' : days === 1 ? 'day' : 'days'}
-          </span>
+          </motion.p>
         </div>
-        <p className="text-xs text-ink-faint">{formatDate(exam.date)}</p>
 
-        {hasScore && (
-          <p className="mt-3 text-xs text-ink-faint">A result is already recorded for this exam.</p>
-        )}
+        <div className="mt-3 flex items-center gap-2">
+          {days === 0 && <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />}
+          <p className="eyebrow !text-ink-muted">{days === 0 ? 'Today' : days === 1 ? 'Day to go' : 'Days to go'}</p>
+        </div>
 
-        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
-          Open exam <ArrowRight size={16} />
+        <p className="mt-5 font-serif text-3xl italic leading-tight text-ink">{exam.name}</p>
+        <p className="mt-1 text-sm text-ink-muted">{formatDate(exam.date)}</p>
+
+        {hasScore && <p className="mt-3 text-xs text-ink-faint">A result is already recorded for this exam.</p>}
+
+        <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent">
+          Open exam
+          <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1.5" />
         </span>
-      </GlassCard>
-    </Link>
+      </Link>
+    </Rise>
   );
 }

@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'accent';
 
 const toneClasses: Record<Tone, string> = {
-  neutral: 'bg-white/10 text-ink-muted',
+  neutral: 'bg-ink/5 text-ink-muted',
   success: 'bg-success/15 text-success',
   warning: 'bg-warning/15 text-warning',
   danger: 'bg-danger/15 text-danger',
@@ -52,7 +52,7 @@ export function EmptyState({
           <Icon size={22} strokeWidth={1.75} />
         </div>
       )}
-      <p className="font-display text-lg font-semibold text-ink">{title}</p>
+      <p className="font-serif text-2xl text-ink">{title}</p>
       <p className="max-w-xs text-sm text-ink-muted">{description}</p>
       {action}
     </div>
