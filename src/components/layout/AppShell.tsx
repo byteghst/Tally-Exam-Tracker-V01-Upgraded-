@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { ToastStack } from './ToastStack';
@@ -65,23 +66,27 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-surface text-ink">
-      <div className="app-backdrop" aria-hidden />
-      <Sidebar />
-      <div className="flex-1 min-w-0">
-        <main className="mx-auto max-w-6xl px-4 pb-24 pt-safe-top md:px-8 md:pb-8">
-          <TopBar />
-          <PageTransition>
-            <Outlet />
-          </PageTransition>
-        </main>
+    // reducedMotion="user": if the phone's "remove animations" setting is on,
+    // movement-based animation is skipped everywhere.
+    <MotionConfig reducedMotion="user">
+      <div className="flex min-h-screen bg-surface text-ink">
+        <div className="app-backdrop" aria-hidden />
+        <Sidebar />
+        <div className="flex-1 min-w-0">
+          <main className="mx-auto max-w-6xl px-4 pb-24 pt-safe-top md:px-8 md:pb-8">
+            <TopBar />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
+          </main>
+        </div>
+        <BottomNav />
+        <ToastStack />
+        <CommandPalette />
+        <OnboardingOverlay />
+        <UpdatePrompt />
+        {celebrating && <ConfettiBurst onDone={finishCelebrating} />}
       </div>
-      <BottomNav />
-      <ToastStack />
-      <CommandPalette />
-      <OnboardingOverlay />
-      <UpdatePrompt />
-      {celebrating && <ConfettiBurst onDone={finishCelebrating} />}
-    </div>
+    </MotionConfig>
   );
 }
