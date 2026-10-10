@@ -65,20 +65,18 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Use stable debug keystore
-        # Without this, every CI run gets its own fresh, randomly-generated
-        # debug.keystore (each runner is a brand-new machine), so every
-        # build is signed with a different key. Android refuses to install
-        # an update over an already-installed app unless the signing
-        # certificate matches exactly — that's the "conflicts with an
-        # existing package" install error. Using the same committed
-        # keystore on every run keeps every build's signature identical, so
-        # updates install cleanly from here on. It's stored as base64 text
-        # (ci/debug.keystore.b64) rather than a raw binary file so it can be
-        # created by pasting into GitHub's web "Create new file" editor.
+      - name: Use stable signing keystore
+        # Every CI run is a brand-new machine, so without a fixed key each
+        # build would be signed with a different one, and Android refuses to
+        # install an update over an installed app unless the signing
+        # certificate matches exactly ("conflicts with an existing package").
+        # The keystore is private: it lives in the TALLY_KEYSTORE_B64 repository
+        # secret (never in the repo, which is public) and is decoded here.
+        env:
+          TALLY_KEYSTORE_B64: ${{ secrets.TALLY_KEYSTORE_B64 }}
         run: |
           mkdir -p ~/.android
-          base64 -d ci/debug.keystore.b64 > ~/.android/debug.keystore
+          echo "$TALLY_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
 
       - name: Add or sync Capacitor Android platform
         # `cap sync` only updates an android/ project that already exists —
@@ -106,6 +104,9 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Force stable signing
+        env:
+          TALLY_KEYSTORE_PASSWORD: ${{ secrets.TALLY_KEYSTORE_PASSWORD }}
+          TALLY_KEY_ALIAS: ${{ secrets.TALLY_KEY_ALIAS }}
         run: bash ci/force-signing.sh
 
       - name: Stamp Android version
