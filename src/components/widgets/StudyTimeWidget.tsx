@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Section } from '@/components/motion/Reveal';
 import { EASE_OUT } from '@/lib/motion';
+import { toneColor } from '@/lib/palette';
 import { useStudyStore, elapsedMs } from '@/store/studyStore';
 
 function formatShort(ms: number): string {
@@ -74,7 +75,7 @@ export function StudyTimeWidget() {
               <div className="h-0.5 w-full overflow-hidden bg-border">
                 <motion.div
                   className="h-full"
-                  style={{ backgroundColor: subject.color }}
+                  style={{ backgroundColor: toneColor(subject.color) }}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.35 + i * 0.08 }}
