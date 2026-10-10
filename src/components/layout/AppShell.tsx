@@ -8,6 +8,7 @@ import { CommandPalette } from './CommandPalette';
 import { PageTransition } from './PageTransition';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
+import { UpdatePrompt } from '@/components/features/update/UpdatePrompt';
 import { useAuthStore } from '@/store/authStore';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -79,6 +80,7 @@ export function AppShell() {
       <ToastStack />
       <CommandPalette />
       <OnboardingOverlay />
+      <UpdatePrompt />
       {celebrating && <ConfettiBurst onDone={finishCelebrating} />}
     </div>
   );
