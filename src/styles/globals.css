@@ -2,42 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Accent palette is derived from the Tally logo itself (one hue, ~220°):
-     logo blue  #0055FE  -> --accent (light)
-     navy       #030C21  -> used for the icon/splash background
-   --accent2 is a close neighbour (azure, ~205°) so gradients and glows read
-   as "blue into lighter blue" — never purple. Dark mode uses lighter tints of
-   the same hues so accent text stays readable (>= 4.5:1) on dark surfaces. */
+/* Editorial, flat design system.
+   Paper-and-ink surfaces separated by hairlines, one blue accent taken from
+   the Tally logo (#0055FE), no blur, no translucency, no shadows. Depth comes
+   from type scale, whitespace and motion instead.
+
+   The old glass tokens (--blur, --glass-alpha, --glass-hi-a) are kept but
+   neutralised (0px blur, fully opaque) so any screen that has not been
+   redesigned yet renders flat instead of breaking. */
 :root {
-  --surface: 250 251 253;
-  --surface-raised: 255 255 255;
-  --ink: 20 24 33;
-  --ink-muted: 90 99 116;
-  --ink-faint: 150 158 173;
+  --surface: 247 246 242;
+  --surface-raised: 255 255 253;
+  --ink: 16 16 18;
+  --ink-muted: 92 92 98;
+  --ink-faint: 140 140 146;
   --accent: 0 85 254;
   --accent2: 0 149 255;
   --accent-soft: 230 238 255;
-  --border: 224 228 235;
+  --border: 223 221 214;
 
-  --radius-card: 22px;
-  --radius-control: 12px;
-  --blur: 20px;
-  --glass-alpha: 0.78;
-  --glass-hi-a: 0.55;
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --blur: 0px;
+  --glass-alpha: 1;
+  --glass-hi-a: 0;
 }
 
 .dark {
-  --surface: 9 12 22;
-  --surface-raised: 18 23 38;
-  --ink: 236 239 244;
-  --ink-muted: 158 167 184;
-  --ink-faint: 100 109 128;
+  --surface: 11 11 13;
+  --surface-raised: 19 19 22;
+  --ink: 241 239 234;
+  --ink-muted: 163 163 168;
+  --ink-faint: 107 107 113;
   --accent: 61 126 255;
   --accent2: 66 176 255;
-  --accent-soft: 27 44 81;
-  --border: 36 44 64;
-  --glass-alpha: 0.58;
-  --glass-hi-a: 0.07;
+  --accent-soft: 24 36 66;
+  --border: 40 40 46;
+  --glass-alpha: 1;
+  --glass-hi-a: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -119,34 +121,19 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Soft, fixed gradient wash behind the whole app — sits under everything,
-   never scrolls, and stays subtle enough not to fight readability. Used as
-   a full-viewport backdrop; the `bg-app-gradient` Tailwind utility (see
-   tailwind.config.ts) covers non-fixed, in-flow uses like the Login card. */
-.app-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(120% 90% at 15% -10%, rgb(var(--accent) / 0.14), transparent 55%),
-    radial-gradient(110% 90% at 100% 0%, rgb(var(--accent2) / 0.12), transparent 60%),
-    radial-gradient(140% 100% at 50% 120%, rgb(var(--accent) / 0.07), transparent 60%);
+@layer components {
+  /* Small spaced-out uppercase label that sits above a section or number. */
+  .eyebrow {
+    @apply text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-ink-faint;
+  }
 }
 
-/* Thin gradient hairline along the top edge of glass surfaces — the
-   "premium glass" detail that a flat border can't give you. */
-.glass-edge {
-  position: relative;
+/* The old gradient wash and glass edge are retired. Selectors are kept so
+   existing markup that still references them simply renders nothing. */
+.app-backdrop {
+  display: none;
 }
+
 .glass-edge::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgb(var(--accent) / 0.35), rgb(255 255 255 / 0.06) 40%, transparent 70%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  display: none;
 }
