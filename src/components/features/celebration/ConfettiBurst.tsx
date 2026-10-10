@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
+import { SUBJECT_COLORS } from '@/lib/palette';
 
-// Logo blue, success green, warning gold, logo navy.
-const COLORS = ['#0055FE', '#3EBD7E', '#E0A93E', '#030C21'];
+// The warm palette only: persimmon, saffron, forest, olive, rose, clay.
+const COLORS = SUBJECT_COLORS.slice(0, 6);
 const DURATION_MS = 2200;
 
 interface Particle {
