@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Timer } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { EmptyState } from '@/components/ui/Badge';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { Section } from '@/components/motion/Reveal';
+import { EASE_OUT } from '@/lib/motion';
 import { useStudyStore, elapsedMs } from '@/store/studyStore';
 
 function formatShort(ms: number): string {
@@ -46,44 +46,38 @@ export function StudyTimeWidget() {
 
   if (rows.length === 0) {
     return (
-      <GlassCard className="p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Study time today</p>
-        <EmptyState
-          title="Nothing logged yet today"
-          description="Start a subject's timer on the Study tab to see it here."
-          icon={Timer}
-          action={
-            <Link to="/study">
-              <Button size="sm" variant="secondary">
-                Open Study
-              </Button>
-            </Link>
-          }
-        />
-      </GlassCard>
+      <Section label="Study time today">
+        <p className="font-serif text-4xl leading-none tracking-tight text-ink">Nothing yet.</p>
+        <p className="mt-3 text-sm text-ink-muted">Start a subject's timer on the Study tab to see it here.</p>
+        <Link to="/study" className="mt-4 inline-block">
+          <Button size="sm" variant="secondary">
+            Open Study
+          </Button>
+        </Link>
+      </Section>
     );
   }
 
   return (
-    <GlassCard className="space-y-3 p-5">
-      <div className="flex items-baseline justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Study time today</p>
-        <span className="tabular-nums font-display text-2xl font-bold text-ink">{formatShort(total)}</span>
-      </div>
+    <Section label="Study time today">
+      <p className="font-serif text-6xl leading-none tracking-tight text-ink">{formatShort(total)}</p>
 
-      <div className="space-y-2">
-        {rows.slice(0, 4).map(({ subject, ms }) => {
+      <div className="mt-6 space-y-4">
+        {rows.slice(0, 4).map(({ subject, ms }, i) => {
           const pct = total > 0 ? Math.round((ms / total) * 100) : 0;
           return (
-            <div key={subject.id} className="space-y-1">
+            <div key={subject.id} className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="truncate text-ink">{subject.name}</span>
-                <span className="tabular-nums shrink-0 pl-2 text-ink-muted">{formatShort(ms)}</span>
+                <span className="shrink-0 pl-2 font-numeric tabular-nums text-ink-muted">{formatShort(ms)}</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, backgroundColor: subject.color }}
+              <div className="h-0.5 w-full overflow-hidden bg-border">
+                <motion.div
+                  className="h-full"
+                  style={{ backgroundColor: subject.color }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.35 + i * 0.08 }}
                 />
               </div>
             </div>
@@ -91,9 +85,9 @@ export function StudyTimeWidget() {
         })}
       </div>
 
-      <Link to="/study" className="inline-block text-sm font-semibold text-accent hover:underline">
+      <Link to="/study" className="mt-5 inline-block text-sm font-semibold text-accent hover:underline">
         View all subjects
       </Link>
-    </GlassCard>
+    </Section>
   );
 }
