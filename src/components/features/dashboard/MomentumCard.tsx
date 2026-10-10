@@ -1,5 +1,7 @@
+import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { Section } from '@/components/motion/Reveal';
+import { pop } from '@/lib/motion';
 import { computeMomentum } from '@/lib/momentum';
 import type { Exam, Task } from '@/types';
 
@@ -7,31 +9,34 @@ export function MomentumCard({ exams, tasks }: { exams: Exam[]; tasks: Task[] })
   const { days, productiveCount } = computeMomentum({ exams, tasks }, 7);
 
   return (
-    <GlassCard className="p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-ink-muted">7-day momentum</p>
-        <p className="text-sm font-semibold tabular-nums text-ink">
+    <Section
+      label="7-day momentum"
+      aside={
+        <p className="font-numeric text-sm tabular-nums text-ink-muted">
           {productiveCount} productive day{productiveCount === 1 ? '' : 's'}
         </p>
-      </div>
-      <div className="mt-4 flex justify-between gap-1.5">
-        {days.map((d) => (
-          <div key={d.iso} className="flex flex-1 flex-col items-center gap-1.5">
-            <span className={`text-xs ${d.isToday ? 'font-semibold text-accent' : 'text-ink-faint'}`}>{d.label}</span>
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-300 ${
+      }
+    >
+      <div className="flex justify-between gap-1.5">
+        {days.map((d, i) => (
+          <div key={d.iso} className="flex flex-1 flex-col items-center gap-2.5">
+            <span className={`eyebrow ${d.isToday ? '!text-accent' : ''}`}>{d.label}</span>
+            <motion.div
+              variants={pop}
+              custom={i}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border ${
                 d.productive
-                  ? 'border-accent bg-accent/15 text-accent'
+                  ? 'border-ink bg-ink text-surface'
                   : d.isToday
-                    ? 'border-accent/40 text-ink-faint'
+                    ? 'border-accent text-ink-faint'
                     : 'border-border text-ink-faint'
               }`}
             >
-              {d.productive ? <Check size={14} /> : <span className="h-1 w-1 rounded-full bg-current" />}
-            </div>
+              {d.productive ? <Check size={15} strokeWidth={3} /> : <span className="h-1 w-1 rounded-full bg-current" />}
+            </motion.div>
           </div>
         ))}
       </div>
-    </GlassCard>
+    </Section>
   );
 }
