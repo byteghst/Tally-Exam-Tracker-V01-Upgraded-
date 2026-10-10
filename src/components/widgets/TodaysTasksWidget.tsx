@@ -1,9 +1,9 @@
-import { PartyPopper } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { ProgressBar } from '@/components/ui/Progress';
-import { EmptyState } from '@/components/ui/Badge';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { Section } from '@/components/motion/Reveal';
+import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { useCountUp } from '@/hooks/useCountUp';
+import { EASE_OUT } from '@/lib/motion';
 import type { Task } from '@/types';
 
 interface TodaysTasksWidgetProps {
@@ -14,50 +14,52 @@ interface TodaysTasksWidgetProps {
 
 export function TodaysTasksWidget({ tasks, onToggle, onAddTask }: TodaysTasksWidgetProps) {
   const completed = tasks.filter((t) => t.status === 'completed').length;
-  const animatedCompleted = useCountUp(completed, 400);
+  const animatedCompleted = useCountUp(completed, 700);
+  const pct = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
 
   return (
-    <GlassCard className="p-5">
-      <p className="text-sm font-medium text-ink-muted">Today's tasks</p>
+    <Section label="Today's tasks">
       {tasks.length === 0 ? (
-        <EmptyState
-          title="You're clear"
-          description="Nothing needs your attention today."
-          icon={PartyPopper}
-          action={
-            <Button size="sm" variant="secondary" onClick={onAddTask}>
-              Add task
-            </Button>
-          }
-        />
+        <div>
+          <p className="font-serif text-4xl leading-none tracking-tight text-ink">You're clear.</p>
+          <p className="mt-3 text-sm text-ink-muted">Nothing needs your attention today.</p>
+          <Button size="sm" variant="secondary" className="mt-4" onClick={onAddTask}>
+            Add task
+          </Button>
+        </div>
       ) : (
         <>
-          <p className="mt-2 font-display text-2xl font-semibold tabular-nums">
-            {animatedCompleted}/{tasks.length}
+          <p className="font-serif text-6xl leading-none tracking-tight text-ink">
+            {animatedCompleted}
+            <span className="text-ink-faint">/{tasks.length}</span>
           </p>
-          <ProgressBar value={(completed / tasks.length) * 100} className="mt-3" />
-          <ul className="mt-4 space-y-2">
-            {tasks.slice(0, 4).map((task) => (
-              <li key={task.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={task.status === 'completed'}
-                  onChange={() => onToggle(task.id)}
-                  aria-label={`Mark "${task.name}" ${task.status === 'completed' ? 'incomplete' : 'complete'}`}
-                  className="h-4 w-4 rounded accent-accent transition-transform duration-150 active:scale-90"
-                />
-                <span
-                  className={`transition-colors duration-300 ${
-                    task.status === 'completed' ? 'text-ink-faint line-through' : 'text-ink'
-                  }`}
-                >
-                  {task.name}
-                </span>
-              </li>
-            ))}
+          <div className="mt-4 h-0.5 w-full overflow-hidden bg-border">
+            <motion.div
+              className="h-full bg-ink"
+              initial={{ width: 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.3 }}
+            />
+          </div>
+          <ul className="mt-4 divide-y divide-border">
+            {tasks.slice(0, 4).map((task) => {
+              const done = task.status === 'completed';
+              return (
+                <li key={task.id} className="flex items-center gap-3 py-3">
+                  <CheckButton
+                    checked={done}
+                    onToggle={() => onToggle(task.id)}
+                    label={`Mark "${task.name}" ${done ? 'incomplete' : 'complete'}`}
+                  />
+                  <StrikeText done={done} className="text-base">
+                    {task.name}
+                  </StrikeText>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
-    </GlassCard>
+    </Section>
   );
 }
