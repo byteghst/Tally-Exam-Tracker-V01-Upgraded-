@@ -31,7 +31,9 @@ export function computeMilestones({ exams, tasks }: MilestonesInput): Milestone[
   if (productiveDays >= 7) milestones.push({ id: 'days-7', label: '7 productive days' });
   if (productiveDays >= 30) milestones.push({ id: 'days-30', label: '30 productive days' });
 
-  // --- Score/rank records (completed exams only) ---
+  // --- Score records (completed exams only) ---
+  // Rank is deliberately not shown anywhere: the app no longer collects it,
+  // and any rank saved on older exams is simply ignored.
   const completedExams = exams.filter((e) => e.status === 'completed');
   const withPercentage = completedExams
     .map((e) => ({
@@ -54,16 +56,6 @@ export function computeMilestones({ exams, tasks }: MilestonesInput): Milestone[
   if (withPercentage.length > 0) {
     const best = withPercentage.reduce((a, b) => (b.percentage > a.percentage ? b : a));
     milestones.push({ id: 'highest-score', label: 'Highest score', detail: `${best.percentage}% — ${best.exam.name}` });
-  }
-
-  const withRank = completedExams.filter((e) => e.rank !== undefined);
-  if (withRank.length > 0) {
-    const best = withRank.reduce((a, b) => (b.rank! < a.rank! ? b : a));
-    milestones.push({
-      id: 'best-rank',
-      label: 'Best rank',
-      detail: `${best.rank}${best.participants ? ` / ${best.participants}` : ''} — ${best.name}`
-    });
   }
 
   // biggest score improvement between consecutive same-type exams
