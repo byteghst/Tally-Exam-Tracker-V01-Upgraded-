@@ -4,36 +4,20 @@ interface TallyMarkProps {
 }
 
 /**
- * The Tally mark: a tile with three bars and one diagonal stroke. Drawn as
- * inline SVG using the theme colours (ink tile, paper bars, persimmon stroke),
- * so it always matches the rest of the app in light and dark. The launcher
- * icon is built from the same geometry (design/icon-master.svg).
+ * The Tally logo, exactly as designed: a black tile with four white bars and
+ * one orange stroke. Drawn as inline SVG from the same measurements as the
+ * launcher icon (scripts/build-icons.mjs), so the logo inside the app and the
+ * icon on the home screen can never drift apart.
  */
 export function TallyMark({ size = 32, className }: TallyMarkProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 512 512"
-      aria-hidden
-      focusable="false"
-      className={className}
-    >
-      <rect width="512" height="512" rx="112" style={{ fill: 'rgb(var(--ink))' }} />
-      <g transform="translate(52.2 62.3) scale(1.27)">
-        <rect x="69" y="50" width="38" height="205" style={{ fill: 'rgb(var(--surface))' }} />
-        <rect x="135" y="50" width="38" height="205" style={{ fill: 'rgb(var(--surface))' }} />
-        <rect x="201" y="50" width="38" height="205" style={{ fill: 'rgb(var(--surface))' }} />
-        <line
-          x1="27"
-          y1="202"
-          x2="294"
-          y2="83"
-          strokeWidth="34"
-          strokeLinecap="square"
-          style={{ stroke: 'rgb(var(--accent))' }}
-        />
-      </g>
+    <svg width={size} height={size} viewBox="0 0 1254 1254" aria-hidden focusable="false" className={className}>
+      <rect width="1254" height="1254" rx="274" fill="#000000" />
+      <rect x="376" y="316" width="92" height="611" fill="#FFFFFF" />
+      <rect x="515" y="316" width="89" height="611" fill="#FFFFFF" />
+      <rect x="651" y="316" width="88" height="611" fill="#FFFFFF" />
+      <rect x="787" y="316" width="91" height="611" fill="#FFFFFF" />
+      <polygon points="248,702 1006,374 1006,474 248,801" fill="#FE5018" />
     </svg>
   );
 }
