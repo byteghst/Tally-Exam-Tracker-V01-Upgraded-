@@ -1,4 +1,5 @@
 import type { MonthlyReport, ReportExam } from '@/lib/monthlyReport';
+import { toneColor } from '@/lib/palette';
 import type { ExamType, TaskPriority } from '@/types';
 
 /**
@@ -15,7 +16,7 @@ export const PAGE_WIDTH = 1080;
 export const PAGE_HEIGHT = 1527;
 
 const PAD = 64;
-/** padding inside each white panel */
+/** padding inside each panel */
 const INNER = 26;
 const CONTENT_W = PAGE_WIDTH - PAD * 2;
 const INNER_L = PAD + INNER;
@@ -32,20 +33,21 @@ const GAP = 44;
 const EMPTY_H = 130;
 
 // Brand tokens as literal hex: canvas drawing happens outside the CSS cascade.
-// accent = the logo's blue.
+// Warm paper and ink with a persimmon accent; no blue anywhere.
 const COLOR = {
-  bg: '#F2F3F6',
-  panel: '#FFFFFF',
-  ink: '#0F1216',
-  inkMuted: '#5A6374',
-  inkFaint: '#96A0AD',
-  accent: '#0055FE',
-  accentSoft: '#E6EEFF',
-  success: '#3EBD7E',
-  warning: '#E0A93E',
-  danger: '#E0645E',
-  border: '#E0E4EB',
-  track: '#EBEEF4'
+  bg: '#F6F1E8',
+  panel: '#FBF8F2',
+  ink: '#1C1814',
+  inkMuted: '#686056',
+  inkFaint: '#92897D',
+  accent: '#D94F2D',
+  accentSoft: '#F9E3D8',
+  success: '#2F7D5B',
+  warning: '#C98B12',
+  danger: '#A82038',
+  low: '#C9486B',
+  border: '#DDD5C7',
+  track: '#EAE3D6'
 };
 
 // Same font roles as the app (bundled via @fontsource; loaded by prepareCardAssets()).
@@ -344,6 +346,13 @@ function drawKpis(ctx: Ctx, r: MonthlyReport, y: number) {
       subColor: COLOR.inkMuted
     },
     {
+      label: 'LOWEST SCORE',
+      value: e.lowest ? `${num(e.lowest.percentage)}%` : '—',
+      color: COLOR.low,
+      sub: e.lowest ? e.lowest.name : 'No scored exams',
+      subColor: COLOR.inkMuted
+    },
+    {
       label: 'TASKS DONE',
       value: t.total === 0 ? '—' : `${t.completed}/${t.total}`,
       color: COLOR.ink,
@@ -356,21 +365,13 @@ function drawKpis(ctx: Ctx, r: MonthlyReport, y: number) {
       color: COLOR.accent,
       sub: studySub,
       subColor: COLOR.inkMuted
-    },
-    {
-      label: 'ACTIVE STUDY DAYS',
-      value: String(s.activeDays),
-      color: COLOR.ink,
-      sub: s.avgPerActiveDayMs === null ? 'No study time logged' : `Avg ${duration(s.avgPerActiveDayMs)} on those days`,
-      subColor: COLOR.inkMuted,
-      suffix: `/ ${r.daysInMonth}`
     }
   ];
 
   cells.forEach((c, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    kpi(ctx, PAD + col * (w + KPI_GAP), y + row * (KPI_H + KPI_GAP), w, KPI_H, c.label, c.value, c.color, c.sub, c.subColor, c.suffix);
+    kpi(ctx, PAD + col * (w + KPI_GAP), y + row * (KPI_H + KPI_GAP), w, KPI_H, c.label, c.value, c.color, c.sub, c.subColor);
   });
 }
 
@@ -427,6 +428,7 @@ function addExamChart(flow: Flow, r: MonthlyReport, measure: Ctx) {
     const pts = e.items.map((it) => {
       const day = Number(it.date.slice(8, 10));
       return {
+        id: it.id,
         day,
         pct: it.percentage,
         x: cx0 + 22 + ((day - 1) / (r.daysInMonth - 1)) * (cw - 44),
@@ -437,7 +439,7 @@ function addExamChart(flow: Flow, r: MonthlyReport, measure: Ctx) {
     if (pts.length >= 2) {
       const grad = ctx.createLinearGradient(0, cy0, 0, cy0 + ch);
       grad.addColorStop(0, COLOR.accentSoft);
-      grad.addColorStop(1, 'rgba(230,238,255,0)');
+      grad.addColorStop(1, 'rgba(249,227,216,0)');
       ctx.beginPath();
       ctx.moveTo(pts[0].x, cy0 + ch);
       pts.forEach((p) => ctx.lineTo(p.x, p.y));
@@ -455,16 +457,33 @@ function addExamChart(flow: Flow, r: MonthlyReport, measure: Ctx) {
       ctx.stroke();
     }
 
+    // The best and lowest exams of the month get their own colour and label.
+    const bestId = e.best && e.lowest && e.best.id !== e.lowest.id ? e.best.id : null;
+    const lowId = e.best && e.lowest && e.best.id !== e.lowest.id ? e.lowest.id : null;
+
     let lastLabelX = -1000;
     pts.forEach((p) => {
+      const isBest = p.id === bestId;
+      const isLow = p.id === lowId;
+      const ring = isBest ? COLOR.success : isLow ? COLOR.low : COLOR.accent;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, isBest || isLow ? 13 : 9, 0, Math.PI * 2);
       ctx.fillStyle = COLOR.panel;
       ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = COLOR.accent;
+      ctx.lineWidth = isBest || isLow ? 6 : 4;
+      ctx.strokeStyle = ring;
       ctx.stroke();
-      if (pts.length <= 8) put(ctx, `${num(p.pct)}%`, p.x, p.y - 20, `700 20px ${FONT_NUMERIC}`, COLOR.ink, 'center');
+      if (pts.length <= 8 || isBest || isLow) {
+        put(
+          ctx,
+          `${num(p.pct)}%`,
+          p.x,
+          isLow ? p.y + 38 : p.y - 22,
+          `700 20px ${FONT_NUMERIC}`,
+          isBest || isLow ? ring : COLOR.ink,
+          'center'
+        );
+      }
       if (p.x - lastLabelX >= 30) {
         put(ctx, String(p.day), p.x, cy0 + ch + 32, `500 19px ${FONT_UI}`, COLOR.inkFaint, 'center');
         lastLabelX = p.x;
@@ -619,14 +638,16 @@ function addStudy(flow: Flow, r: MonthlyReport) {
     rowH: 80,
     headerH: 0,
     drawRow: (ctx, sub, y) => {
+      // subjects saved with the old blue/violet colours are shown in the new palette
+      const color = toneColor(sub.color);
       ctx.beginPath();
       ctx.arc(INNER_L + 8, y + 22, 8, 0, Math.PI * 2);
-      ctx.fillStyle = sub.color;
+      ctx.fillStyle = color;
       ctx.fill();
       put(ctx, fit(ctx, sub.name, nameFont, INNER_R - INNER_L - 270), INNER_L + 28, y + 22, nameFont, COLOR.ink, 'left', 'middle');
       const share = Math.round((sub.ms / s.totalMs) * 100);
       put(ctx, `${duration(sub.ms)} · ${share}%`, INNER_R, y + 22, `700 23px ${FONT_NUMERIC}`, COLOR.inkMuted, 'right', 'middle');
-      bar(ctx, INNER_L, y + 46, INNER_R - INNER_L, 14, sub.ms / s.bySubject[0].ms, sub.color);
+      bar(ctx, INNER_L, y + 46, INNER_R - INNER_L, 14, sub.ms / s.bySubject[0].ms, color);
     }
   });
 }
