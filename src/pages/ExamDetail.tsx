@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Badge } from '@/components/ui/Badge';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Rise, Rule, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
 import { useUIStore } from '@/store/uiStore';
@@ -12,6 +11,28 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { calculateScore } from '@/lib/scoring';
 import { compareToPrevious } from '@/lib/examComparison';
 import { formatDate } from '@/lib/dates';
+
+/** Goes back one step in history, or to the exam list if the page was opened directly. */
+function useGoBack() {
+  const navigate = useNavigate();
+  return () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate('/exams');
+  };
+}
+
+function BackButton() {
+  const goBack = useGoBack();
+  return (
+    <Button variant="secondary" size="sm" onClick={goBack}>
+      <ArrowLeft size={16} /> Back
+    </Button>
+  );
+}
+
+const fmt = (n: number | null | undefined, suffix = '') =>
+  n === null || n === undefined ? '—' : `${Math.round(n * 10) / 10}${suffix}`;
 
 export function ExamDetail() {
   const { id } = useParams();
@@ -30,11 +51,9 @@ export function ExamDetail() {
 
   if (!exam) {
     return (
-      <div className="py-6">
-        <p className="text-ink-muted">Exam not found.</p>
-        <Link to="/exams" className="text-accent">
-          Back to Exams
-        </Link>
+      <div className="space-y-6 py-8">
+        <BackButton />
+        <p className="font-serif text-4xl leading-none tracking-tight text-ink">Exam not found.</p>
       </div>
     );
   }
@@ -66,74 +85,76 @@ export function ExamDetail() {
     navigate('/exams');
   }
 
+  const rows: Array<[string, string]> = [
+    ['Final score', `${fmt(score.finalScore)} / ${score.totalMarks}`],
+    ['Accuracy', fmt(score.accuracy, '%')],
+    ['Attempt rate', fmt(score.attemptRate, '%')],
+    ['Correct', fmt(exam.mcqCorrect)],
+    ['Wrong', fmt(exam.mcqWrong)],
+    ['Unanswered', fmt(exam.mcqUnanswered)],
+    ['MCQ score', `${score.mcqScore} / ${exam.mcqCount * exam.mcqMarksEach}`],
+    ['Written score', `${score.writtenScore} / ${exam.writtenCount * exam.writtenMarksEach}`],
+    ['Negative / wrong', `${exam.negativeMarkPerWrong}`]
+  ];
+
   return (
-    <div className="space-y-5 py-6">
-      <Link to="/exams" className="text-sm text-ink-muted">
-        ← Back to Exams
-      </Link>
+    <Stagger className="space-y-10 py-8">
+      <Rise>
+        <BackButton />
+      </Rise>
 
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-ink">{exam.name}</h1>
-          <p className="text-sm text-ink-muted">{formatDate(exam.date)}</p>
+      <Rise as="header">
+        <p className="eyebrow">
+          {exam.type} exam · {formatDate(exam.date)}
+        </p>
+        <h1 className="mt-3 font-serif text-[clamp(2.75rem,12vw,4.5rem)] leading-[0.95] tracking-tight text-ink">
+          {exam.name}
+        </h1>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => setEditOpen(true)}>
+            Edit
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleDuplicate}>
+            Duplicate
+          </Button>
+          <Button size="sm" variant="secondary" className="text-danger" onClick={() => setDeleteConfirmOpen(true)}>
+            Delete
+          </Button>
         </div>
-        <Badge tone={exam.type === 'daily' ? 'accent' : 'neutral'}>{exam.type}</Badge>
-      </header>
+      </Rise>
 
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => setEditOpen(true)}>
-          Edit
-        </Button>
-        <Button size="sm" variant="secondary" onClick={handleDuplicate}>
-          Duplicate
-        </Button>
-        <Button size="sm" variant="danger" onClick={() => setDeleteConfirmOpen(true)}>
-          Delete
-        </Button>
-      </div>
+      <Rise>
+        <ScoreHero percentage={score.percentage} finalScore={score.finalScore} totalMarks={score.totalMarks} />
 
-      {comparison?.previousExam && comparison.percentageDiff !== null && (
-        <GlassCard className="flex flex-wrap gap-6 p-5">
-          <ComparisonStat
-            label="Score vs. previous"
+        {comparison?.previousExam && comparison.percentageDiff !== null && (
+          <Comparison
             diff={comparison.percentageDiff}
-            unit="%"
             detail={`${comparison.previousPercentage}% → ${comparison.currentPercentage}%`}
           />
-        </GlassCard>
-      )}
+        )}
 
-      <GlassCard className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-        <Stat label="Final score" value={score.finalScore} decimals={1} />
-        <Stat label="Out of" raw={`${score.totalMarks}`} />
-        <Stat label="Percentage" value={score.percentage} suffix="%" decimals={1} />
-        <Stat label="Accuracy" value={score.accuracy} suffix="%" decimals={1} />
-        <Stat label="Correct" value={exam.mcqCorrect ?? null} />
-        <Stat label="Wrong" value={exam.mcqWrong ?? null} />
-        <Stat label="Attempt rate" value={score.attemptRate} suffix="%" decimals={1} />
-      </GlassCard>
+        {score.isManualOverride && (
+          <p className="mt-3 text-sm text-ink-faint">
+            Final score was manually overridden (calculated value was {score.calculatedScore}).
+          </p>
+        )}
+      </Rise>
 
-      <GlassCard className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-        <Stat label="MCQ score" raw={`${score.mcqScore} / ${exam.mcqCount * exam.mcqMarksEach}`} />
-        <Stat
-          label="Written score"
-          raw={`${score.writtenScore} / ${exam.writtenCount * exam.writtenMarksEach}`}
-        />
-        <Stat label="Unanswered" value={exam.mcqUnanswered ?? null} />
-        <Stat label="Negative / wrong" raw={`${exam.negativeMarkPerWrong}`} />
-      </GlassCard>
-
-      {score.isManualOverride && (
-        <p className="text-sm text-ink-faint">
-          Final score was manually overridden (calculated value was {score.calculatedScore}).
-        </p>
-      )}
+      <Section label="Breakdown">
+        <dl className="divide-y divide-border">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-muted">{label}</dt>
+              <dd className="font-numeric text-lg font-medium tabular-nums text-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Section>
 
       {exam.notes && (
-        <GlassCard className="p-5">
-          <p className="text-sm font-medium text-ink-muted">Notes</p>
-          <p className="mt-1 text-ink">{exam.notes}</p>
-        </GlassCard>
+        <Section label="Notes">
+          <p className="whitespace-pre-line font-serif text-xl italic leading-snug text-ink">{exam.notes}</p>
+        </Section>
       )}
 
       <ExamForm open={editOpen} onClose={() => setEditOpen(false)} exam={exam} />
@@ -146,59 +167,55 @@ export function ExamDetail() {
         description={`"${exam.name}" and its recorded result will be permanently deleted. This can't be undone.`}
         confirmLabel="Delete"
       />
+    </Stagger>
+  );
+}
+
+function ScoreHero({
+  percentage,
+  finalScore,
+  totalMarks
+}: {
+  percentage: number | null;
+  finalScore: number;
+  totalMarks: number;
+}) {
+  const animated = useCountUp(percentage ?? 0, 1300, 1);
+
+  return (
+    <div>
+      <p className="eyebrow">Result</p>
+      <Rule strong className="mt-3" />
+      {percentage === null ? (
+        <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">No result yet.</p>
+      ) : (
+        <>
+          <p className="mt-5 font-serif text-[clamp(5.5rem,30vw,9rem)] leading-[0.85] tracking-tight text-ink">
+            {animated}
+            <span className="text-[0.45em] text-ink-faint">%</span>
+          </p>
+          <p className="mt-3 font-numeric text-base tabular-nums text-ink-muted">
+            {Math.round(finalScore * 10) / 10} of {totalMarks} marks
+          </p>
+        </>
+      )}
     </div>
   );
 }
 
-function ComparisonStat({
-  label,
-  diff,
-  unit,
-  detail
-}: {
-  label: string;
-  diff: number;
-  unit: string;
-  detail: string;
-}) {
+function Comparison({ diff, detail }: { diff: number; detail: string }) {
   const improved = diff > 0;
   const flat = diff === 0;
   const Icon = improved ? TrendingUp : TrendingDown;
-  const tone = flat ? 'text-ink-muted' : improved ? 'text-success' : 'text-danger';
+  const tone = flat ? 'text-ink-muted' : improved ? 'text-forest' : 'text-danger';
 
   return (
-    <div>
-      <p className="text-xs text-ink-faint">{label}</p>
-      <div className={`mt-1 flex items-center gap-1.5 font-display text-lg font-semibold tabular-nums ${tone}`}>
-        {!flat && <Icon size={18} />}
-        <span>
-          {flat ? 'No change' : `${improved ? '+' : ''}${diff}${unit}`}
-        </span>
-      </div>
-      <p className="text-xs text-ink-faint">{detail}</p>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  suffix,
-  decimals = 0,
-  raw
-}: {
-  label: string;
-  value?: number | null;
-  suffix?: string;
-  decimals?: number;
-  raw?: string;
-}) {
-  const animated = useCountUp(value ?? 0, 500, decimals);
-  const display = raw !== undefined ? raw : value === null || value === undefined ? '—' : `${animated}${suffix ?? ''}`;
-  return (
-    <div>
-      <p className="text-xs text-ink-faint">{label}</p>
-      <p className="font-display text-lg font-semibold tabular-nums text-ink">{display}</p>
+    <div className={`mt-5 flex items-center gap-2 border-t border-border pt-4 ${tone}`}>
+      {!flat && <Icon size={20} />}
+      <span className="font-numeric text-lg font-semibold tabular-nums">
+        {flat ? 'No change' : `${improved ? '+' : ''}${diff}%`}
+      </span>
+      <span className="text-sm text-ink-muted">vs. previous · {detail}</span>
     </div>
   );
 }
