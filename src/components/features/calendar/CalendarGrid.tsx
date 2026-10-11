@@ -15,7 +15,7 @@ interface CalendarGridProps {
   firstDayOfWeek: 0 | 1;
 }
 
-const WEEKDAY_LABELS_SUN_FIRST = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_LABELS_SUN_FIRST = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export function CalendarGrid({
   days,
@@ -34,14 +34,14 @@ export function CalendarGrid({
 
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1 pb-1">
-        {labels.map((label) => (
-          <div key={label} className="text-center text-xs font-medium text-ink-faint">
+      <div className="grid grid-cols-7 border-b border-border pb-2">
+        {labels.map((label, i) => (
+          <div key={`${label}-${i}`} className="eyebrow text-center">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7">
         {days.map((date) => {
           const inMonth = parseISODate(date).getMonth() === currentMonth;
           const isToday = date === today;
@@ -54,22 +54,22 @@ export function CalendarGrid({
               key={date}
               onClick={() => onSelectDate(date)}
               className={clsx(
-                'flex aspect-square flex-col items-center justify-center gap-0.5 rounded-control text-sm transition-colors',
-                !inMonth && 'text-ink-faint/50',
-                inMonth && !isSelected && 'text-ink hover:bg-white/5',
-                isSelected && 'bg-accent text-white',
-                isToday && !isSelected && 'font-semibold text-accent'
+                'relative flex aspect-square flex-col items-center justify-center gap-1 text-base transition-colors duration-200',
+                !inMonth && 'text-ink-faint/40',
+                inMonth && !isSelected && 'text-ink hover:bg-ink/5',
+                isSelected && 'bg-ink text-surface',
+                isToday && !isSelected && 'font-bold text-accent'
               )}
               aria-current={isToday ? 'date' : undefined}
               aria-label={formatDate(date)}
             >
-              <span>{dayNum}</span>
-              {markers && (
-                <span className="flex gap-0.5">
-                  {markers.examCount > 0 && <Dot color={isSelected ? 'bg-white' : 'bg-accent'} />}
-                  {markers.taskCount > 0 && <Dot color={isSelected ? 'bg-white' : 'bg-success'} />}
-                </span>
-              )}
+              <span className="font-numeric tabular-nums">{dayNum}</span>
+              {/* dot colours: exam = persimmon, task = forest */}
+              <span className="flex h-1.5 gap-1">
+                {markers && markers.examCount > 0 && <Dot color="bg-accent" />}
+                {markers && markers.taskCount > 0 && <Dot color="bg-forest" />}
+              </span>
+              {isToday && <span className="absolute inset-x-3 bottom-1 h-0.5 bg-accent" aria-hidden />}
             </button>
           );
         })}
@@ -79,5 +79,5 @@ export function CalendarGrid({
 }
 
 function Dot({ color }: { color: string }) {
-  return <span className={clsx('h-1 w-1 rounded-full', color)} />;
+  return <span className={clsx('h-1.5 w-1.5 rounded-full', color)} />;
 }
