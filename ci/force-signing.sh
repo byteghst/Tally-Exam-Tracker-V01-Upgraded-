@@ -48,8 +48,8 @@ echo "Stable signing config appended to android/app/build.gradle"
 # Android 12 and newer ignore the splash image and instead show the app's
 # small adaptive-icon layer enlarged about 2x, which is why the logo looked
 # small and blurry when opening the app. This points the system launch
-# screen at the full-size 1024px logo (resources/icon.png) on the same warm
-# ink as the logo tile (#1C1814), so it is crisp and fills the screen properly.
+# screen at the full-size 1024px logo (resources/icon.png) on the same pure
+# black as the logo tile, so it is crisp and fills the screen properly.
 # The logo is inset 5% so its corners stay inside the circle Android 12
 # crops the launch icon to.
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ XML
 <resources>
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
         <item name="android:background">@drawable/splash</item>
-        <item name="android:windowSplashScreenBackground">#1C1814</item>
+        <item name="android:windowSplashScreenBackground">#000000</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
     </style>
 </resources>
