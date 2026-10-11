@@ -1,10 +1,10 @@
 import { Download, RefreshCw } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
+import { Section } from '@/components/motion/Reveal';
 import { useUpdateStore } from '@/store/updateStore';
 import { canCheckForUpdates, INSTALLED_BUILD } from '@/lib/updateCheck';
 
-/** Settings card: shows the installed build and lets you check for updates by hand. */
+/** Settings section: shows the installed build and lets you check for updates by hand. */
 export function UpdateCard() {
   const phase = useUpdateStore((s) => s.phase);
   const update = useUpdateStore((s) => s.update);
@@ -22,12 +22,10 @@ export function UpdateCard() {
   else if (phase === 'available' && update) status = `Build ${update.build} is available.`;
 
   return (
-    <GlassCard className="space-y-3 p-5">
-      <h2 className="font-medium text-ink">App updates</h2>
-      <p className="text-sm text-ink-muted">
-        Installed: build {INSTALLED_BUILD}. {status}
-      </p>
-      <div className="flex flex-wrap gap-2">
+    <Section label="App updates">
+      <p className="font-serif text-4xl leading-none tracking-tight text-ink">Build {INSTALLED_BUILD}</p>
+      <p className="mt-2 text-sm text-ink-muted">{status}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
         <Button size="sm" variant="secondary" disabled={checking} onClick={() => void check({ manual: true })}>
           <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} /> Check for updates
         </Button>
@@ -37,6 +35,6 @@ export function UpdateCard() {
           </Button>
         )}
       </div>
-    </GlassCard>
+    </Section>
   );
 }
