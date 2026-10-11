@@ -4,21 +4,23 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { GlassCard } from '@/components/ui/GlassCard';
 import { EmptyState } from '@/components/ui/Badge';
 import { computeExamTrendPoints } from '@/lib/examTrend';
+import { useChartColors } from '@/lib/chartTheme';
 import { ShareableExamCard } from './ShareableExamCard';
 import type { Exam } from '@/types';
 
 export function ExamScoreTrendChart({ exams }: { exams: Exam[] }) {
   const [shareOpen, setShareOpen] = useState(false);
   const points = computeExamTrendPoints(exams);
+  const c = useChartColors();
 
   return (
     <GlassCard className="p-4">
       <div className="mb-1 flex items-center justify-between">
-        <p className="text-sm font-medium text-ink-muted">Exam score trend</p>
+        <p className="eyebrow">Exam score trend</p>
         {points.length >= 2 && (
           <button
             onClick={() => setShareOpen(true)}
-            className="flex items-center gap-1.5 rounded-control px-2 py-1 text-xs font-medium text-accent hover:bg-accent/10"
+            className="flex items-center gap-1.5 rounded-control px-2 py-1 text-xs font-semibold text-accent hover:bg-accent/10"
           >
             <Share2 size={14} />
             Share
@@ -42,21 +44,21 @@ export function ExamScoreTrendChart({ exams }: { exams: Exam[] }) {
           </p>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={points} margin={{ top: 5, right: 10, left: 4, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+              <CartesianGrid strokeDasharray="2 4" stroke={c.border} vertical={false} />
               <XAxis
                 dataKey="label"
-                stroke="#9EA7B8"
+                stroke={c.faint}
                 fontSize={12}
                 tickLine={false}
-                label={{ value: 'Exam date', position: 'insideBottom', offset: -12, fill: '#9EA7B8', fontSize: 11 }}
+                label={{ value: 'Exam date', position: 'insideBottom', offset: -12, fill: c.faint, fontSize: 11 }}
               />
               <YAxis
                 domain={[0, 100]}
-                stroke="#9EA7B8"
+                stroke={c.faint}
                 fontSize={12}
                 tickLine={false}
                 width={44}
-                label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', fill: '#9EA7B8', fontSize: 11 }}
+                label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', fill: c.faint, fontSize: 11 }}
               />
               <Tooltip
                 formatter={(value: number) => [`${value}%`, 'Score']}
@@ -65,13 +67,20 @@ export function ExamScoreTrendChart({ exams }: { exams: Exam[] }) {
                   return items?.[0]?.payload?.name ?? '';
                 }}
                 contentStyle={{
-                  background: '#141B2B',
-                  border: '1px solid #262F42',
+                  background: c.surface,
+                  border: `1px solid ${c.border}`,
                   borderRadius: 8,
-                  fontSize: 12
+                  fontSize: 12,
+                  color: c.ink
                 }}
               />
-              <Line type="monotone" dataKey="percentage" stroke="#0055FE" strokeWidth={2} dot={{ r: 3 }} />
+              <Line
+                type="monotone"
+                dataKey="percentage"
+                stroke={c.accent}
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: c.accent, strokeWidth: 0 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </>

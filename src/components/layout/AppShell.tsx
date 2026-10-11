@@ -4,8 +4,6 @@ import { MotionConfig } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { ToastStack } from './ToastStack';
-import { TopBar } from './TopBar';
-import { CommandPalette } from './CommandPalette';
 import { PageTransition } from './PageTransition';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
@@ -56,7 +54,7 @@ export function AppShell() {
   if (initializing) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-surface">
-        <p className="text-sm text-ink-muted">Loading…</p>
+        <p className="eyebrow">Loading</p>
       </div>
     );
   }
@@ -70,11 +68,9 @@ export function AppShell() {
     // movement-based animation is skipped everywhere.
     <MotionConfig reducedMotion="user">
       <div className="flex min-h-screen bg-surface text-ink">
-        <div className="app-backdrop" aria-hidden />
         <Sidebar />
-        <div className="flex-1 min-w-0">
-          <main className="mx-auto max-w-6xl px-4 pb-24 pt-safe-top md:px-8 md:pb-8">
-            <TopBar />
+        <div className="min-w-0 flex-1">
+          <main className="mx-auto max-w-6xl px-5 pb-28 pt-safe-top md:px-10 md:pb-10">
             <PageTransition>
               <Outlet />
             </PageTransition>
@@ -82,7 +78,6 @@ export function AppShell() {
         </div>
         <BottomNav />
         <ToastStack />
-        <CommandPalette />
         <OnboardingOverlay />
         <UpdatePrompt />
         {celebrating && <ConfettiBurst onDone={finishCelebrating} />}

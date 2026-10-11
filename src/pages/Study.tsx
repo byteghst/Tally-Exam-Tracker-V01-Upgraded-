@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Pause, Square, Plus, Pencil, Trash2, ImagePlus, X, Timer } from 'lucide-react';
+import { Play, Pause, Square, Plus, Pencil, Trash2, ImagePlus, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Sheet } from '@/components/ui/Sheet';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Rise, Rule, Section, Stagger } from '@/components/motion/Reveal';
 import { useStudyStore, elapsedMs, type StudySubject } from '@/store/studyStore';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
+import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
 
-const COLORS = ['#284EFE', '#7C3AED', '#0EA5A4', '#E0A93E', '#E0645E', '#3EBD7E', '#EC4899', '#64748B'];
 const DAY_MS = 86_400_000;
 
 function pad(n: number) {
@@ -49,23 +51,20 @@ function useNow(enabled: boolean): number {
 }
 
 /**
- * Shows the subject's full picture (no cropping) letterboxed on a tinted
- * backdrop of the subject's own color, so portrait/landscape/square photos
- * of a book cover or notes page are all fully visible instead of being
- * cropped to fill the frame.
+ * Shows the subject's full picture (no cropping) letterboxed on a flat tint of
+ * the subject's own colour, so portrait, landscape and square photos are all
+ * fully visible. Without a picture it is a solid colour tile with the initial.
  */
 function SubjectCover({ subject, className }: { subject: StudySubject; className?: string }) {
+  const color = toneColor(subject.color);
   return (
-    <div
-      className={clsx('relative overflow-hidden', className)}
-      style={{ background: `linear-gradient(135deg, ${subject.color}33, ${subject.color}11)` }}
-    >
+    <div className={clsx('relative overflow-hidden', className)} style={{ backgroundColor: `${color}26` }}>
       {subject.image ? (
         <img src={subject.image} alt="" className="h-full w-full object-contain" />
       ) : (
         <span
-          className="grid h-full w-full place-items-center font-display text-3xl font-bold text-white/90"
-          style={{ background: `linear-gradient(135deg, ${subject.color}, ${subject.color}AA)` }}
+          className="grid h-full w-full place-items-center font-serif text-5xl leading-none text-[#FBF8F2]"
+          style={{ backgroundColor: color }}
         >
           {subject.name.charAt(0).toUpperCase()}
         </span>
@@ -78,7 +77,7 @@ function SubjectEditor({ subject, onClose }: { subject: StudySubject | null; onC
   const addSubject = useStudyStore((s) => s.addSubject);
   const updateSubject = useStudyStore((s) => s.updateSubject);
   const [name, setName] = useState(subject?.name ?? '');
-  const [color, setColor] = useState(subject?.color ?? COLORS[0]);
+  const [color, setColor] = useState<string>(toneColor(subject?.color));
   const [image, setImage] = useState<string | undefined>(subject?.image);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -119,71 +118,66 @@ function SubjectEditor({ subject, onClose }: { subject: StudySubject | null; onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative max-h-[90dvh] w-full overflow-y-auto rounded-t-card border border-border bg-surface-raised p-5 pb-safe-bottom md:max-w-md md:rounded-card">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-ink">{subject ? 'Edit subject' : 'New subject'}</h2>
-          <button onClick={onClose} aria-label="Close">
-            <X size={20} className="text-ink-muted" />
-          </button>
-        </div>
-
-        <SubjectCover subject={preview} className="mb-4 h-36 w-full rounded-card" />
-
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>
-            <ImagePlus className="h-4 w-4" /> {busy ? 'Loading...' : image ? 'Change picture' : 'Add picture'}
+    <Sheet
+      open
+      onClose={onClose}
+      title={subject ? 'Edit subject' : 'New subject'}
+      footer={
+        <div className="flex gap-2">
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+            Cancel
           </Button>
-          {image && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setImage(undefined)}>
-              Remove picture
-            </Button>
-          )}
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
+          <Button type="button" className="flex-1" onClick={handleSave} disabled={busy}>
+            {subject ? 'Save' : 'Add subject'}
+          </Button>
         </div>
+      }
+    >
+      <SubjectCover subject={preview} className="mb-4 h-36 w-full rounded-card" />
 
-        <div className="space-y-4">
-          <Input
-            label="Subject name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Physics 1st Paper"
-            maxLength={60}
-          />
-
-          <div>
-            <span className="mb-1.5 block text-sm font-medium text-ink-muted">Color</span>
-            <div className="flex flex-wrap gap-2.5">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  aria-label={`Color ${c}`}
-                  className={clsx(
-                    'h-8 w-8 rounded-full transition-transform',
-                    color === c ? 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-surface-raised' : ''
-                  )}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-danger">{error}</p>}
-
-          <div className="flex gap-2 pt-1">
-            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="button" className="flex-1" onClick={handleSave} disabled={busy}>
-              {subject ? 'Save' : 'Add subject'}
-            </Button>
-          </div>
-        </div>
+      <div className="mb-5 flex flex-wrap gap-2">
+        <Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>
+          <ImagePlus className="h-4 w-4" /> {busy ? 'Loading...' : image ? 'Change picture' : 'Add picture'}
+        </Button>
+        {image && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setImage(undefined)}>
+            Remove picture
+          </Button>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
       </div>
-    </div>
+
+      <div className="space-y-5">
+        <Input
+          label="Subject name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Physics 1st Paper"
+          maxLength={60}
+        />
+
+        <div>
+          <span className="mb-2 block text-sm font-medium text-ink-muted">Colour</span>
+          <div className="flex flex-wrap gap-3">
+            {SUBJECT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                aria-label={`Colour ${c}`}
+                className={clsx(
+                  'h-9 w-9 rounded-full transition-transform duration-200',
+                  color === c ? 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-surface-raised' : ''
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+      </div>
+    </Sheet>
   );
 }
 
@@ -234,84 +228,90 @@ export function Study() {
   const recent = useMemo(() => [...sessions].sort((a, b) => b.end - a.end).slice(0, 8), [sessions]);
 
   return (
-    <div className="space-y-6 py-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-ink">Study</h1>
+    <Stagger className="space-y-10 py-8">
+      <Rise as="header" className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Focus</p>
+          <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Study</h1>
+        </div>
         <Button size="sm" onClick={() => setEditing('new')}>
           <Plus className="h-4 w-4" /> Subject
         </Button>
-      </div>
+      </Rise>
 
-      {active && activeSubject ? (
-        <GlassCard accented className="space-y-4 p-5">
-          <div className="flex items-center gap-3">
-            <SubjectCover subject={activeSubject} className="h-12 w-12 shrink-0 rounded-control" />
-            <div className="min-w-0">
-              <p className="truncate font-display text-lg font-semibold text-ink">{activeSubject.name}</p>
-              <p className="text-sm text-ink-muted">{running ? 'Studying now' : 'Paused'}</p>
-            </div>
-          </div>
-          <p className="tabular-nums text-center text-5xl font-bold tracking-tight text-ink">{formatClock(activeMs)}</p>
-          <div className="flex gap-2">
-            {running ? (
-              <Button variant="secondary" className="flex-1" onClick={pause}>
-                <Pause className="h-4 w-4" /> Pause
-              </Button>
-            ) : (
-              <Button className="flex-1" onClick={resume}>
-                <Play className="h-4 w-4" /> Resume
-              </Button>
-            )}
-            <Button className="flex-1" onClick={stop}>
-              <Square className="h-4 w-4" /> Stop &amp; save
-            </Button>
-          </div>
-          <button
-            onClick={() => setDiscardOpen(true)}
-            className="w-full text-center text-sm text-ink-faint underline-offset-2 hover:text-danger hover:underline"
-          >
-            Discard this session
-          </button>
-          <p className="text-center text-xs text-ink-faint">
-            The timer keeps running if you switch apps or close Tally.
-          </p>
-        </GlassCard>
-      ) : (
-        <GlassCard className="flex items-center gap-3 p-5">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-accent/[0.12] text-accent">
-            <Timer size={22} />
-          </div>
+      <Rise>
+        {active && activeSubject ? (
           <div>
-            <p className="font-medium text-ink">Ready when you are</p>
-            <p className="text-sm text-ink-muted">Tap a subject below to start the timer.</p>
+            <div className="flex items-center justify-between">
+              <p className="eyebrow">{running ? 'Studying now' : 'Paused'}</p>
+              {running && <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />}
+            </div>
+            <Rule strong className="mt-3" />
+            <div className="mt-5 flex items-center gap-3">
+              <SubjectCover subject={activeSubject} className="h-12 w-12 shrink-0 rounded-control" />
+              <p className="truncate font-serif text-3xl italic leading-none text-ink">{activeSubject.name}</p>
+            </div>
+            <p className="mt-6 text-center font-numeric text-[clamp(3.5rem,19vw,6.5rem)] font-medium leading-none tracking-tight tabular-nums text-ink">
+              {formatClock(activeMs)}
+            </p>
+            <div className="mt-7 flex gap-2">
+              {running ? (
+                <Button variant="secondary" className="flex-1" onClick={pause}>
+                  <Pause className="h-4 w-4" /> Pause
+                </Button>
+              ) : (
+                <Button className="flex-1" onClick={resume}>
+                  <Play className="h-4 w-4" /> Resume
+                </Button>
+              )}
+              <Button className="flex-1" onClick={stop}>
+                <Square className="h-4 w-4" /> Stop &amp; save
+              </Button>
+            </div>
+            <button
+              onClick={() => setDiscardOpen(true)}
+              className="mt-4 w-full text-center text-sm text-ink-faint underline-offset-2 hover:text-danger hover:underline"
+            >
+              Discard this session
+            </button>
+            <p className="mt-2 text-center text-xs text-ink-faint">
+              The timer keeps running if you switch apps or close Tally.
+            </p>
           </div>
-        </GlassCard>
-      )}
+        ) : (
+          <div>
+            <p className="eyebrow">Timer</p>
+            <Rule strong className="mt-3" />
+            <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">Ready when you are.</p>
+            <p className="mt-3 text-ink-muted">Tap a subject below to start the clock.</p>
+          </div>
+        )}
+      </Rise>
 
-      <div className="grid grid-cols-2 gap-3">
-        <GlassCard className="p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Today</p>
-          <p className="tabular-nums mt-1 text-2xl font-bold text-ink">{formatShort(todayTotal)}</p>
-        </GlassCard>
-        <GlassCard className="p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Last 7 days</p>
-          <p className="tabular-nums mt-1 text-2xl font-bold text-ink">{formatShort(weekTotal)}</p>
-        </GlassCard>
-      </div>
+      <Rise className="grid grid-cols-2 border-y border-border">
+        <div className="py-5 pr-4">
+          <p className="eyebrow">Today</p>
+          <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">{formatShort(todayTotal)}</p>
+        </div>
+        <div className="border-l border-border py-5 pl-5">
+          <p className="eyebrow">Last 7 days</p>
+          <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">{formatShort(weekTotal)}</p>
+        </div>
+      </Rise>
 
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold text-ink">Subjects</h2>
+      <Section label="Subjects">
         {subjects.length === 0 ? (
-          <GlassCard className="space-y-3 p-6 text-center">
-            <p className="text-sm text-ink-muted">
+          <div>
+            <p className="font-serif text-4xl leading-none tracking-tight text-ink">No subjects yet.</p>
+            <p className="mt-3 max-w-xs text-sm text-ink-muted">
               Add the subjects you study, with a picture if you like, then track time on each one.
             </p>
-            <Button onClick={() => setEditing('new')}>
+            <Button className="mt-4" onClick={() => setEditing('new')}>
               <Plus className="h-4 w-4" /> Add your first subject
             </Button>
-          </GlassCard>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {subjects.map((subject) => {
               const isActive = active?.subjectId === subject.id;
               return (
@@ -325,12 +325,12 @@ export function Study() {
                   <div className="relative">
                     <SubjectCover subject={subject} className="h-28 w-full" />
                     {isActive && (
-                      <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      <span className="absolute left-2 top-2 bg-ink px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-surface">
                         {running ? 'Studying' : 'Paused'}
                       </span>
                     )}
-                    <span className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-black/55 text-white">
-                      {isActive && running ? <Pause size={15} /> : <Play size={15} />}
+                    <span className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-ink text-surface">
+                      {isActive && running ? <Pause size={14} /> : <Play size={14} />}
                     </span>
                   </div>
                   <div className="space-y-1 p-3">
@@ -345,7 +345,7 @@ export function Study() {
                           setEditing(subject);
                         }}
                         aria-label={`Edit ${subject.name}`}
-                        className="rounded-control p-1.5 text-ink-muted hover:bg-white/5 hover:text-ink"
+                        className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
                       >
                         <Pencil size={14} />
                       </button>
@@ -355,7 +355,7 @@ export function Study() {
                           setDeleteTarget(subject);
                         }}
                         aria-label={`Delete ${subject.name}`}
-                        className="rounded-control p-1.5 text-ink-muted hover:bg-white/5 hover:text-danger"
+                        className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-danger"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -366,19 +366,18 @@ export function Study() {
             })}
           </div>
         )}
-      </section>
+      </Section>
 
       {recent.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="font-display text-lg font-semibold text-ink">Recent sessions</h2>
-          <GlassCard className="divide-y divide-border p-1">
+        <Section label="Recent sessions">
+          <ul className="divide-y divide-border">
             {recent.map((session) => {
               const subject = subjects.find((s) => s.id === session.subjectId);
               return (
-                <div key={session.id} className="flex items-center gap-3 px-3 py-2.5">
+                <li key={session.id} className="flex items-center gap-3 py-3">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: subject?.color ?? '#64748B' }}
+                    style={{ backgroundColor: subject ? toneColor(subject.color) : '#7A7165' }}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink">{subject?.name ?? 'Deleted subject'}</p>
@@ -392,15 +391,15 @@ export function Study() {
                   <button
                     onClick={() => removeSession(session.id)}
                     aria-label="Delete session"
-                    className="rounded-control p-1.5 text-ink-faint hover:bg-white/5 hover:text-danger"
+                    className="rounded-control p-1.5 text-ink-faint hover:bg-ink/5 hover:text-danger"
                   >
                     <X size={14} />
                   </button>
-                </div>
+                </li>
               );
             })}
-          </GlassCard>
-        </section>
+          </ul>
+        </Section>
       )}
 
       {editing !== null && (
@@ -430,6 +429,6 @@ export function Study() {
         description="The time on the timer will not be saved."
         confirmLabel="Discard"
       />
-    </div>
+    </Stagger>
   );
 }

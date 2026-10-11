@@ -3,6 +3,7 @@ import { BarChart3 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { EmptyState } from '@/components/ui/Badge';
 import { toISODate, parseISODate } from '@/lib/dates';
+import { useChartColors } from '@/lib/chartTheme';
 import type { Task } from '@/types';
 
 interface DayPoint {
@@ -15,6 +16,7 @@ interface DayPoint {
 const DAYS_BACK = 14;
 
 export function TaskCompletionTrendChart({ tasks }: { tasks: Task[] }) {
+  const c = useChartColors();
   const today = new Date();
   const byDate = new Map<string, { total: number; completed: number }>();
 
@@ -44,7 +46,7 @@ export function TaskCompletionTrendChart({ tasks }: { tasks: Task[] }) {
 
   return (
     <GlassCard className="p-4">
-      <p className="mb-3 text-sm font-medium text-ink-muted">Task completion — last {DAYS_BACK} days</p>
+      <p className="eyebrow mb-4">Task completion, last {DAYS_BACK} days</p>
       {!hasAnyData ? (
         <EmptyState
           title="No dated tasks yet"
@@ -54,23 +56,25 @@ export function TaskCompletionTrendChart({ tasks }: { tasks: Task[] }) {
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={points} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-            <XAxis dataKey="label" stroke="#9EA7B8" fontSize={11} tickLine={false} interval={1} />
-            <YAxis domain={[0, 100]} stroke="#9EA7B8" fontSize={12} tickLine={false} width={36} />
+            <CartesianGrid strokeDasharray="2 4" stroke={c.border} vertical={false} />
+            <XAxis dataKey="label" stroke={c.faint} fontSize={11} tickLine={false} interval={1} />
+            <YAxis domain={[0, 100]} stroke={c.faint} fontSize={12} tickLine={false} width={36} />
             <Tooltip
+              cursor={{ fill: c.border, opacity: 0.4 }}
               formatter={(value: number, _name: unknown, item: unknown) => {
                 const entry = item as { payload?: { total?: number } } | undefined;
                 const total = entry?.payload?.total ?? 0;
                 return [`${value}% (${total} task${total === 1 ? '' : 's'})`, 'Completed'];
               }}
               contentStyle={{
-                background: '#141B2B',
-                border: '1px solid #262F42',
+                background: c.surface,
+                border: `1px solid ${c.border}`,
                 borderRadius: 8,
-                fontSize: 12
+                fontSize: 12,
+                color: c.ink
               }}
             />
-            <Bar dataKey="percent" fill="#3EBD7E" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="percent" fill={c.forest} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}

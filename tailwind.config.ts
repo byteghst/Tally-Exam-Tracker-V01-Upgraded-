@@ -15,17 +15,21 @@ export default {
           muted: 'rgb(var(--ink-muted) / <alpha-value>)',
           faint: 'rgb(var(--ink-faint) / <alpha-value>)'
         },
+        // Persimmon: the main accent. `on` = text colour that sits on top of it.
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
-          soft: 'rgb(var(--accent-soft) / <alpha-value>)'
+          soft: 'rgb(var(--accent-soft) / <alpha-value>)',
+          on: 'rgb(var(--on-accent) / <alpha-value>)'
         },
-        accent2: {
-          DEFAULT: 'rgb(var(--accent2) / <alpha-value>)'
-        },
+        // Supporting accents, used for categories, charts and states.
+        forest: 'rgb(var(--forest) / <alpha-value>)',
+        saffron: 'rgb(var(--saffron) / <alpha-value>)',
+        rose: 'rgb(var(--rose) / <alpha-value>)',
+        accent2: 'rgb(var(--saffron) / <alpha-value>)',
         border: 'rgb(var(--border) / <alpha-value>)',
-        success: '#3EBD7E',
-        warning: '#E0A93E',
-        danger: '#E0645E'
+        success: 'rgb(var(--forest) / <alpha-value>)',
+        warning: 'rgb(var(--saffron) / <alpha-value>)',
+        danger: 'rgb(var(--danger) / <alpha-value>)'
       },
       fontFamily: {
         // UI + body text
@@ -34,23 +38,24 @@ export default {
         display: ['"Fraunces"', 'Georgia', 'serif'],
         // numerals: scores, countdowns, stats
         numeric: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
-        // quiet accent: italic taglines, small flourishes
+        // large editorial type: greetings, big numbers, italic taglines
         serif: ['"Instrument Serif"', 'Georgia', 'serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',
         control: 'var(--radius-control)'
       },
+      // Flat design: no blur and no shadows anywhere. These keys remain only so
+      // class names in not-yet-redesigned files still resolve (to nothing).
       backdropBlur: {
         glass: 'var(--blur)'
       },
       boxShadow: {
-        glass: '0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.25)',
-        'glass-lg': '0 2px 4px rgb(0 0 0 / 0.05), 0 24px 60px -18px rgb(0 0 0 / 0.35)'
+        glass: 'none',
+        'glass-lg': 'none'
       },
       backgroundImage: {
-        'app-gradient':
-          'radial-gradient(120% 90% at 15% -10%, rgb(var(--accent) / 0.16), transparent 55%), radial-gradient(110% 90% at 100% 0%, rgb(var(--accent2) / 0.14), transparent 60%), radial-gradient(140% 100% at 50% 120%, rgb(var(--accent) / 0.08), transparent 60%)'
+        'app-gradient': 'none'
       },
       spacing: {
         'safe-top': 'max(env(safe-area-inset-top), 14px)',

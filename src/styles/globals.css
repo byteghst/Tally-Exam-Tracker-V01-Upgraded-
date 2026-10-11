@@ -2,24 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Editorial, flat design system.
-   Paper-and-ink surfaces separated by hairlines, one blue accent taken from
-   the Tally logo (#0055FE), no blur, no translucency, no shadows. Depth comes
-   from type scale, whitespace and motion instead.
+/* Tally design system: warm paper and ink, flat, editorial.
 
-   The old glass tokens (--blur, --glass-alpha, --glass-hi-a) are kept but
-   neutralised (0px blur, fully opaque) so any screen that has not been
-   redesigned yet renders flat instead of breaking. */
+   Palette
+   - Surfaces are warm cream (light) or warm charcoal (dark), never blue-tinted.
+   - Persimmon is the one main accent. Forest, saffron and rose support it for
+     categories, charts and states. There is deliberately no blue or purple.
+   - Surfaces are separated by hairlines and whitespace: no blur, no
+     translucency, no shadows.
+
+   The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
+   screen that has not been redesigned yet still renders flat. */
 :root {
-  --surface: 247 246 242;
-  --surface-raised: 255 255 253;
-  --ink: 16 16 18;
-  --ink-muted: 92 92 98;
-  --ink-faint: 140 140 146;
-  --accent: 0 85 254;
-  --accent2: 0 149 255;
-  --accent-soft: 230 238 255;
-  --border: 223 221 214;
+  --surface: 246 241 232;
+  --surface-raised: 251 248 242;
+  --ink: 28 24 20;
+  --ink-muted: 104 96 86;
+  --ink-faint: 146 137 125;
+  --border: 221 213 199;
+
+  --accent: 217 79 45;
+  --accent-soft: 249 227 216;
+  --on-accent: 255 255 255;
+
+  --forest: 47 125 91;
+  --saffron: 201 139 18;
+  --rose: 201 72 107;
+  --danger: 168 32 56;
 
   --radius-card: 16px;
   --radius-control: 10px;
@@ -29,17 +38,21 @@
 }
 
 .dark {
-  --surface: 11 11 13;
-  --surface-raised: 19 19 22;
-  --ink: 241 239 234;
-  --ink-muted: 163 163 168;
-  --ink-faint: 107 107 113;
-  --accent: 61 126 255;
-  --accent2: 66 176 255;
-  --accent-soft: 24 36 66;
-  --border: 40 40 46;
-  --glass-alpha: 1;
-  --glass-hi-a: 0;
+  --surface: 18 16 14;
+  --surface-raised: 27 24 21;
+  --ink: 245 238 227;
+  --ink-muted: 173 164 151;
+  --ink-faint: 120 112 101;
+  --border: 50 45 39;
+
+  --accent: 255 122 84;
+  --accent-soft: 62 33 24;
+  --on-accent: 30 18 12;
+
+  --forest: 95 192 146;
+  --saffron: 242 184 75;
+  --rose: 240 116 150;
+  --danger: 255 107 125;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -83,19 +96,18 @@
   animation: toast-in 180ms ease-out;
 }
 
+/* Opacity only: screens do their own, richer reveal (see components/motion). */
 @keyframes page-fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .page-transition {
-  animation: page-fade-in 220ms ease-out;
+  animation: page-fade-in 160ms ease-out;
 }
 
 html,
@@ -128,8 +140,41 @@ body {
   }
 }
 
-/* The old gradient wash and glass edge are retired. Selectors are kept so
-   existing markup that still references them simply renders nothing. */
+/* ---------------------------------------------------------------------------
+   Safety net for screens that have not been redesigned yet.
+   Older markup used white/black overlays (made for a dark glass look) for
+   hover fills, tracks and backdrops. On warm paper those are invisible or
+   muddy, so they are remapped to ink tints, and any blur is switched off.
+   Each screen drops these classes as it is rebuilt; once none remain, this
+   block can be deleted.
+   --------------------------------------------------------------------------- */
+.bg-white\/5,
+.hover\:bg-white\/5:hover,
+.active\:bg-white\/5:active {
+  background-color: rgb(var(--ink) / 0.06) !important;
+}
+.bg-white\/10 {
+  background-color: rgb(var(--ink) / 0.1) !important;
+}
+.stroke-white\/10 {
+  stroke: rgb(var(--ink) / 0.1) !important;
+}
+.bg-black\/30,
+.bg-black\/40,
+.bg-black\/50 {
+  background-color: rgb(var(--ink) / 0.45) !important;
+}
+.backdrop-blur-sm,
+.backdrop-blur-glass,
+.backdrop-blur,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* retired: gradient wash behind the app and the glass edge highlight */
 .app-backdrop {
   display: none;
 }

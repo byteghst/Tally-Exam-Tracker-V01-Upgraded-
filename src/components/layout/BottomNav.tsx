@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { MoreHorizontal, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { NAV_ITEMS } from './navConfig';
+import { EASE_OUT, spring } from '@/lib/motion';
 
 export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -11,28 +13,34 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Floating glass dock. The active tab is a soft pill behind the icon +
-          label (no indicator bar), and the dock sits inset from the screen
-          edges instead of running edge to edge with a hard top border. */}
+      {/* Flat bar fixed to the bottom edge: a hairline on top, solid paper
+          behind. The active tab gets an accent line that slides between tabs. */}
       <nav
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-safe-bottom md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-safe-bottom md:hidden"
         aria-label="Primary"
       >
-        <div className="glass-edge pointer-events-auto flex w-full max-w-md items-center gap-1 rounded-full border border-border/60 bg-surface-raised/[var(--glass-alpha)] p-1.5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_14px_36px_-14px_rgb(0_0_0/0.3),inset_0_1px_0_rgb(255_255_255/var(--glass-hi-a))] backdrop-blur-glass">
+        <div className="mx-auto flex max-w-md items-stretch">
           {primary.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
                 clsx(
-                  'flex flex-1 flex-col items-center gap-0.5 rounded-full px-1 py-2 text-[11px] font-semibold tracking-tight transition-colors duration-200',
-                  isActive ? 'bg-accent/[0.12] text-accent' : 'text-ink-muted active:bg-white/5'
+                  'relative flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight transition-colors duration-200',
+                  isActive ? 'text-ink' : 'text-ink-faint active:text-ink'
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <item.icon size={21} strokeWidth={isActive ? 2.3 : 1.9} />
+                  {isActive && (
+                    <motion.span
+                      layoutId="bottom-nav-indicator"
+                      transition={spring}
+                      className="absolute inset-x-3 -top-px h-0.5 bg-accent"
+                    />
+                  )}
+                  <item.icon size={21} strokeWidth={isActive ? 2.2 : 1.7} className={isActive ? 'text-accent' : ''} />
                   {item.label}
                 </>
               )}
@@ -40,41 +48,56 @@ export function BottomNav() {
           ))}
           <button
             onClick={() => setMoreOpen(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-full px-1 py-2 text-[11px] font-semibold tracking-tight text-ink-muted transition-colors duration-200 active:bg-white/5"
+            className="flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight text-ink-faint transition-colors duration-200 active:text-ink"
             aria-label="More"
           >
-            <MoreHorizontal size={21} strokeWidth={1.9} />
+            <MoreHorizontal size={21} strokeWidth={1.7} />
             More
           </button>
         </div>
       </nav>
 
-      {moreOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
-          <div className="relative w-full rounded-t-card border-t border-border bg-surface-raised p-4 pb-safe-bottom">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="font-display text-base font-semibold text-ink">More</span>
-              <button onClick={() => setMoreOpen(false)} aria-label="Close">
-                <X size={20} className="text-ink-muted" />
-              </button>
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3">
-              {secondary.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMoreOpen(false)}
-                  className="flex flex-col items-center gap-2 rounded-control py-3 text-xs font-medium text-ink-muted transition-colors hover:bg-white/5 active:scale-95"
-                >
-                  <item.icon size={22} />
-                  {item.label}
-                </NavLink>
-              ))}
-            </div>
+      <AnimatePresence>
+        {moreOpen && (
+          <div className="fixed inset-0 z-50 flex items-end md:hidden" role="dialog" aria-modal="true">
+            <motion.div
+              className="absolute inset-0 bg-ink/40"
+              onClick={() => setMoreOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            />
+            <motion.div
+              className="relative w-full rounded-t-card border-t border-border bg-surface-raised p-5 pb-safe-bottom"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.45, ease: EASE_OUT }}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <span className="font-serif text-2xl leading-none tracking-tight text-ink">More</span>
+                <button onClick={() => setMoreOpen(false)} aria-label="Close">
+                  <X size={20} className="text-ink-muted" />
+                </button>
+              </div>
+              <div className="divide-y divide-border border-y border-border">
+                {secondary.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMoreOpen(false)}
+                    className="flex items-center gap-4 py-4 text-base font-medium text-ink transition-colors active:text-accent"
+                  >
+                    <item.icon size={20} className="text-ink-muted" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 }
