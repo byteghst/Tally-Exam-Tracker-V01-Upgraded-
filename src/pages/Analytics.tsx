@@ -92,7 +92,7 @@ export function Analytics() {
         </Button>
       </Rise>
 
-      <Rise className="grid grid-cols-2 gap-px border-y border-border bg-border md:grid-cols-4">
+      <Rise className="grid grid-cols-2 gap-x-6 gap-y-7 border-b border-border pb-7 md:grid-cols-4">
         <Metric label="Total exams" value={exams.length} />
         <Metric label="Average" value={avgPercentage} suffix="%" />
         <Metric label="Total tasks" value={tasks.length} />
@@ -128,7 +128,7 @@ export function Analytics() {
 function Metric({ label, value, suffix }: { label: string; value: number | null; suffix?: string }) {
   const animated = useCountUp(value ?? 0, 900, suffix === '%' ? 1 : 0);
   return (
-    <div className="bg-surface px-4 py-5 first:pl-0 md:first:pl-0">
+    <div>
       <p className="eyebrow">{label}</p>
       <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">
         {value === null ? '—' : `${animated}${suffix ?? ''}`}
