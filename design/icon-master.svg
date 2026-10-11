@@ -1,14 +1,12 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Tally brand mark: three paper bars struck through by one persimmon stroke,
-       on a warm ink tile. Reference copy of the drawing in
-       scripts/build-icons.mjs, which generates every app icon and the launch
-       screen from this same geometry. -->
-  <rect width="512" height="512" rx="112" fill="#1C1814"/>
-
-  <g transform="translate(52.2 62.3) scale(1.27)">
-    <rect x="69" y="50" width="38" height="205" fill="#F6F1E8"/>
-    <rect x="135" y="50" width="38" height="205" fill="#F6F1E8"/>
-    <rect x="201" y="50" width="38" height="205" fill="#F6F1E8"/>
-    <line x1="27" y1="202" x2="294" y2="83" stroke="#D94F2D" stroke-width="34" stroke-linecap="square"/>
-  </g>
+<svg width="1254" height="1254" viewBox="0 0 1254 1254" xmlns="http://www.w3.org/2000/svg">
+  <!-- The original Tally logo: pure black tile, four white bars, one orange
+       stroke. Coordinates measured from the original artwork. Reference copy of
+       the drawing in scripts/build-icons.mjs, which generates every app icon and
+       the launch screen from this same geometry. -->
+  <rect width="1254" height="1254" rx="274" fill="#000000"/>
+  <rect x="376" y="316" width="92" height="611" fill="#FFFFFF"/>
+  <rect x="515" y="316" width="89" height="611" fill="#FFFFFF"/>
+  <rect x="651" y="316" width="88" height="611" fill="#FFFFFF"/>
+  <rect x="787" y="316" width="91" height="611" fill="#FFFFFF"/>
+  <polygon points="248,702 1006,374 1006,474 248,801" fill="#FE5018"/>
 </svg>
