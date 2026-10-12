@@ -17,6 +17,11 @@ interface UIStore {
   dismissToast: (id: string) => void;
 }
 
+/** How long a message stays on screen. ToastStack's draining line uses the same value. */
+export const TOAST_DURATION_MS = 4000;
+/** At most this many messages are shown at once; the oldest is dropped first. */
+const MAX_TOASTS = 3;
+
 export const useUIStore = create<UIStore>((set, get) => ({
   commandPaletteOpen: false,
   quickAddOpen: false,
@@ -27,8 +32,8 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
   pushToast: (message, action, tone = 'success') => {
     const id = crypto.randomUUID();
-    set({ toasts: [...get().toasts, { id, message, action, tone }] });
-    setTimeout(() => get().dismissToast(id), 6000);
+    set({ toasts: [...get().toasts, { id, message, action, tone }].slice(-MAX_TOASTS) });
+    setTimeout(() => get().dismissToast(id), TOAST_DURATION_MS);
   },
 
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) })
