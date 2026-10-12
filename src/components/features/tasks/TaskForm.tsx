@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { clsx } from 'clsx';
 import { Sheet } from '@/components/ui/Sheet';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Segmented } from '@/components/ui/Segmented';
+import { ToggleRow } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { taskFormSchema, type TaskFormValues } from '@/lib/validation/taskSchema';
 import { useTaskStore } from '@/store/taskStore';
 import { useUIStore } from '@/store/uiStore';
 import { todayISO } from '@/lib/dates';
+import { EASE_OUT } from '@/lib/motion';
 import type { Task, TaskPriority, RecurrenceFreq } from '@/types';
 
 interface TaskFormProps {
@@ -17,6 +23,20 @@ interface TaskFormProps {
 type FieldErrors = Record<string, string | undefined>;
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Priority colours match the dots on the Tasks screen.
+const PRIORITY_OPTIONS = [
+  { value: 'low' as TaskPriority, label: 'Low', color: 'bg-forest' },
+  { value: 'medium' as TaskPriority, label: 'Medium', color: 'bg-saffron' },
+  { value: 'high' as TaskPriority, label: 'High', color: 'bg-danger' }
+];
+
+const FREQ_OPTIONS = [
+  { value: 'daily' as RecurrenceFreq, label: 'Daily' },
+  { value: 'weekdays' as RecurrenceFreq, label: 'Weekdays' },
+  { value: 'weekly' as RecurrenceFreq, label: 'Weekly' },
+  { value: 'custom' as RecurrenceFreq, label: 'Custom' }
+];
 
 function toFormState(task?: Task) {
   return {
@@ -144,7 +164,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
         </div>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Input
           label="Task name"
           value={form.name}
@@ -153,7 +173,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           placeholder="e.g. Revise Chapter 4 problems"
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-5">
           <Input
             label="Date"
             type="date"
@@ -169,9 +189,16 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <Segmented
+          label="Priority"
+          options={PRIORITY_OPTIONS}
+          value={form.priority}
+          onChange={(p) => set('priority', p)}
+        />
+
+        <div className="grid grid-cols-2 gap-5">
           <Input
-            label="Estimated duration (min)"
+            label="Duration (min)"
             type="number"
             inputMode="numeric"
             value={form.estimatedDuration}
@@ -188,25 +215,6 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           />
         </div>
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-ink-muted">Priority</legend>
-          <div className="flex gap-2">
-            {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => set('priority', p)}
-                aria-pressed={form.priority === p}
-                className={`flex-1 rounded-control border px-3 py-2 text-sm font-medium capitalize ${
-                  form.priority === p ? 'border-accent bg-accent/15 text-accent' : 'border-border text-ink-muted'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
         <Input
           label="Category (optional)"
           value={form.category}
@@ -214,81 +222,69 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           error={errors.category}
         />
 
-        <div className="space-y-3 rounded-control border border-border p-3">
-          <label className="flex items-center gap-2 text-sm font-medium text-ink">
-            <input
-              type="checkbox"
-              checked={form.recurrenceEnabled}
-              onChange={(e) => set('recurrenceEnabled', e.target.checked)}
-              className="h-4 w-4 rounded accent-accent"
-            />
-            Repeat this task
-          </label>
-
-          {form.recurrenceEnabled && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {(['daily', 'weekdays', 'weekly', 'custom'] as RecurrenceFreq[]).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => set('recurrenceFreq', f)}
-                    aria-pressed={form.recurrenceFreq === f}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${
-                      form.recurrenceFreq === f ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-
-              {(form.recurrenceFreq === 'weekly' || form.recurrenceFreq === 'custom') && (
-                <div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {DAY_LABELS.map((label, i) => (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => toggleDay(i)}
-                        aria-pressed={form.recurrenceDays.includes(i)}
-                        className={`h-9 w-11 rounded-control text-xs font-medium ${
-                          form.recurrenceDays.includes(i) ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {errors['recurrence.daysOfWeek'] && (
-                    <p className="mt-1 text-sm text-danger">{errors['recurrence.daysOfWeek']}</p>
-                  )}
-                </div>
-              )}
-
-              <Input
-                label="Ends on (optional)"
-                type="date"
-                value={form.recurrenceEndDate}
-                onChange={(e) => set('recurrenceEndDate', e.target.value)}
-              />
-              <p className="text-xs text-ink-faint">
-                Upcoming instances are generated automatically up to 60 days ahead.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink-muted">Notes</label>
-          <textarea
-            value={form.notes}
-            onChange={(e) => set('notes', e.target.value)}
-            rows={2}
-            className="w-full rounded-control border border-border bg-surface p-3 text-ink placeholder:text-ink-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        <div className="border-y border-border">
+          <ToggleRow
+            label="Repeat this task"
+            checked={form.recurrenceEnabled}
+            onChange={(checked) => set('recurrenceEnabled', checked)}
           />
-          {errors.notes && <p className="text-sm text-danger">{errors.notes}</p>}
+
+          <AnimatePresence initial={false}>
+            {form.recurrenceEnabled && (
+              <motion.div
+                key="recurrence"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: EASE_OUT }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-5 pb-5 pt-1">
+                  <Segmented options={FREQ_OPTIONS} value={form.recurrenceFreq} onChange={(f) => set('recurrenceFreq', f)} />
+
+                  {(form.recurrenceFreq === 'weekly' || form.recurrenceFreq === 'custom') && (
+                    <div>
+                      <div className="flex justify-between gap-1">
+                        {DAY_LABELS.map((label, i) => {
+                          const on = form.recurrenceDays.includes(i);
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => toggleDay(i)}
+                              aria-pressed={on}
+                              className={clsx(
+                                'h-10 flex-1 rounded-control border text-xs font-semibold transition-colors duration-200',
+                                on ? 'border-ink bg-ink text-surface' : 'border-ink/20 text-ink-muted hover:text-ink'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {errors['recurrence.daysOfWeek'] && (
+                        <p className="mt-1 text-sm text-danger">{errors['recurrence.daysOfWeek']}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <Input
+                    label="Ends on (optional)"
+                    type="date"
+                    value={form.recurrenceEndDate}
+                    onChange={(e) => set('recurrenceEndDate', e.target.value)}
+                  />
+                  <p className="text-xs text-ink-faint">
+                    Upcoming instances are generated automatically up to 60 days ahead.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        <Textarea label="Notes" value={form.notes} onChange={(e) => set('notes', e.target.value)} error={errors.notes} />
       </div>
     </Sheet>
   );
