@@ -21,14 +21,21 @@ const ORANGE = '#FE5018';
 const BOX = 1254; // size of the original artwork
 const CENTER = BOX / 2;
 
-/** The mark, scaled around the centre of the artwork box. */
+/**
+ * The mark, scaled around the centre of the artwork box.
+ * The white bars use crispEdges so their straight edges land exactly on pixel
+ * boundaries at every icon size (no soft, blurry sides); the diagonal stays
+ * anti-aliased.
+ */
 function mark(scale) {
   return `
   <g transform="translate(${CENTER} ${CENTER}) scale(${scale}) translate(${-CENTER} ${-CENTER})">
-    <rect x="376" y="316" width="92" height="611" fill="${WHITE}"/>
-    <rect x="515" y="316" width="89" height="611" fill="${WHITE}"/>
-    <rect x="651" y="316" width="88" height="611" fill="${WHITE}"/>
-    <rect x="787" y="316" width="91" height="611" fill="${WHITE}"/>
+    <g shape-rendering="crispEdges" fill="${WHITE}">
+      <rect x="376" y="316" width="92" height="611"/>
+      <rect x="515" y="316" width="89" height="611"/>
+      <rect x="651" y="316" width="88" height="611"/>
+      <rect x="787" y="316" width="91" height="611"/>
+    </g>
     <polygon points="248,702 1006,374 1006,474 248,801" fill="${ORANGE}"/>
   </g>`;
 }
@@ -41,18 +48,21 @@ function drawing({ size, background = null, radius = 0, markScale = 1 }) {
 
 const ROUND = 274; // corner radius for the rounded tile, in artwork units
 
+// markScale 1 = the artwork exactly as drawn (the mark is about 60% of the tile
+// wide). Android's adaptive icon only shows the middle ~66% of the layer, so
+// those layers are sized to fill that safe zone as far as it allows.
 const JOBS = [
   // browser / PWA
-  { file: 'public/icons/icon-192.png', size: 192, background: BLACK, radius: ROUND, markScale: 1 },
-  { file: 'public/icons/icon-512.png', size: 512, background: BLACK, radius: ROUND, markScale: 1 },
-  { file: 'public/icons/icon-512-maskable.png', size: 512, background: BLACK, radius: 0, markScale: 0.85 },
-  { file: 'public/icons/apple-touch-icon.png', size: 180, background: BLACK, radius: 0, markScale: 0.95 },
+  { file: 'public/icons/icon-192.png', size: 192, background: BLACK, radius: ROUND, markScale: 1.12 },
+  { file: 'public/icons/icon-512.png', size: 512, background: BLACK, radius: ROUND, markScale: 1.12 },
+  { file: 'public/icons/icon-512-maskable.png', size: 512, background: BLACK, radius: 0, markScale: 1.05 },
+  { file: 'public/icons/apple-touch-icon.png', size: 180, background: BLACK, radius: 0, markScale: 1.1 },
   // Android launcher (adaptive icon layers + legacy icon)
-  { file: 'resources/icon.png', size: 1024, background: BLACK, radius: 0, markScale: 0.85 },
-  { file: 'resources/icon-foreground.png', size: 1024, background: null, radius: 0, markScale: 0.78 },
+  { file: 'resources/icon.png', size: 1024, background: BLACK, radius: 0, markScale: 0.96 },
+  { file: 'resources/icon-foreground.png', size: 1024, background: null, radius: 0, markScale: 0.92 },
   { file: 'resources/icon-background.png', size: 1024, background: BLACK, radius: 0, markScale: 0 },
   // Android launch screen
-  { file: 'resources/splash.png', size: 2732, background: BLACK, radius: 0, markScale: 0.5 }
+  { file: 'resources/splash.png', size: 2732, background: BLACK, radius: 0, markScale: 0.6 }
 ];
 
 async function main() {
