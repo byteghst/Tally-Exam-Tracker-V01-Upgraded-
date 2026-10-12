@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { FileSpreadsheet, ListChecks, Pencil, CalendarX2 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Badge, EmptyState } from '@/components/ui/Badge';
-import type { Exam, Task } from '@/types';
+import { ChevronRight, Pencil } from 'lucide-react';
+import { clsx } from 'clsx';
+import { CheckButton, StrikeText } from '@/components/motion/Check';
+import type { Exam, ExamType, Task } from '@/types';
 
 interface DayAgendaProps {
   exams: Exam[];
@@ -11,57 +11,64 @@ interface DayAgendaProps {
   onEditTask: (task: Task) => void;
 }
 
+const TYPE_DOT: Record<ExamType, string> = {
+  daily: 'bg-accent',
+  weekly: 'bg-saffron',
+  monthly: 'bg-forest'
+};
+
 export function DayAgenda({ exams, tasks, onToggleTask, onEditTask }: DayAgendaProps) {
   const isEmpty = exams.length === 0 && tasks.length === 0;
 
   if (isEmpty) {
     return (
-      <EmptyState
-        title="Nothing on this day"
-        description="Exams and tasks for the selected date will show up here."
-        icon={CalendarX2}
-      />
+      <div>
+        <p className="font-serif text-4xl leading-none tracking-tight text-ink">Nothing on this day.</p>
+        <p className="mt-3 text-sm text-ink-muted">Exams and tasks for the selected date will show up here.</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-border">
       {exams.map((exam) => (
-        <Link key={exam.id} to={`/exams/${exam.id}`}>
-          <GlassCard interactive className="flex items-center gap-3 p-3.5">
-            <FileSpreadsheet size={18} className="shrink-0 text-accent" />
-            <span className="min-w-0 flex-1 truncate text-ink">{exam.name}</span>
-            <Badge tone={exam.type === 'daily' ? 'accent' : 'neutral'}>{exam.type}</Badge>
-          </GlassCard>
-        </Link>
+        <li key={exam.id}>
+          <Link to={`/exams/${exam.id}`} className="group flex items-center gap-3 py-3 transition-colors hover:bg-ink/5">
+            <span className={clsx('h-2.5 w-2.5 shrink-0 rounded-full', TYPE_DOT[exam.type])} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base text-ink">{exam.name}</p>
+              <p className="text-xs capitalize text-ink-muted">{exam.type} exam</p>
+            </div>
+            <ChevronRight
+              size={18}
+              className="shrink-0 text-ink-faint transition-transform duration-300 group-hover:translate-x-1"
+            />
+          </Link>
+        </li>
       ))}
 
-      {tasks.map((task) => (
-        <GlassCard key={task.id} className="flex items-center gap-3 p-3.5">
-          <input
-            type="checkbox"
-            checked={task.status === 'completed'}
-            onChange={() => onToggleTask(task.id)}
-            aria-label={`Mark "${task.name}" ${task.status === 'completed' ? 'incomplete' : 'complete'}`}
-            className="h-4 w-4 shrink-0 rounded accent-accent"
-          />
-          <ListChecks size={16} className="shrink-0 text-success" />
-          <span
-            className={`min-w-0 flex-1 truncate ${
-              task.status === 'completed' ? 'text-ink-faint line-through' : 'text-ink'
-            }`}
-          >
-            {task.name}
-          </span>
-          <button
-            onClick={() => onEditTask(task)}
-            aria-label={`Edit ${task.name}`}
-            className="shrink-0 rounded-control p-1.5 text-ink-muted hover:bg-white/5 hover:text-ink"
-          >
-            <Pencil size={16} />
-          </button>
-        </GlassCard>
-      ))}
-    </div>
+      {tasks.map((task) => {
+        const done = task.status === 'completed';
+        return (
+          <li key={task.id} className="flex items-center gap-3 py-3">
+            <CheckButton
+              checked={done}
+              onToggle={() => onToggleTask(task.id)}
+              label={`Mark "${task.name}" ${done ? 'incomplete' : 'complete'}`}
+            />
+            <StrikeText done={done} className="block min-w-0 flex-1 truncate text-base">
+              {task.name}
+            </StrikeText>
+            <button
+              onClick={() => onEditTask(task)}
+              aria-label={`Edit ${task.name}`}
+              className="shrink-0 rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
+            >
+              <Pencil size={16} />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

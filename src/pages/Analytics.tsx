@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Award, BarChart3, FileText } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Badge';
+import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamScoreTrendChart } from '@/components/features/analytics/ExamScoreTrendChart';
 import { TaskCompletionTrendChart } from '@/components/features/analytics/TaskCompletionTrendChart';
 import { MonthlyReportSheet } from '@/components/features/analytics/MonthlyReportSheet';
@@ -58,27 +58,31 @@ export function Analytics() {
 
   if (completedExams.length === 0 && tasks.length === 0 && studySessions.length === 0) {
     return (
-      <div className="py-6">
-        <h1 className="font-display text-2xl font-semibold text-ink">Analytics</h1>
-        <div className="mt-5">
+      <Stagger className="space-y-8 py-8">
+        <Rise as="header">
+          <p className="eyebrow">Insights</p>
+          <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Analytics</h1>
+        </Rise>
+        <Rise>
           <EmptyState
             title="Not enough data yet"
-            description="Analytics build up automatically from exams and tasks you record — nothing is estimated."
+            description="Analytics build up automatically from exams and tasks you record. Nothing is estimated."
             icon={BarChart3}
           />
-        </div>
-      </div>
+        </Rise>
+      </Stagger>
     );
   }
 
   return (
-    <div className="space-y-5 py-6">
-      <h1 className="font-display text-2xl font-semibold text-ink">Analytics</h1>
+    <Stagger className="space-y-10 py-8">
+      <Rise as="header">
+        <p className="eyebrow">Insights</p>
+        <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Analytics</h1>
+      </Rise>
 
-      <GlassCard className="flex items-center gap-4 p-4">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-accent/[0.12] text-accent">
-          <FileText size={22} />
-        </div>
+      <Rise className="flex items-center gap-4 border-y border-border py-4">
+        <FileText size={22} className="shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-ink">Monthly report</p>
           <p className="text-sm text-ink-muted">Download a detailed breakdown of any month.</p>
@@ -86,50 +90,49 @@ export function Analytics() {
         <Button size="sm" onClick={() => setReportOpen(true)}>
           Open
         </Button>
-      </GlassCard>
+      </Rise>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricCard label="Total exams" value={exams.length} />
-        <MetricCard label="Average percentage" value={avgPercentage} suffix="%" />
-        <MetricCard label="Total tasks" value={tasks.length} />
-        <MetricCard label="Task completion" value={taskCompletionRate} suffix="%" />
-      </div>
+      <Rise className="grid grid-cols-2 gap-x-6 gap-y-7 border-b border-border pb-7 md:grid-cols-4">
+        <Metric label="Total exams" value={exams.length} />
+        <Metric label="Average" value={avgPercentage} suffix="%" />
+        <Metric label="Total tasks" value={tasks.length} />
+        <Metric label="Task completion" value={taskCompletionRate} suffix="%" />
+      </Rise>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <Rise className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ExamScoreTrendChart exams={completedExams} />
         <TaskCompletionTrendChart tasks={tasks} />
-      </div>
+      </Rise>
 
       {milestones.length > 0 && (
-        <GlassCard className="p-5">
-          <p className="mb-3 text-sm font-medium text-ink-muted">Milestones</p>
-          <ul className="space-y-3">
+        <Section label="Milestones">
+          <ul className="divide-y divide-border">
             {milestones.map((m) => (
-              <li key={m.id} className="flex items-start gap-3">
+              <li key={m.id} className="flex items-start gap-3 py-3">
                 <Award size={18} className="mt-0.5 shrink-0 text-accent" />
                 <div>
-                  <p className="text-sm text-ink">{m.label}</p>
-                  {m.detail && <p className="text-xs text-ink-faint">{m.detail}</p>}
+                  <p className="text-base text-ink">{m.label}</p>
+                  {m.detail && <p className="text-sm text-ink-muted">{m.detail}</p>}
                 </div>
               </li>
             ))}
           </ul>
-        </GlassCard>
+        </Section>
       )}
 
       <MonthlyReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
-    </div>
+    </Stagger>
   );
 }
 
-function MetricCard({ label, value, suffix }: { label: string; value: number | null; suffix?: string }) {
-  const animated = useCountUp(value ?? 0, 700, suffix === '%' ? 1 : 0);
+function Metric({ label, value, suffix }: { label: string; value: number | null; suffix?: string }) {
+  const animated = useCountUp(value ?? 0, 900, suffix === '%' ? 1 : 0);
   return (
-    <GlassCard className="p-4">
-      <p className="text-xs text-ink-faint">{label}</p>
-      <p className="mt-1 font-display text-xl font-semibold tabular-nums text-ink">
+    <div>
+      <p className="eyebrow">{label}</p>
+      <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">
         {value === null ? '—' : `${animated}${suffix ?? ''}`}
       </p>
-    </GlassCard>
+    </div>
   );
 }

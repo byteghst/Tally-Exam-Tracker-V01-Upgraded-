@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Bell, BellOff, LogOut, AlertTriangle } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Switch, ToggleRow } from '@/components/ui/Switch';
+import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { UpdateCard } from '@/components/features/update/UpdateCard';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
@@ -50,6 +52,35 @@ function formatWhen(d: Date): string {
     hour: 'numeric',
     minute: '2-digit'
   });
+}
+
+/** A row of mutually exclusive options: the chosen one is filled with ink. */
+function Choice<T extends string>({
+  options,
+  value,
+  onChange
+}: {
+  options: T[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => (
+        <button
+          key={option}
+          onClick={() => onChange(option)}
+          aria-pressed={value === option}
+          className={clsx(
+            'rounded-full border px-4 py-1.5 text-sm font-semibold capitalize transition-colors duration-200',
+            value === option ? 'border-ink bg-ink text-surface' : 'border-border text-ink-muted hover:text-ink'
+          )}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function Settings() {
@@ -148,157 +179,114 @@ export function Settings() {
   const prefs = settings.notificationPrefs;
 
   return (
-    <div className="space-y-6 py-6">
-      <h1 className="font-display text-2xl font-semibold text-ink">Settings</h1>
+    <Stagger className="space-y-10 py-8">
+      <Rise as="header">
+        <p className="eyebrow">Preferences</p>
+        <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Settings</h1>
+      </Rise>
 
-      <GlassCard className="space-y-3 p-5">
-        <h2 className="font-medium text-ink">Account</h2>
-        <p className="text-sm text-ink-muted">
-          Signed in as <span className="text-ink">{user?.email}</span>. Your exams, tasks and configs sync to every
-          device you sign in on.
+      <Section label="Account">
+        <p className="font-serif text-2xl italic leading-snug text-ink">{user?.email}</p>
+        <p className="mt-2 text-sm text-ink-muted">
+          Your exams, tasks and configs sync to every device you sign in on.
         </p>
-        <Button variant="secondary" size="sm" onClick={() => setSignOutConfirmOpen(true)}>
+        <Button variant="secondary" size="sm" className="mt-4" onClick={() => setSignOutConfirmOpen(true)}>
           <LogOut className="h-4 w-4" /> Sign out
         </Button>
-      </GlassCard>
+      </Section>
 
-      <GlassCard className="space-y-3 p-5">
-        <h2 className="font-medium text-ink">Personal</h2>
-        <Input
-          label="Your name (optional)"
-          value={settings.userName ?? ''}
-          onChange={(e) => updateSettings({ userName: e.target.value || undefined })}
-          placeholder="Used for the Dashboard greeting"
-        />
-        <p className="-mt-1 text-xs text-ink-faint">
-          Saved to your account, so it stays the same after app updates and on all your devices. Change it here any
-          time.
-        </p>
-        <Select
-          label="Default exam type when adding"
-          value={settings.defaultExamType}
-          onChange={(e) => updateSettings({ defaultExamType: e.target.value as ExamType })}
-        >
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </Select>
-      </GlassCard>
-
-      <GlassCard className="space-y-4 p-5">
-        <h2 className="font-medium text-ink">Appearance</h2>
-        <div className="flex gap-2">
-          {THEME_OPTIONS.map((mode) => (
-            <button
-              key={mode}
-              onClick={() => updateSettings({ theme: mode })}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium capitalize ${
-                settings.theme === mode ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
+      <Section label="Personal">
+        <div className="space-y-4">
+          <Input
+            label="Your name (optional)"
+            value={settings.userName ?? ''}
+            onChange={(e) => updateSettings({ userName: e.target.value || undefined })}
+            placeholder="Used for the Dashboard greeting"
+          />
+          <p className="-mt-2 text-xs text-ink-faint">
+            Saved to your account, so it stays the same after app updates and on all your devices.
+          </p>
+          <Select
+            label="Default exam type when adding"
+            value={settings.defaultExamType}
+            onChange={(e) => updateSettings({ defaultExamType: e.target.value as ExamType })}
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </Select>
         </div>
-        <p className="text-xs text-ink-faint">
-          Glass, blur and motion are tuned for a consistent look and are no longer adjustable here.
-        </p>
-      </GlassCard>
+      </Section>
 
-      <GlassCard className="space-y-3 p-5">
-        <h2 className="font-medium text-ink">Dashboard</h2>
+      <Section label="Appearance">
+        <Choice options={THEME_OPTIONS} value={settings.theme} onChange={(theme) => updateSettings({ theme })} />
+      </Section>
 
-        <div className="space-y-2">
-          <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
-            Momentum tracker
-            <input
-              type="checkbox"
-              checked={settings.streaksEnabled}
-              onChange={(e) => updateSettings({ streaksEnabled: e.target.checked })}
-              className="h-4 w-4 rounded accent-accent"
-            />
-          </label>
-          <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
-            Daily Mission
-            <input
-              type="checkbox"
-              checked={settings.showDailyMission}
-              onChange={(e) => updateSettings({ showDailyMission: e.target.checked })}
-              className="h-4 w-4 rounded accent-accent"
-            />
-          </label>
+      <Section label="Dashboard">
+        <div className="divide-y divide-border">
+          <ToggleRow
+            label="Momentum tracker"
+            checked={settings.streaksEnabled}
+            onChange={(streaksEnabled) => updateSettings({ streaksEnabled })}
+          />
+          <ToggleRow
+            label="Daily Mission"
+            checked={settings.showDailyMission}
+            onChange={(showDailyMission) => updateSettings({ showDailyMission })}
+          />
         </div>
 
-        <p className="text-xs text-ink-faint">
-          The Next Exam card always shows above the widgets below and can't be hidden or reordered.
+        <p className="mt-4 text-xs text-ink-faint">
+          The next-exam countdown always shows above the widgets below and can't be hidden or reordered.
         </p>
 
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-ink-muted">Density</span>
-          <div className="flex gap-2">
-            {DENSITY_OPTIONS.map((d) => (
-              <button
-                key={d}
-                onClick={() => updateSettings({ density: d })}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium capitalize ${
-                  settings.density === d ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
+        <p className="eyebrow mt-6">Density</p>
+        <div className="mt-3">
+          <Choice
+            options={DENSITY_OPTIONS}
+            value={settings.density}
+            onChange={(density) => updateSettings({ density })}
+          />
         </div>
 
-        <p className="text-sm text-ink-muted">Choose which widgets show below, and in what order.</p>
-        <div className="space-y-2">
+        <p className="eyebrow mt-6">Widgets</p>
+        <ul className="mt-2 divide-y divide-border">
           {widgetItems.map((w, i) => (
-            <div key={w.id} className="flex items-center justify-between rounded-control border border-border p-3">
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={w.visible}
-                  onChange={() => toggleWidget(w.id)}
-                  className="h-4 w-4 rounded accent-accent"
-                />
-                {WIDGET_LABELS[w.id]}
-              </label>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => moveWidget(i, -1)}
-                  disabled={i === 0}
-                  aria-label={`Move ${WIDGET_LABELS[w.id]} up`}
-                  className="rounded-control p-1.5 text-ink-muted hover:bg-white/5 hover:text-ink disabled:opacity-30"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button
-                  onClick={() => moveWidget(i, 1)}
-                  disabled={i === widgetItems.length - 1}
-                  aria-label={`Move ${WIDGET_LABELS[w.id]} down`}
-                  className="rounded-control p-1.5 text-ink-muted hover:bg-white/5 hover:text-ink disabled:opacity-30"
-                >
-                  <ChevronDown size={16} />
-                </button>
-              </div>
-            </div>
+            <li key={w.id} className="flex items-center gap-2 py-3">
+              <span className="min-w-0 flex-1 text-base text-ink">{WIDGET_LABELS[w.id]}</span>
+              <button
+                onClick={() => moveWidget(i, -1)}
+                disabled={i === 0}
+                aria-label={`Move ${WIDGET_LABELS[w.id]} up`}
+                className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                onClick={() => moveWidget(i, 1)}
+                disabled={i === widgetItems.length - 1}
+                aria-label={`Move ${WIDGET_LABELS[w.id]} down`}
+                className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
+              >
+                <ChevronDown size={16} />
+              </button>
+              <Switch checked={w.visible} onChange={() => toggleWidget(w.id)} label={`Show ${WIDGET_LABELS[w.id]}`} />
+            </li>
           ))}
-        </div>
-      </GlassCard>
+        </ul>
+      </Section>
 
-      <GlassCard className="space-y-3 p-5">
-        <h2 className="font-medium text-ink">Notifications</h2>
-
+      <Section label="Notifications">
         {permission === 'unsupported' ? (
           <p className="text-sm text-ink-muted">Notifications aren't supported in this browser.</p>
         ) : (
           <>
-            <div className="flex items-center justify-between rounded-control border border-border p-3">
-              <div className="flex items-center gap-2 text-sm text-ink">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-base text-ink">
                 {permission === 'granted' ? (
-                  <Bell size={16} className="text-success" />
+                  <Bell size={18} className="text-forest" />
                 ) : (
-                  <BellOff size={16} className="text-ink-faint" />
+                  <BellOff size={18} className="text-ink-faint" />
                 )}
                 {permission === 'granted' ? 'Notifications enabled' : 'Notifications not enabled'}
               </div>
@@ -310,15 +298,15 @@ export function Settings() {
             </div>
 
             {isNative && permission !== 'granted' && (
-              <p className="text-xs text-ink-faint">
+              <p className="mt-2 text-xs text-ink-faint">
                 If no prompt appears, open your phone's Settings → Apps → Tally → Notifications and turn them on.
               </p>
             )}
 
             {isNative && permission === 'granted' && native?.exactAlarms === 'denied' && (
-              <div className="rounded-control border border-warning/40 bg-warning/10 p-3">
-                <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
-                  <AlertTriangle size={14} className="text-warning" /> Exact timing is off
+              <div className="mt-4 border-l-2 border-saffron bg-saffron/10 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                  <AlertTriangle size={14} className="text-saffron" /> Exact timing is off
                 </p>
                 <p className="mt-1 text-xs text-ink-muted">
                   Android may deliver reminders several minutes late. Allow "Alarms &amp; reminders" for Tally to fix
@@ -331,80 +319,61 @@ export function Settings() {
             )}
 
             {isNative && permission === 'granted' && native && (
-              <p className="text-xs text-ink-muted">
+              <p className="mt-3 text-xs text-ink-muted">
                 {native.scheduledCount === 0 || !native.next
                   ? 'No reminders scheduled right now.'
                   : `${native.scheduledCount} reminder${native.scheduledCount === 1 ? '' : 's'} scheduled. Next: ${native.next.title} — ${formatWhen(native.next.at)}`}
               </p>
             )}
 
-            <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
-              Exam reminders
-              <input
-                type="checkbox"
+            <div className="mt-3 divide-y divide-border border-t border-border">
+              <ToggleRow
+                label="Exam reminders"
                 checked={prefs.exams}
-                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, exams: e.target.checked } })}
-                className="h-4 w-4 rounded accent-accent"
+                onChange={(exams) => updateSettings({ notificationPrefs: { ...prefs, exams } })}
               />
-            </label>
-            <label className="flex items-center justify-between rounded-control border border-border p-3 text-sm text-ink">
-              Task reminders
-              <input
-                type="checkbox"
+              <ToggleRow
+                label="Task reminders"
                 checked={prefs.tasks}
-                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, tasks: e.target.checked } })}
-                className="h-4 w-4 rounded accent-accent"
+                onChange={(tasks) => updateSettings({ notificationPrefs: { ...prefs, tasks } })}
               />
-            </label>
-            <label className="flex items-center justify-between gap-3 rounded-control border border-border p-3 text-sm text-ink">
-              <span>
-                Evening-before exam heads-up
-                <span className="block text-xs text-ink-faint">8:00 PM the night before each exam</span>
-              </span>
-              <input
-                type="checkbox"
+              <ToggleRow
+                label="Evening-before exam heads-up"
+                hint="8:00 PM the night before each exam"
                 checked={prefs.examEveningBefore !== false}
-                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, examEveningBefore: e.target.checked } })}
-                className="h-4 w-4 shrink-0 rounded accent-accent"
+                onChange={(examEveningBefore) => updateSettings({ notificationPrefs: { ...prefs, examEveningBefore } })}
               />
-            </label>
-            <label className="flex items-center justify-between gap-3 rounded-control border border-border p-3 text-sm text-ink">
-              <span>
-                Morning briefing
-                <span className="block text-xs text-ink-faint">8:00 AM on days with an exam or tasks due</span>
-              </span>
-              <input
-                type="checkbox"
+              <ToggleRow
+                label="Morning briefing"
+                hint="8:00 AM on days with an exam or tasks due"
                 checked={prefs.morningBriefing !== false}
-                onChange={(e) => updateSettings({ notificationPrefs: { ...prefs, morningBriefing: e.target.checked } })}
-                className="h-4 w-4 shrink-0 rounded accent-accent"
+                onChange={(morningBriefing) => updateSettings({ notificationPrefs: { ...prefs, morningBriefing } })}
               />
-            </label>
+            </div>
 
             {permission === 'granted' && (
-              <Button size="sm" variant="secondary" onClick={handleTestNotification}>
+              <Button size="sm" variant="secondary" className="mt-4" onClick={handleTestNotification}>
                 Send a test notification
               </Button>
             )}
 
-            <p className="text-xs text-ink-faint">
+            <p className="mt-4 text-xs text-ink-faint">
               {isNative
                 ? 'The two automatic reminders above need no setup. You can also set a reminder time on any exam or task. Android delivers them even when Tally is closed.'
                 : "Set a reminder time on any exam or task. In a browser, this can only notify you while the tab or installed app is actually open — there's no way for a website to wake up on its own to fire a notification while fully closed."}
             </p>
           </>
         )}
-      </GlassCard>
+      </Section>
 
       <UpdateCard />
 
-      <GlassCard className="p-5">
-        <Button variant="danger" size="sm" onClick={() => setResetConfirmOpen(true)}>
+      <Rise>
+        <Button variant="secondary" size="sm" className="text-danger" onClick={() => setResetConfirmOpen(true)}>
           Reset settings to default
         </Button>
-      </GlassCard>
-
-      <p className="pb-2 text-center text-xs text-ink-faint">{BUILD_LABEL}</p>
+        <p className="mt-8 text-center text-xs text-ink-faint">{BUILD_LABEL}</p>
+      </Rise>
 
       <ConfirmDialog
         open={resetConfirmOpen}
@@ -423,6 +392,6 @@ export function Settings() {
         description="You'll need to sign in again to see your synced exams and tasks on this device."
         confirmLabel="Sign out"
       />
-    </div>
+    </Stagger>
   );
 }

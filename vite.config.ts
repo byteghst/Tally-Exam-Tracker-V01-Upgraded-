@@ -31,9 +31,9 @@ export default defineConfig({
         name: 'Tally',
         short_name: 'Tally',
         description: 'Tally — a manual-first exam and task tracker, synced across your devices',
-        // Warm paper for the browser/app chrome, warm ink behind the icon on the launch screen.
+        // Warm paper for the browser/app chrome, pure black (the logo tile) behind the icon on the launch screen.
         theme_color: '#F6F1E8',
-        background_color: '#1C1814',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

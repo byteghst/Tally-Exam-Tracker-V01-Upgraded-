@@ -6,17 +6,19 @@ export const CARD_HEIGHT = 1350;
 
 // Brand tokens (kept as literal hex here rather than reading CSS variables,
 // since canvas drawing happens outside the CSS cascade entirely).
-// accent = the logo's blue (#0055FE).
+// Warm paper and ink, persimmon accent, forest for the best result and rose for
+// the lowest. There is no blue anywhere.
 const COLOR = {
-  bg: '#F2F3F6',
-  ink: '#0F1216',
-  inkMuted: '#5A6374',
-  inkFaint: '#96A0AD',
-  accent: '#0055FE',
-  accentSoft: '#E6EEFF',
-  success: '#3EBD7E',
-  border: '#E0E4EB',
-  white: '#FFFFFF'
+  bg: '#F6F1E8',
+  ink: '#1C1814',
+  inkMuted: '#686056',
+  inkFaint: '#92897D',
+  accent: '#D94F2D',
+  accentSoft: '#F9E3D8',
+  success: '#2F7D5B',
+  low: '#C9486B',
+  border: '#DDD5C7',
+  white: '#FBF8F2'
 };
 
 // Same font roles as the app itself (bundled via @fontsource in main.tsx).
@@ -31,7 +33,7 @@ const FONT_UI = "'Plus Jakarta Sans', system-ui, sans-serif";
 const CARD_FONT_SPECS = [
   `600 34px ${FONT_DISPLAY}`,
   `700 48px ${FONT_DISPLAY}`,
-  `700 64px ${FONT_NUMERIC}`,
+  `700 60px ${FONT_NUMERIC}`,
   `400 26px ${FONT_UI}`,
   `500 19px ${FONT_UI}`,
   `500 20px ${FONT_UI}`,
@@ -93,6 +95,7 @@ function lerp(a: number, b: number, t: number): number {
 export interface ExamTrendCardStats {
   latest: number;
   highest: number;
+  lowest: number;
   average: number;
 }
 
@@ -101,6 +104,7 @@ export function computeCardStats(points: ExamTrendPoint[]): ExamTrendCardStats {
   return {
     latest: values[values.length - 1],
     highest: Math.max(...values),
+    lowest: Math.min(...values),
     average: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10
   };
 }
@@ -128,6 +132,15 @@ export function drawExamTrendCard(
 ) {
   const p = clamp01(rawProgress);
   const stats = computeCardStats(points);
+
+  // first occurrence of the highest / lowest result, marked on the line
+  let highIndex = 0;
+  let lowIndex = 0;
+  points.forEach((pt, i) => {
+    if (pt.percentage > points[highIndex].percentage) highIndex = i;
+    if (pt.percentage < points[lowIndex].percentage) lowIndex = i;
+  });
+  const hasSpread = highIndex !== lowIndex;
 
   ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
   ctx.fillStyle = COLOR.bg;
@@ -176,27 +189,28 @@ export function drawExamTrendCard(
   const columns = [
     { label: 'LATEST', value: stats.latest, color: COLOR.accent },
     { label: 'HIGHEST', value: stats.highest, color: COLOR.success },
+    { label: 'LOWEST', value: stats.lowest, color: COLOR.low },
     { label: 'AVERAGE', value: stats.average, color: COLOR.ink }
   ];
-  const colWidth = (CARD_WIDTH - pad * 2) / 3;
+  const colWidth = (CARD_WIDTH - pad * 2) / columns.length;
   ctx.save();
   ctx.globalAlpha = clamp01(p / 0.1);
   columns.forEach((col, i) => {
-    const cx = pad + colWidth * i;
+    const cx = pad + colWidth * i + (i > 0 ? 24 : 0);
     const animatedValue = Math.round(col.value * statsProgress * 10) / 10;
     ctx.fillStyle = COLOR.inkFaint;
     ctx.font = `600 20px ${FONT_UI}`;
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(col.label, cx, statY);
     ctx.fillStyle = col.color;
-    ctx.font = `700 64px ${FONT_NUMERIC}`;
+    ctx.font = `700 60px ${FONT_NUMERIC}`;
     ctx.fillText(`${animatedValue}%`, cx, statY + 66);
     if (i > 0) {
       ctx.strokeStyle = COLOR.border;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx - 28, statY - 28);
-      ctx.lineTo(cx - 28, statY + 70);
+      ctx.moveTo(cx - 24, statY - 28);
+      ctx.lineTo(cx - 24, statY + 70);
       ctx.stroke();
     }
   });
@@ -275,7 +289,7 @@ export function drawExamTrendCard(
     // area fill
     const gradient = ctx.createLinearGradient(0, chartTop, 0, chartBottom);
     gradient.addColorStop(0, COLOR.accentSoft);
-    gradient.addColorStop(1, 'rgba(230,238,255,0)');
+    gradient.addColorStop(1, 'rgba(249,227,216,0)');
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(visiblePoints[0].x, chartBottom);
@@ -297,22 +311,33 @@ export function drawExamTrendCard(
     ctx.stroke();
     ctx.restore();
 
-    // dots + value labels for fully-reached points
+    // dots + value labels for fully-reached points; the highest and lowest
+    // results get a bigger, differently coloured marker with their value.
     points.forEach((pt, i) => {
       if (i > visibleSpan + 0.001) return;
       const dotProgress = clamp01((visibleSpan - i) * 5 + 1);
       const scale = dotProgress < 1 ? 0.7 + 0.3 * easeOutCubic(dotProgress) : 1;
       const x = xFor(i);
       const y = yFor(pt.percentage);
+      const isHigh = hasSpread && i === highIndex;
+      const isLow = hasSpread && i === lowIndex;
+      const ring = isHigh ? COLOR.success : isLow ? COLOR.low : COLOR.accent;
       ctx.save();
       ctx.globalAlpha = dotProgress;
       ctx.beginPath();
-      ctx.arc(x, y, 9 * scale, 0, Math.PI * 2);
+      ctx.arc(x, y, (isHigh || isLow ? 14 : 9) * scale, 0, Math.PI * 2);
       ctx.fillStyle = COLOR.white;
       ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = COLOR.accent;
+      ctx.lineWidth = isHigh || isLow ? 6 : 4;
+      ctx.strokeStyle = ring;
       ctx.stroke();
+      if (isHigh || isLow) {
+        ctx.fillStyle = ring;
+        ctx.font = `700 22px ${FONT_UI}`;
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = i >= n * 0.75 ? 'right' : i <= n * 0.15 ? 'left' : 'center';
+        ctx.fillText(`${isHigh ? 'High' : 'Low'} ${pt.percentage}%`, x, isHigh ? y - 26 : y + 46);
+      }
       ctx.restore();
     });
   }
