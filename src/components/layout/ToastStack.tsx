@@ -1,72 +1,59 @@
-import { useEffect, useState } from 'react';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
-import { useUIStore, type Toast } from '@/store/uiStore';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useUIStore, TOAST_DURATION_MS } from '@/store/uiStore';
+import { EASE_OUT } from '@/lib/motion';
 
-const EXIT_MS = 200;
-
-interface DisplayToast extends Toast {
-  leaving?: boolean;
-}
-
+/**
+ * Confirmation messages, in the app's own voice: a flat paper strip with a thin
+ * coloured edge (forest = done, crimson = problem), the message in serif, and a
+ * hairline that drains while the message is on screen. They slide up into place
+ * above the navigation bar and slide away when dismissed.
+ */
 export function ToastStack() {
   const { toasts, dismissToast } = useUIStore();
-  const [visible, setVisible] = useState<DisplayToast[]>([]);
-
-  // Toasts are removed from the store instantly (both on auto-timeout and
-  // manual Undo-click), but we want a brief exit transition rather than a
-  // hard pop. So this component keeps its own shadow list: an id that
-  // disappears from the store gets marked `leaving` here first, and is only
-  // actually dropped from view ~200ms later.
-  useEffect(() => {
-    setVisible((prev) => {
-      const storeIds = new Set(toasts.map((t) => t.id));
-      const stillTracked = prev
-        .filter((t) => storeIds.has(t.id) || t.leaving)
-        .map((t) => (storeIds.has(t.id) ? t : { ...t, leaving: true }));
-      const newlyAdded = toasts.filter((t) => !prev.some((p) => p.id === t.id));
-      return [...stillTracked, ...newlyAdded];
-    });
-  }, [toasts]);
-
-  useEffect(() => {
-    if (!visible.some((t) => t.leaving)) return;
-    const timer = setTimeout(() => {
-      setVisible((prev) => prev.filter((t) => !t.leaving));
-    }, EXIT_MS);
-    return () => clearTimeout(timer);
-  }, [visible]);
-
-  if (visible.length === 0) return null;
 
   return (
-    <div className="fixed bottom-24 left-1/2 z-[70] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 md:bottom-6">
-      {visible.map((toast) => {
-        const Icon = toast.tone === 'error' ? AlertCircle : CheckCircle2;
-        return (
-          // Inverted flat toast: ink background, paper text, no shadow.
-          <div
-            key={toast.id}
-            role="status"
-            className={`flex items-center gap-3 rounded-control bg-ink px-4 py-3 text-surface transition-all duration-200 ${
-              toast.leaving ? 'translate-y-1 opacity-0' : 'toast-enter translate-y-0 opacity-100'
-            }`}
-          >
-            <Icon size={18} className={`shrink-0 ${toast.tone === 'error' ? 'text-rose' : 'text-forest'}`} />
-            <span className="flex-1 text-sm">{toast.message}</span>
-            {toast.action && (
-              <button
-                onClick={() => {
-                  toast.action?.onClick();
-                  dismissToast(toast.id);
-                }}
-                className="shrink-0 text-sm font-semibold text-accent"
-              >
-                {toast.action.label}
-              </button>
-            )}
-          </div>
-        );
-      })}
+    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[70] mx-auto flex w-full max-w-md flex-col gap-2 px-4 md:bottom-6">
+      <AnimatePresence initial={false} mode="popLayout">
+        {toasts.map((toast) => {
+          const isError = toast.tone === 'error';
+          return (
+            <motion.div
+              key={toast.id}
+              layout
+              role="status"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.45, ease: EASE_OUT }}
+              className="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-control border border-border bg-surface-raised py-3.5 pl-5 pr-4"
+            >
+              <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${isError ? 'bg-danger' : 'bg-forest'}`} />
+
+              <p className="min-w-0 flex-1 font-serif text-xl leading-snug text-ink">{toast.message}</p>
+
+              {toast.action && (
+                <button
+                  onClick={() => {
+                    toast.action?.onClick();
+                    dismissToast(toast.id);
+                  }}
+                  className="shrink-0 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+                >
+                  {toast.action.label}
+                </button>
+              )}
+
+              <motion.span
+                aria-hidden
+                className="absolute bottom-0 left-0 h-0.5 bg-ink/15"
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: TOAST_DURATION_MS / 1000, ease: 'linear' }}
+              />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }
