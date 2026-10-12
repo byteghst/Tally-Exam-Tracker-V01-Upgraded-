@@ -6,14 +6,18 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
+/**
+ * Editorial field: a small spaced label above a bare line. No box. The line
+ * turns persimmon (and doubles in weight) when the field is focused.
+ */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, className, id, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id ?? props.name ?? generatedId;
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-ink-muted">
+          <label htmlFor={inputId} className="eyebrow">
             {label}
           </label>
         )}
@@ -21,9 +25,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={clsx(
-            'h-11 rounded-control border bg-surface px-3 text-ink placeholder:text-ink-faint',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-            error ? 'border-danger' : 'border-border',
+            'h-11 rounded-none border-0 border-b bg-transparent px-0 text-lg text-ink placeholder:text-ink-faint/70',
+            'transition-[border-color,box-shadow] duration-200 focus-visible:outline-none',
+            error
+              ? 'border-danger focus-visible:shadow-[0_1px_0_0_rgb(var(--danger))]'
+              : 'border-ink/25 focus-visible:border-accent focus-visible:shadow-[0_1px_0_0_rgb(var(--accent))]',
             className
           )}
           aria-invalid={!!error}
