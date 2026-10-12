@@ -50,8 +50,10 @@ echo "Stable signing config appended to android/app/build.gradle"
 # small and blurry when opening the app. This points the system launch
 # screen at the full-size 1024px logo (resources/icon.png) on the same pure
 # black as the logo tile, so it is crisp and fills the screen properly.
-# The logo is inset 5% so its corners stay inside the circle Android 12
-# crops the launch icon to.
+# No inset: the artwork is a square black tile on a black background, so the
+# tile's edges are invisible, and the mark is already sized (see
+# scripts/build-icons.mjs) to sit inside the circle Android 12 crops the
+# launch icon to.
 # ---------------------------------------------------------------------------
 RES=android/app/src/main/res
 
@@ -64,10 +66,10 @@ if [ -f resources/icon.png ]; then
 <?xml version="1.0" encoding="utf-8"?>
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/splash_logo_src"
-    android:insetLeft="5%"
-    android:insetTop="5%"
-    android:insetRight="5%"
-    android:insetBottom="5%" />
+    android:insetLeft="0%"
+    android:insetTop="0%"
+    android:insetRight="0%"
+    android:insetBottom="0%" />
 XML
 
   cat > "$RES/values-v31/styles.xml" <<'XML'
