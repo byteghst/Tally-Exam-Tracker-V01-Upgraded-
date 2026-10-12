@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Sheet } from '@/components/ui/Sheet';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
+import { Segmented } from '@/components/ui/Segmented';
+import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { examFormSchema, type ExamFormValues } from '@/lib/validation/examSchema';
 import { useExamStore } from '@/store/examStore';
@@ -10,6 +14,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useUIStore } from '@/store/uiStore';
 import { calculateScore } from '@/lib/scoring';
 import { todayISO } from '@/lib/dates';
+import { EASE_OUT } from '@/lib/motion';
 import type { Exam, ExamStatus, ExamType } from '@/types';
 
 interface ExamFormProps {
@@ -22,12 +27,18 @@ interface ExamFormProps {
 
 type FieldErrors = Record<string, string | undefined>;
 
-const TYPE_LABELS: Record<ExamType, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
-const STATUS_LABELS: Record<ExamStatus, string> = {
-  upcoming: 'Upcoming',
-  completed: 'Completed',
-  missed: 'Missed'
-};
+// Same colours as the dots on the Exams screen: daily = persimmon, weekly = saffron, monthly = forest.
+const TYPE_OPTIONS = [
+  { value: 'daily' as ExamType, label: 'Daily', color: 'bg-accent' },
+  { value: 'weekly' as ExamType, label: 'Weekly', color: 'bg-saffron' },
+  { value: 'monthly' as ExamType, label: 'Monthly', color: 'bg-forest' }
+];
+
+const STATUS_OPTIONS = [
+  { value: 'upcoming' as ExamStatus, label: 'Upcoming', color: 'bg-saffron' },
+  { value: 'completed' as ExamStatus, label: 'Completed', color: 'bg-forest' },
+  { value: 'missed' as ExamStatus, label: 'Missed', color: 'bg-danger' }
+];
 
 function toFormState(exam: Exam | undefined, defaultDate: string | undefined, defaultType: ExamType) {
   return {
@@ -55,6 +66,10 @@ function toFormState(exam: Exam | undefined, defaultDate: string | undefined, de
     // or unlocked for a one-off, manual override
     unlockedStructure: !exam?.configId
   };
+}
+
+function SectionHead({ children }: { children: string }) {
+  return <p className="eyebrow border-t border-border pt-6">{children}</p>;
 }
 
 export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: ExamFormProps) {
@@ -224,6 +239,8 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
     }
   }
 
+  const structureLocked = !!form.configId && !form.unlockedStructure;
+
   return (
     <Sheet
       open={open}
@@ -240,12 +257,8 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
         </div>
       }
     >
-      <div className="space-y-4">
-        <Select
-          label="Config (optional)"
-          value={form.configId}
-          onChange={(e) => handleConfigChange(e.target.value)}
-        >
+      <div className="space-y-6">
+        <Select label="Config (optional)" value={form.configId} onChange={(e) => handleConfigChange(e.target.value)}>
           <option value="">Custom (enter numbers manually)</option>
           {configs.map((c) => (
             <option key={c.id} value={c.id}>
@@ -262,180 +275,158 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
           placeholder="e.g. Weekly Exam #6"
         />
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-ink-muted">Type</legend>
-          <div className="flex gap-2">
-            {(['daily', 'weekly', 'monthly'] as ExamType[]).map((t) => {
-              const disabled = !!availableTypesForConfig && !availableTypesForConfig.includes(t);
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleTypeChange(t)}
-                  aria-pressed={form.type === t}
-                  className={`flex-1 rounded-control border px-3 py-2 text-sm font-medium ${
-                    form.type === t
-                      ? 'border-accent bg-accent/15 text-accent'
-                      : disabled
-                        ? 'border-border/50 text-ink-faint'
-                        : 'border-border text-ink-muted'
-                  }`}
-                >
-                  {TYPE_LABELS[t]}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        <Segmented
+          label="Type"
+          options={TYPE_OPTIONS.map((o) => ({
+            ...o,
+            disabled: !!availableTypesForConfig && !availableTypesForConfig.includes(o.value)
+          }))}
+          value={form.type}
+          onChange={handleTypeChange}
+        />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-5">
           <Input label="Date" type="date" value={form.date} onChange={(e) => set('date', e.target.value)} error={errors.date} />
           <Input label="Start" type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} />
         </div>
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-ink-muted">Status</legend>
-          <div className="flex flex-wrap gap-2">
-            {(['upcoming', 'completed', 'missed'] as ExamStatus[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => set('status', s)}
-                aria-pressed={form.status === s}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                  form.status === s ? 'bg-accent text-white' : 'bg-white/5 text-ink-muted'
-                }`}
-              >
-                {STATUS_LABELS[s]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <Segmented label="Status" options={STATUS_OPTIONS} value={form.status} onChange={(s) => set('status', s)} />
 
-        <div className="space-y-3 rounded-control border border-border p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-ink">Scoring structure</p>
-            {form.configId && (
-              <label className="flex items-center gap-1.5 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  checked={form.unlockedStructure}
-                  onChange={(e) => set('unlockedStructure', e.target.checked)}
-                  className="h-3.5 w-3.5 rounded accent-accent"
-                />
-                Override for this exam
-              </label>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="MCQ questions"
-              type="number"
-              inputMode="numeric"
-              disabled={!!form.configId && !form.unlockedStructure}
-              value={form.mcqCount}
-              onChange={(e) => set('mcqCount', e.target.value)}
-            />
-            <Input
-              label="Marks per MCQ"
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              disabled={!!form.configId && !form.unlockedStructure}
-              value={form.mcqMarksEach}
-              onChange={(e) => set('mcqMarksEach', e.target.value)}
-            />
-            <Input
-              label="Written questions"
-              type="number"
-              inputMode="numeric"
-              disabled={!!form.configId && !form.unlockedStructure}
-              value={form.writtenCount}
-              onChange={(e) => set('writtenCount', e.target.value)}
-            />
-            <Input
-              label="Marks per written Q"
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              disabled={!!form.configId && !form.unlockedStructure}
-              value={form.writtenMarksEach}
-              onChange={(e) => set('writtenMarksEach', e.target.value)}
-            />
-            <div className="col-span-2">
-              <Input
-                label="Negative mark / wrong"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                disabled={!!form.configId && !form.unlockedStructure}
-                value={form.negativeMarkPerWrong}
-                onChange={(e) => set('negativeMarkPerWrong', e.target.value)}
+        <SectionHead>Scoring structure</SectionHead>
+        {form.configId && (
+          <div className="-mt-3 flex items-center justify-between gap-4">
+            <p className="text-sm text-ink-muted">Numbers come from the config.</p>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-ink">Override</span>
+              <Switch
+                checked={form.unlockedStructure}
+                onChange={(checked) => set('unlockedStructure', checked)}
+                label="Override the config numbers for this exam"
               />
             </div>
           </div>
-        </div>
-
-        <div className="space-y-3 rounded-control border border-border p-3">
-          <p className="text-sm font-medium text-ink">Result</p>
-          <div className="grid grid-cols-3 gap-3">
+        )}
+        <div className="grid grid-cols-2 gap-x-5 gap-y-5">
+          <Input
+            label="MCQ questions"
+            type="number"
+            inputMode="numeric"
+            disabled={structureLocked}
+            value={form.mcqCount}
+            onChange={(e) => set('mcqCount', e.target.value)}
+            className="disabled:opacity-50"
+          />
+          <Input
+            label="Marks per MCQ"
+            type="number"
+            step="0.01"
+            inputMode="decimal"
+            disabled={structureLocked}
+            value={form.mcqMarksEach}
+            onChange={(e) => set('mcqMarksEach', e.target.value)}
+            className="disabled:opacity-50"
+          />
+          <Input
+            label="Written questions"
+            type="number"
+            inputMode="numeric"
+            disabled={structureLocked}
+            value={form.writtenCount}
+            onChange={(e) => set('writtenCount', e.target.value)}
+            className="disabled:opacity-50"
+          />
+          <Input
+            label="Marks per written Q"
+            type="number"
+            step="0.01"
+            inputMode="decimal"
+            disabled={structureLocked}
+            value={form.writtenMarksEach}
+            onChange={(e) => set('writtenMarksEach', e.target.value)}
+            className="disabled:opacity-50"
+          />
+          <div className="col-span-2">
             <Input
-              label="Correct"
+              label="Negative mark / wrong"
               type="number"
-              inputMode="numeric"
-              value={form.mcqCorrect}
-              onChange={(e) => set('mcqCorrect', e.target.value)}
-              error={errors.mcqCorrect}
-            />
-            <Input
-              label="Wrong"
-              type="number"
-              inputMode="numeric"
-              value={form.mcqWrong}
-              onChange={(e) => set('mcqWrong', e.target.value)}
-              error={errors.mcqWrong}
-            />
-            <Input
-              label="Unanswered (auto)"
-              type="number"
-              inputMode="numeric"
-              disabled
-              value={unansweredComputed}
+              step="0.01"
+              inputMode="decimal"
+              disabled={structureLocked}
+              value={form.negativeMarkPerWrong}
+              onChange={(e) => set('negativeMarkPerWrong', e.target.value)}
+              className="disabled:opacity-50"
             />
           </div>
-          <Input
-            label="Written marks obtained"
-            type="number"
-            step="0.01"
-            inputMode="decimal"
-            value={form.writtenMarksObtained}
-            onChange={(e) => set('writtenMarksObtained', e.target.value)}
-            error={errors.writtenMarksObtained}
-          />
-          <Input
-            label="Manual score override (optional)"
-            type="number"
-            step="0.01"
-            inputMode="decimal"
-            value={form.manualScoreOverride}
-            onChange={(e) => set('manualScoreOverride', e.target.value)}
-          />
-
-          {preview && (
-            <div className="rounded-control bg-accent/10 p-3 text-sm">
-              <p className="font-semibold text-accent">
-                {preview.finalScore} / {preview.totalMarks}
-                {preview.percentage !== null && ` (${preview.percentage}%)`}
-              </p>
-              <p className="text-xs text-ink-muted">
-                MCQ {preview.mcqScore} + Written {preview.writtenScore}
-                {preview.isManualOverride && ' — using manual override'}
-              </p>
-            </div>
-          )}
         </div>
 
+        <SectionHead>Result</SectionHead>
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            label="Correct"
+            type="number"
+            inputMode="numeric"
+            value={form.mcqCorrect}
+            onChange={(e) => set('mcqCorrect', e.target.value)}
+            error={errors.mcqCorrect}
+          />
+          <Input
+            label="Wrong"
+            type="number"
+            inputMode="numeric"
+            value={form.mcqWrong}
+            onChange={(e) => set('mcqWrong', e.target.value)}
+            error={errors.mcqWrong}
+          />
+          <Input label="Blank (auto)" type="number" inputMode="numeric" disabled value={unansweredComputed} className="opacity-60" />
+        </div>
+        <Input
+          label="Written marks obtained"
+          type="number"
+          step="0.01"
+          inputMode="decimal"
+          value={form.writtenMarksObtained}
+          onChange={(e) => set('writtenMarksObtained', e.target.value)}
+          error={errors.writtenMarksObtained}
+        />
+        <Input
+          label="Manual score override (optional)"
+          type="number"
+          step="0.01"
+          inputMode="decimal"
+          value={form.manualScoreOverride}
+          onChange={(e) => set('manualScoreOverride', e.target.value)}
+        />
+
+        {/* Live score: appears as soon as there's a structure to score against. */}
+        <AnimatePresence initial={false}>
+          {preview && (
+            <motion.div
+              key="preview"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: EASE_OUT }}
+              className="overflow-hidden"
+            >
+              <div className="border-l-2 border-accent bg-accent/10 px-4 py-3">
+                <p className="eyebrow !text-accent">Live score</p>
+                <p className="mt-1 font-serif text-5xl leading-none tracking-tight text-ink">
+                  {preview.finalScore}
+                  <span className="text-ink-faint"> / {preview.totalMarks}</span>
+                  {preview.percentage !== null && (
+                    <span className="ml-3 text-3xl text-accent">{preview.percentage}%</span>
+                  )}
+                </p>
+                <p className="mt-2 text-xs text-ink-muted">
+                  MCQ {preview.mcqScore} + Written {preview.writtenScore}
+                  {preview.isManualOverride && ' · using manual override'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <SectionHead>Extras</SectionHead>
         <Input
           label="Reminder (min before)"
           type="number"
@@ -444,18 +435,12 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
           onChange={(e) => set('reminderMinutesBefore', e.target.value)}
         />
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="exam-notes" className="text-sm font-medium text-ink-muted">
-            Notes (optional)
-          </label>
-          <textarea
-            id="exam-notes"
-            rows={3}
-            value={form.notes}
-            onChange={(e) => set('notes', e.target.value)}
-            className="rounded-control border border-border bg-surface px-3 py-2 text-ink placeholder:text-ink-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-        </div>
+        <Textarea
+          label="Notes (optional)"
+          rows={3}
+          value={form.notes}
+          onChange={(e) => set('notes', e.target.value)}
+        />
       </div>
     </Sheet>
   );
