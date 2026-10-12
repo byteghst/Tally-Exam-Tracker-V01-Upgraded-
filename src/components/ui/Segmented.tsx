@@ -8,6 +8,7 @@ export interface SegmentedOption<T extends string> {
   label: string;
   /** Tailwind background class for this option's selected state (defaults to ink). */
   color?: string;
+  disabled?: boolean;
 }
 
 interface SegmentedProps<T extends string> {
@@ -34,11 +35,13 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
             <button
               key={option.value}
               type="button"
+              disabled={option.disabled}
               aria-pressed={active}
               onClick={() => onChange(option.value)}
               className={clsx(
                 'relative flex-1 rounded-[7px] px-3 py-2 text-sm font-semibold capitalize transition-colors duration-200',
-                active ? 'text-accent-on' : 'text-ink-muted hover:text-ink'
+                'disabled:pointer-events-none disabled:opacity-35',
+                active ? (option.color ? 'text-accent-on' : 'text-surface') : 'text-ink-muted hover:text-ink'
               )}
             >
               {active && (
@@ -46,10 +49,9 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
                   layoutId={groupId}
                   transition={spring}
                   className={clsx('absolute inset-0 rounded-[7px]', option.color ?? 'bg-ink')}
-                  style={option.color ? undefined : { color: 'rgb(var(--surface))' }}
                 />
               )}
-              <span className={clsx('relative', active && !option.color && 'text-surface')}>{option.label}</span>
+              <span className="relative">{option.label}</span>
             </button>
           );
         })}
