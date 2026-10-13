@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-label="Tally: a manual-first exam, task and study tracker">
+  <!-- README banner. The mark is the original Tally logo, same measurements as
+       design/icon-master.svg (scaled). Fonts fall back to Georgia / system sans
+       because GitHub does not load web fonts inside images. -->
+  <rect width="1280" height="420" fill="#000000"/>
+
+  <!-- logo mark -->
+  <g transform="translate(64.6 85.8) scale(0.2)">
+    <rect x="376" y="316" width="92" height="611" fill="#FFFFFF"/>
+    <rect x="515" y="316" width="89" height="611" fill="#FFFFFF"/>
+    <rect x="651" y="316" width="88" height="611" fill="#FFFFFF"/>
+    <rect x="787" y="316" width="91" height="611" fill="#FFFFFF"/>
+    <polygon points="248,702 1006,374 1006,474 248,801" fill="#FE5018"/>
+  </g>
+
+  <!-- text -->
+  <text x="330" y="150" font-family="'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="7" fill="#FE5018">EXAMS · TASKS · STUDY</text>
+  <text x="326" y="256" font-family="Georgia, 'Times New Roman', serif" font-size="132" fill="#F6F1E8">Tally<tspan fill="#FE5018">.</tspan></text>
+  <text x="330" y="312" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-style="italic" fill="#B8AFA2">A manual-first tracker. Every number is yours.</text>
+
+  <!-- hairline and footer -->
+  <rect x="330" y="352" width="886" height="1" fill="#2A2622"/>
+  <text x="330" y="388" font-family="'Helvetica Neue', Arial, sans-serif" font-size="17" letter-spacing="2" fill="#7A7165">REACT · TYPESCRIPT · SUPABASE · CAPACITOR</text>
+</svg>
