@@ -160,14 +160,14 @@ The key is Supabase's **publishable** key, which is designed to be public. Row L
 Every push to `master` builds a signed Android APK and publishes it as a GitHub Release. The installed app compares its own build number with the newest release and offers the update.
 
 ```mermaid
-flowchart LR
-  A[Push to master] --> B[Build the web app<br/>APP_BUILD = run number]
-  B --> C[Generate icons<br/>from one drawing]
-  C --> D[Add the Android project<br/>and native patches]
-  D --> E[Sign with the private key<br/>from GitHub secrets]
-  E --> F[Build the APK]
-  F --> G[Publish release build-N<br/>with tally.apk]
-  G --> H[App checks on launch<br/>and offers the update]
+flowchart TD
+  A["Push to master"] --> B["Build the web app"]
+  B --> C["Generate icons from one drawing"]
+  C --> D["Add the Android project and native patches"]
+  D --> E["Sign with the private key from GitHub secrets"]
+  E --> F["Build the APK"]
+  F --> G["Publish release build-N with tally.apk"]
+  G --> H["App checks on launch and offers the update"]
 ```
 
 - **Always the newest APK:** `https://github.com/byteghst/Tally-Exam-Tracker-V01-Upgraded-/releases/latest/download/tally.apk`
