@@ -12,6 +12,9 @@
 #  2. Sharp launch screen on Android 12+.
 #  3. Reliable reminders: the permissions Android needs to show notifications
 #     and fire them on time, plus a proper Tally status-bar icon.
+#  4. System bars that blend into the app: the status bar (top) and the
+#     navigation bar (bottom) take the paper colour, with dark icons, and the
+#     app switches them to charcoal with light icons in dark mode.
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
@@ -130,3 +133,93 @@ cat > "$RES/drawable/ic_stat_tally.xml" <<'XML'
 XML
 
 echo "Reminder permissions and notification icon configured"
+
+# ---------------------------------------------------------------------------
+# 4. System bars that blend into the app
+#
+# The grey status bar and black navigation bar made the app look like it was
+# sitting inside a frame. Here the bars start out in the light-theme paper
+# colour with dark icons (so there is no grey flash while the app loads), and
+# a tiny native plugin (SystemBars) lets the app recolour both bars at runtime,
+# which is how dark mode gets charcoal bars with light icons.
+# ---------------------------------------------------------------------------
+MAIN_ACTIVITY="$(find android/app/src/main/java -name MainActivity.java | head -n 1)"
+if [ -n "$MAIN_ACTIVITY" ]; then
+  JAVA_DIR="$(dirname "$MAIN_ACTIVITY")"
+  JAVA_PKG="$(grep -m1 '^package ' "$MAIN_ACTIVITY" | sed -E 's/^package ([^;]+);.*/\1/')"
+
+  cat > "$JAVA_DIR/SystemBarsPlugin.java" <<JAVA
+package ${JAVA_PKG};
+
+import android.graphics.Color;
+import android.view.Window;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+/** Colours the status bar and the navigation bar, and picks dark or light icons for them. */
+@CapacitorPlugin(name = "SystemBars")
+public class SystemBarsPlugin extends Plugin {
+
+    @PluginMethod
+    public void apply(final PluginCall call) {
+        final String color = call.getString("color", "#F6F1E8");
+        final boolean darkIcons = Boolean.TRUE.equals(call.getBoolean("darkIcons", true));
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Window window = getActivity().getWindow();
+                    int parsed = Color.parseColor(color);
+                    window.setStatusBarColor(parsed);
+                    window.setNavigationBarColor(parsed);
+                    WindowInsetsControllerCompat controller =
+                        WindowCompat.getInsetsController(window, window.getDecorView());
+                    controller.setAppearanceLightStatusBars(darkIcons);
+                    controller.setAppearanceLightNavigationBars(darkIcons);
+                    call.resolve();
+                } catch (Exception e) {
+                    call.reject("Could not set the system bar colours: " + e.getMessage());
+                }
+            }
+        });
+    }
+}
+JAVA
+
+  cat > "$MAIN_ACTIVITY" <<JAVA
+package ${JAVA_PKG};
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(SystemBarsPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+JAVA
+
+  # Starting colours, used until the app has loaded and takes over.
+  STYLES="$RES/values/styles.xml"
+  if [ -f "$STYLES" ] && grep -q '<style name="AppTheme.NoActionBar"' "$STYLES"; then
+    sed -i '/<style name="AppTheme.NoActionBar"/a\
+        <item name="android:statusBarColor">#F6F1E8</item>\
+        <item name="android:navigationBarColor">#F6F1E8</item>\
+        <item name="android:windowLightStatusBar">true</item>\
+        <item name="android:windowLightNavigationBar">true</item>' "$STYLES"
+    echo "Starting system bar colours set in styles.xml"
+  else
+    echo "styles.xml or AppTheme.NoActionBar not found - skipping starting system bar colours"
+  fi
+
+  echo "SystemBars plugin added (${JAVA_PKG})"
+else
+  echo "MainActivity.java not found - skipping system bars plugin"
+fi
