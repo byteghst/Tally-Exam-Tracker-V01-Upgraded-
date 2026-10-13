@@ -74,8 +74,8 @@ All colours live as CSS variables in `src/styles/globals.css` and are exposed to
 
 | Face | Used for |
 |---|---|
-| Instrument Serif | Big editorial type: greetings, countdowns, headings, confirmation messages |
-| Fraunces | Section and sheet headings |
+| Instrument Serif | Big editorial type: greetings, countdowns, page and sheet titles, confirmation messages |
+| Fraunces | Smaller headings, subject names, and the share and report images |
 | Plus Jakarta Sans | Interface and body text |
 | Space Grotesk | Numerals: scores, timers, stats |
 
