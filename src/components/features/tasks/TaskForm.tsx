@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Plus, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Sheet } from '@/components/ui/Sheet';
 import { Input } from '@/components/ui/Input';
@@ -12,7 +13,8 @@ import { useTaskStore } from '@/store/taskStore';
 import { useUIStore } from '@/store/uiStore';
 import { todayISO } from '@/lib/dates';
 import { EASE_OUT } from '@/lib/motion';
-import type { Task, TaskPriority, RecurrenceFreq } from '@/types';
+import { newSubtask, statusFromSubtasks } from '@/lib/subtasks';
+import type { Subtask, Task, TaskPriority, TaskStatus, RecurrenceFreq } from '@/types';
 
 interface TaskFormProps {
   open: boolean;
@@ -48,6 +50,8 @@ function toFormState(task?: Task) {
     category: task?.category ?? '',
     reminderMinutesBefore: task?.reminderMinutesBefore?.toString() ?? '',
     notes: task?.notes ?? '',
+    subtasks: (task?.subtasks ?? []) as Subtask[],
+    subtaskDraft: '',
     recurrenceEnabled: !!task?.recurrence,
     recurrenceFreq: task?.recurrence?.freq ?? ('daily' as RecurrenceFreq),
     recurrenceDays: task?.recurrence?.daysOfWeek ?? ([] as number[]),
@@ -84,6 +88,16 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
     }));
   }
 
+  function addSubtask() {
+    const name = form.subtaskDraft.trim();
+    if (!name) return;
+    setForm((f) => ({ ...f, subtasks: [...f.subtasks, newSubtask(name)], subtaskDraft: '' }));
+  }
+
+  function removeSubtask(id: string) {
+    setForm((f) => ({ ...f, subtasks: f.subtasks.filter((s) => s.id !== id) }));
+  }
+
   async function handleSubmit() {
     const toValidate: TaskFormValues = {
       name: form.name,
@@ -118,6 +132,11 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
     setSubmitting(true);
     const v = result.data;
 
+    // Whatever is still typed in the subtask box is kept rather than lost.
+    const draft = form.subtaskDraft.trim();
+    const subtasks: Subtask[] = draft ? [...form.subtasks, newSubtask(draft)] : form.subtasks;
+    const baseStatus: TaskStatus = task?.status ?? 'todo';
+
     const payload = {
       name: v.name.trim(),
       date: v.date,
@@ -127,7 +146,9 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
       category: v.category?.trim() || undefined,
       reminderMinutesBefore: v.reminderMinutesBefore === '' ? undefined : v.reminderMinutesBefore,
       notes: v.notes?.trim() || undefined,
-      status: task?.status ?? ('todo' as const),
+      subtasks,
+      // a task with subtasks is complete exactly when all of them are done
+      status: statusFromSubtasks(subtasks, baseStatus),
       recurrence: v.recurrenceEnabled ? v.recurrence : undefined,
       seriesId: task?.seriesId
     };
@@ -172,6 +193,52 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           error={errors.name}
           placeholder="e.g. Revise Chapter 4 problems"
         />
+
+        <div>
+          <p className="eyebrow">Subtasks</p>
+          {form.subtasks.length > 0 && (
+            <ul className="mt-2 divide-y divide-border border-y border-border">
+              {form.subtasks.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 py-2.5">
+                  <span className={clsx('h-2 w-2 shrink-0 rounded-full', s.done ? 'bg-forest' : 'bg-ink/25')} />
+                  <span className={clsx('min-w-0 flex-1 truncate text-base', s.done && 'text-ink-faint line-through')}>
+                    {s.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeSubtask(s.id)}
+                    aria-label={`Remove subtask ${s.name}`}
+                    className="shrink-0 rounded-control p-1.5 text-ink-muted hover:bg-danger/10 hover:text-danger"
+                  >
+                    <X size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-2 flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Input
+                value={form.subtaskDraft}
+                onChange={(e) => set('subtaskDraft', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubtask();
+                  }
+                }}
+                placeholder="Add a subtask"
+                aria-label="New subtask"
+              />
+            </div>
+            <Button type="button" size="sm" variant="secondary" onClick={addSubtask} className="mb-1.5">
+              <Plus className="h-4 w-4" /> Add
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-ink-faint">
+            The task's progress bar fills as you finish subtasks, and the task completes when the last one is done.
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 gap-5">
           <Input
