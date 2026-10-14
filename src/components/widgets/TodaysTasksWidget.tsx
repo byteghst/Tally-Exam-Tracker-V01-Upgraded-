@@ -4,6 +4,7 @@ import { Section } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { useCountUp } from '@/hooks/useCountUp';
 import { EASE_OUT } from '@/lib/motion';
+import { subtaskProgress } from '@/lib/subtasks';
 import type { Task } from '@/types';
 
 interface TodaysTasksWidgetProps {
@@ -44,6 +45,7 @@ export function TodaysTasksWidget({ tasks, onToggle, onAddTask }: TodaysTasksWid
           <ul className="mt-4 divide-y divide-border">
             {tasks.slice(0, 4).map((task) => {
               const done = task.status === 'completed';
+              const sub = subtaskProgress(task);
               return (
                 <li key={task.id} className="flex items-center gap-3 py-3">
                   <CheckButton
@@ -51,9 +53,14 @@ export function TodaysTasksWidget({ tasks, onToggle, onAddTask }: TodaysTasksWid
                     onToggle={() => onToggle(task.id)}
                     label={`Mark "${task.name}" ${done ? 'incomplete' : 'complete'}`}
                   />
-                  <StrikeText done={done} className="text-base">
+                  <StrikeText done={done} className="min-w-0 flex-1 truncate text-base">
                     {task.name}
                   </StrikeText>
+                  {sub && (
+                    <span className="shrink-0 font-numeric text-xs tabular-nums text-ink-muted">
+                      {sub.done}/{sub.total}
+                    </span>
+                  )}
                 </li>
               );
             })}
