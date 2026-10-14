@@ -18,6 +18,10 @@ import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
 import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
+// Bengali: the Latin fonts above have no Bengali letters, so anything typed in
+// Bengali falls through to Tiro Bangla (see the font stacks in tailwind.config.ts).
+import '@fontsource/tiro-bangla/400.css';
+import '@fontsource/tiro-bangla/400-italic.css';
 import './styles/globals.css';
 
 setupServiceWorker();
