@@ -76,6 +76,13 @@ export interface RecurrenceRule {
   endDate?: string;
 }
 
+/** A small step inside a task. A task with subtasks is complete when all of them are done. */
+export interface Subtask {
+  id: ID;
+  name: string;
+  done: boolean;
+}
+
 export interface Task extends BaseEntity {
   name: string;
   date?: string;
@@ -86,6 +93,7 @@ export interface Task extends BaseEntity {
   status: TaskStatus;
   category?: string;
   notes?: string;
+  subtasks?: Subtask[];
   recurrence?: RecurrenceRule;
   seriesId?: ID; // links generated instances back to their recurring parent
   reminderMinutesBefore?: number;
