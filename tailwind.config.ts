@@ -31,15 +31,18 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
+      // Every stack ends with Tiro Bangla before the generic fallbacks. The Latin
+      // fonts have no Bengali letters, so the browser picks Tiro Bangla for any
+      // Bengali text, whichever font the surrounding text uses.
       fontFamily: {
         // UI + body text
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
         // headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Fraunces"', 'Georgia', 'serif'],
+        display: ['"Fraunces"', '"Tiro Bangla"', 'Georgia', 'serif'],
         // numerals: scores, countdowns, stats
-        numeric: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        numeric: ['"Space Grotesk"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
         // large editorial type: greetings, big numbers, italic taglines
-        serif: ['"Instrument Serif"', 'Georgia', 'serif']
+        serif: ['"Instrument Serif"', '"Tiro Bangla"', 'Georgia', 'serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',
