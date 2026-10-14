@@ -22,6 +22,10 @@ const EXIT_MS = 520;
  * The slide is plain CSS, and the sheet is always removed by a timer, never by
  * waiting on an animation library to report "finished". While it is closing it
  * ignores touches, so a closing (or stuck) sheet can never block the app.
+ *
+ * The contents are rendered in the very same render that `open` becomes true,
+ * so anything inside (a canvas, an input) exists by the time the parent's
+ * effects run.
  */
 export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -30,13 +34,14 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  const [mounted, setMounted] = useState(open);
+  // `lingering` keeps the sheet on the page while it slides out.
+  const [lingering, setLingering] = useState(false);
   const [shown, setShown] = useState(false);
 
-  // Mount, then slide in on the next frames; slide out, then unmount on a timer.
+  // Slide in on the next frames; slide out, then remove on a timer.
   useEffect(() => {
     if (open) {
-      setMounted(true);
+      setLingering(true);
       let inner = 0;
       const outer = requestAnimationFrame(() => {
         inner = requestAnimationFrame(() => setShown(true));
@@ -47,7 +52,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
       };
     }
     setShown(false);
-    const timer = window.setTimeout(() => setMounted(false), EXIT_MS);
+    const timer = window.setTimeout(() => setLingering(false), EXIT_MS);
     return () => window.clearTimeout(timer);
   }, [open]);
 
@@ -70,7 +75,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
     };
   }, [open]);
 
-  if (!mounted) return null;
+  if (!open && !lingering) return null;
 
   return createPortal(
     <div
@@ -81,7 +86,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
       <div
         className={clsx(
           'absolute inset-0 bg-ink/40 transition-opacity duration-300',
-          shown ? 'opacity-100' : 'opacity-0'
+          shown && open ? 'opacity-100' : 'opacity-0'
         )}
         onClick={() => onCloseRef.current()}
         aria-hidden
@@ -96,7 +101,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
           'max-h-[90vh] md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-card',
           'pb-safe-bottom',
           'transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-          shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 md:translate-y-8'
+          shown && open ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 md:translate-y-8'
         )}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
