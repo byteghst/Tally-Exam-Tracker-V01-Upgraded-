@@ -3,7 +3,8 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { expandRecurrence } from '@/lib/dates';
-import type { Task } from '@/types';
+import { statusFromSubtasks } from '@/lib/subtasks';
+import type { Subtask, Task } from '@/types';
 
 interface TaskRow {
   id: string;
@@ -16,6 +17,7 @@ interface TaskRow {
   status: Task['status'];
   category: string | null;
   notes: string | null;
+  subtasks: Subtask[] | null;
   recurrence: Task['recurrence'] | null;
   series_id: string | null;
   reminder_minutes_before: number | null;
@@ -35,6 +37,7 @@ function mapTask(row: TaskRow): Task {
     status: row.status,
     category: row.category ?? undefined,
     notes: row.notes ?? undefined,
+    subtasks: Array.isArray(row.subtasks) ? row.subtasks : [],
     recurrence: row.recurrence ?? undefined,
     seriesId: row.series_id ?? undefined,
     reminderMinutesBefore: row.reminder_minutes_before ?? undefined,
@@ -56,6 +59,7 @@ function toRow(data: Partial<TaskPayload>) {
   if (data.status !== undefined) row.status = data.status;
   if (data.category !== undefined) row.category = data.category ?? null;
   if (data.notes !== undefined) row.notes = data.notes ?? null;
+  if (data.subtasks !== undefined) row.subtasks = data.subtasks ?? [];
   if (data.recurrence !== undefined) row.recurrence = data.recurrence ?? null;
   if (data.seriesId !== undefined) row.series_id = data.seriesId ?? null;
   if (data.reminderMinutesBefore !== undefined) row.reminder_minutes_before = data.reminderMinutesBefore ?? null;
@@ -72,7 +76,10 @@ interface TaskStore {
   subscribe: () => void;
   unsubscribe: () => void;
   addTask: (data: TaskPayload) => Promise<Task | null>;
+  /** Ticks or un-ticks a task. For a task with subtasks, all of its subtasks follow. */
   toggleComplete: (id: string) => Promise<void>;
+  /** Ticks or un-ticks one subtask; the main task completes when the last one is done. */
+  toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   updateTask: (id: string, changes: Partial<TaskPayload>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
 }
@@ -91,6 +98,9 @@ async function ensureRecurringInstances(seriesTask: Task, fromISO: string, toISO
   const toCreate = occurrences.filter((d) => !existingDates.has(d) && d !== seriesTask.date);
   if (toCreate.length === 0) return;
 
+  // every generated day starts with the same subtasks, all un-ticked
+  const freshSubtasks = (seriesTask.subtasks ?? []).map((s) => ({ ...s, done: false }));
+
   await supabase.from('tasks').insert(
     toCreate.map((date) => ({
       user_id: userId,
@@ -102,6 +112,7 @@ async function ensureRecurringInstances(seriesTask: Task, fromISO: string, toISO
       status: 'todo',
       category: seriesTask.category ?? null,
       notes: seriesTask.notes ?? null,
+      subtasks: freshSubtasks,
       recurrence: seriesTask.recurrence,
       series_id: seriesId,
       reminder_minutes_before: seriesTask.reminderMinutesBefore ?? null
@@ -173,7 +184,21 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   toggleComplete: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
     if (!task) return;
-    await get().updateTask(id, { status: task.status === 'completed' ? 'todo' : 'completed' });
+    const completing = task.status !== 'completed';
+    const changes: Partial<TaskPayload> = { status: completing ? 'completed' : 'todo' };
+    // Ticking the main task finishes every subtask; un-ticking it clears them,
+    // so the two can never disagree.
+    if ((task.subtasks ?? []).length > 0) {
+      changes.subtasks = (task.subtasks ?? []).map((s) => ({ ...s, done: completing }));
+    }
+    await get().updateTask(id, changes);
+  },
+
+  toggleSubtask: async (taskId, subtaskId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const subtasks = (task.subtasks ?? []).map((s) => (s.id === subtaskId ? { ...s, done: !s.done } : s));
+    await get().updateTask(taskId, { subtasks, status: statusFromSubtasks(subtasks, task.status) });
   },
 
   updateTask: async (id, changes) => {
