@@ -7,13 +7,16 @@ import { EASE_OUT } from '@/lib/motion';
  * coloured edge (forest = done, crimson = problem), the message in serif, and a
  * hairline that drains while the message is on screen. They slide up into place
  * above the navigation bar and slide away when dismissed.
+ *
+ * The stack itself ignores touches (only a message's own Undo button takes
+ * them), so nothing here can ever sit on top of the app and block it.
  */
 export function ToastStack() {
   const { toasts, dismissToast } = useUIStore();
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[70] mx-auto flex w-full max-w-md flex-col gap-2 px-4 md:bottom-6">
-      <AnimatePresence initial={false} mode="popLayout">
+      <AnimatePresence initial={false}>
         {toasts.map((toast) => {
           const isError = toast.tone === 'error';
           return (
@@ -25,7 +28,7 @@ export function ToastStack() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-control border border-border bg-surface-raised py-3.5 pl-5 pr-4"
+              className="relative flex items-center gap-4 overflow-hidden rounded-control border border-border bg-surface-raised py-3.5 pl-5 pr-4"
             >
               <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${isError ? 'bg-danger' : 'bg-forest'}`} />
 
@@ -37,7 +40,7 @@ export function ToastStack() {
                     toast.action?.onClick();
                     dismissToast(toast.id);
                   }}
-                  className="shrink-0 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+                  className="pointer-events-auto shrink-0 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
                 >
                   {toast.action.label}
                 </button>
