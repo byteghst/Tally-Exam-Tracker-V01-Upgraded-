@@ -116,9 +116,10 @@ body,
   height: 100%;
 }
 
+/* Bengali letters are not in Plus Jakarta Sans, so they fall through to Tiro Bangla. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif;
 }
 
 * {
@@ -129,7 +130,7 @@ body {
    dedicated numeric face (Space Grotesk) so digits line up and read as
    data, distinct from body text and serif headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Tiro Bangla', 'Plus Jakarta Sans', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
