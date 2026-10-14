@@ -1,9 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { EASE_OUT } from '@/lib/motion';
 
 interface SheetProps {
   open: boolean;
@@ -13,83 +11,112 @@ interface SheetProps {
   footer?: ReactNode;
 }
 
+/** How long the closing slide takes; the sheet is removed from the page right after. */
+const EXIT_MS = 520;
+
 /**
  * Shared modal primitive for the app. Slides up as a bottom sheet on mobile
  * and rises into a centered dialog on desktop. Flat: a solid panel with a
  * hairline border over a dimmed backdrop, no blur and no shadow.
+ *
+ * The slide is plain CSS, and the sheet is always removed by a timer, never by
+ * waiting on an animation library to report "finished". While it is closing it
+ * ignores touches, so a closing (or stuck) sheet can never block the app.
  */
 export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Always call the latest onClose without re-running the effects below
+  // every time the parent re-renders.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  const [mounted, setMounted] = useState(open);
+  const [shown, setShown] = useState(false);
+
+  // Mount, then slide in on the next frames; slide out, then unmount on a timer.
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }
+    setShown(false);
+    const timer = window.setTimeout(() => setMounted(false), EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  // Escape closes; the page behind does not scroll; focus lands on the first field once.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKeyDown);
     document.body.style.overflow = 'hidden';
-    // focus the first focusable field for keyboard users
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const first = panelRef.current?.querySelector<HTMLElement>('input, select, textarea, button');
       first?.focus();
-    }, 0);
+    }, 50);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = '';
-      clearTimeout(timer);
+      window.clearTimeout(timer);
     };
-  }, [open, onClose]);
+  }, [open]);
 
-  const desktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
+  if (!mounted) return null;
 
   return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center md:items-center" role="presentation">
-          <motion.div
-            className="absolute inset-0 bg-ink/40"
-            onClick={onClose}
-            aria-hidden
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          />
-          <motion.div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sheet-title"
-            initial={desktop ? { opacity: 0, y: 48 } : { y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={desktop ? { opacity: 0, y: 32 } : { y: '100%' }}
-            transition={{ duration: 0.5, ease: EASE_OUT }}
-            className={clsx(
-              'relative flex w-full flex-col rounded-t-card border border-border bg-surface-raised',
-              'max-h-[90vh] md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-card',
-              'pb-safe-bottom'
-            )}
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center md:items-center"
+      role="presentation"
+      style={{ pointerEvents: open ? 'auto' : 'none' }}
+    >
+      <div
+        className={clsx(
+          'absolute inset-0 bg-ink/40 transition-opacity duration-300',
+          shown ? 'opacity-100' : 'opacity-0'
+        )}
+        onClick={() => onCloseRef.current()}
+        aria-hidden
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sheet-title"
+        className={clsx(
+          'relative flex w-full flex-col rounded-t-card border border-border bg-surface-raised',
+          'max-h-[90vh] md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-card',
+          'pb-safe-bottom',
+          'transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 md:translate-y-8'
+        )}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
+          <h2 id="sheet-title" className="font-serif text-2xl leading-none tracking-tight text-ink">
+            {title}
+          </h2>
+          <button
+            onClick={() => onCloseRef.current()}
+            aria-label="Close"
+            className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
           >
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
-              <h2 id="sheet-title" className="font-serif text-2xl leading-none tracking-tight text-ink">
-                {title}
-              </h2>
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
-
-            {footer && <div className="shrink-0 border-t border-border px-5 py-4">{footer}</div>}
-          </motion.div>
+            <X size={20} />
+          </button>
         </div>
-      )}
-    </AnimatePresence>,
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
+
+        {footer && <div className="shrink-0 border-t border-border px-5 py-4">{footer}</div>}
+      </div>
+    </div>,
     document.body
   );
 }

@@ -1,10 +1,26 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useIsPresent } from 'framer-motion';
 import { MoreHorizontal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { NAV_ITEMS } from './navConfig';
 import { EASE_OUT, spring } from '@/lib/motion';
+
+/** Dims the page behind the open More bar. Ignores touches the moment it starts fading out. */
+function Scrim({ onClick }: { onClick: () => void }) {
+  const isPresent = useIsPresent();
+  return (
+    <motion.div
+      className="fixed inset-0 z-30 bg-ink/25 md:hidden"
+      style={{ pointerEvents: isPresent ? 'auto' : 'none' }}
+      onClick={onClick}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    />
+  );
+}
 
 export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -23,19 +39,7 @@ export function BottomNav() {
   return (
     <>
       {/* Tapping anywhere outside the open bar closes it. */}
-      <AnimatePresence>
-        {moreOpen && (
-          <motion.div
-            key="more-scrim"
-            className="fixed inset-0 z-30 bg-ink/25 md:hidden"
-            onClick={() => setMoreOpen(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          />
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{moreOpen && <Scrim key="more-scrim" onClick={() => setMoreOpen(false)} />}</AnimatePresence>
 
       {/* Flat bar fixed to the bottom edge: a hairline on top, solid paper
           behind. The active tab gets an accent line that slides between tabs. */}
