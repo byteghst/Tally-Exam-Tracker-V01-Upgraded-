@@ -7,7 +7,8 @@ import type { Exam, NotificationPrefs, Task } from '@/types';
 export const REMINDER_CHANNEL_ID = 'tally-reminders';
 /** White Tally glyph added to the Android project at build time (see ci/force-signing.sh). */
 const SMALL_ICON = 'ic_stat_tally';
-const ICON_COLOR = '#0055FE';
+/** Persimmon: tints the notification icon and the phone's notification light. */
+const ICON_COLOR = '#D94F2D';
 /** Dispatch this on `window` to make the sync hook re-plan and re-schedule right away. */
 export const RESYNC_EVENT = 'tally:resync-notifications';
 
