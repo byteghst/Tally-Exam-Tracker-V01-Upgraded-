@@ -68,19 +68,20 @@ export function Tasks() {
       <Section
         label="Today"
         aside={
-          today.length > 0 ? (
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
+            {today.length > 0 && (
               <span className="font-numeric text-sm tabular-nums text-ink-muted">
                 {todayDone} of {today.length}
               </span>
-              <button
-                onClick={() => setShareOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
-              >
-                <Share2 size={14} /> Share
-              </button>
-            </div>
-          ) : undefined
+            )}
+            {/* Share is always there: it also makes yesterday's and the week's cards */}
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+            >
+              <Share2 size={14} /> Share
+            </button>
+          </div>
         }
       >
         {today.length === 0 ? (
@@ -126,7 +127,7 @@ export function Tasks() {
       )}
 
       <TaskForm open={formOpen} onClose={() => setFormOpen(false)} task={editing} />
-      <ShareTaskCard open={shareOpen} onClose={() => setShareOpen(false)} tasks={today} />
+      <ShareTaskCard open={shareOpen} onClose={() => setShareOpen(false)} tasks={tasks} />
     </Stagger>
   );
 }
