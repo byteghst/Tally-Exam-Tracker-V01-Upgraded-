@@ -22,15 +22,21 @@ const COLOR = {
 };
 
 // Same font roles as the app itself (bundled via @fontsource in main.tsx).
-const FONT_DISPLAY = "'Fraunces', Georgia, serif";
-const FONT_NUMERIC = "'Space Grotesk', system-ui, sans-serif";
-const FONT_UI = "'Plus Jakarta Sans', system-ui, sans-serif";
+// Tiro Bangla comes after each Latin font, so Bengali text (exam names, for
+// example) is drawn in Tiro Bangla, exactly as in the app.
+const FONT_DISPLAY = "'Fraunces', 'Tiro Bangla', Georgia, serif";
+const FONT_NUMERIC = "'Space Grotesk', 'Tiro Bangla', system-ui, sans-serif";
+const FONT_UI = "'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif";
+
+// A handful of Bengali letters and digits: asking for them is what makes the
+// browser fetch the Bengali part of Tiro Bangla before the first frame.
+const BENGALI_SAMPLE = 'অআইঈউঊএঐওঔকখগঘচছজঝটঠডঢণতথদধনপফবভমযরলশষসহ০১২৩৪৫৬৭৮৯ািীুূেৈোৌ';
 
 // Every font spec the card draws with. Canvas text does NOT trigger web-font
 // loading by itself (only text in the page does), so these are loaded
 // explicitly before the first frame — otherwise the card can silently fall
 // back to a system font.
-const CARD_FONT_SPECS = [
+export const CARD_FONT_SPECS = [
   `600 34px ${FONT_DISPLAY}`,
   `700 48px ${FONT_DISPLAY}`,
   `700 60px ${FONT_NUMERIC}`,
@@ -38,7 +44,9 @@ const CARD_FONT_SPECS = [
   `500 19px ${FONT_UI}`,
   `500 20px ${FONT_UI}`,
   `600 20px ${FONT_UI}`,
-  `600 22px ${FONT_UI}`
+  `600 22px ${FONT_UI}`,
+  `700 22px ${FONT_UI}`,
+  `400 26px 'Tiro Bangla'`
 ];
 
 // Header logo: the real Tally logo image, drawn as-is (not redrawn from shapes).
@@ -71,7 +79,11 @@ export function loadTallyLogo(): Promise<HTMLImageElement | null> {
 export async function prepareCardAssets(): Promise<HTMLImageElement | null> {
   if (typeof document !== 'undefined' && 'fonts' in document) {
     try {
-      await Promise.all(CARD_FONT_SPECS.map((spec) => document.fonts.load(spec)));
+      await Promise.all([
+        ...CARD_FONT_SPECS.map((spec) => document.fonts.load(spec)),
+        // the same specs again with Bengali text, which pulls in the Bengali letters of Tiro Bangla
+        ...CARD_FONT_SPECS.map((spec) => document.fonts.load(spec, BENGALI_SAMPLE))
+      ]);
       await document.fonts.ready;
     } catch {
       // proceed with whatever's loaded — a fallback font beats no card
