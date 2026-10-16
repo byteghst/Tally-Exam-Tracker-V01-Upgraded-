@@ -51,9 +51,11 @@ const COLOR = {
 };
 
 // Same font roles as the app (bundled via @fontsource; loaded by prepareCardAssets()).
-const FONT_DISPLAY = "'Fraunces', Georgia, serif";
-const FONT_NUMERIC = "'Space Grotesk', system-ui, sans-serif";
-const FONT_UI = "'Plus Jakarta Sans', system-ui, sans-serif";
+// Tiro Bangla follows each Latin font, so Bengali exam and subject names are
+// drawn in Tiro Bangla, exactly as in the app.
+const FONT_DISPLAY = "'Fraunces', 'Tiro Bangla', Georgia, serif";
+const FONT_NUMERIC = "'Space Grotesk', 'Tiro Bangla', system-ui, sans-serif";
+const FONT_UI = "'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif";
 
 const TYPE_LABEL: Record<ExamType, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
 const PRIORITY_LABEL: Record<TaskPriority, string> = { high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
