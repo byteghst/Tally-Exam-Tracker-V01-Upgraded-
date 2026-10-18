@@ -7,6 +7,7 @@ import {
   Settings,
   SlidersHorizontal,
   Timer,
+  Hourglass,
   type LucideIcon
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Tasks', path: '/tasks', icon: ListChecks, primary: true },
   { label: 'Study', path: '/study', icon: Timer, primary: true },
   { label: 'Calendar', path: '/calendar', icon: CalendarDays, primary: true },
+  { label: 'Deadlines', path: '/deadlines', icon: Hourglass },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
   { label: 'Exam configs', path: '/configs', icon: SlidersHorizontal },
   { label: 'Settings', path: '/settings', icon: Settings }

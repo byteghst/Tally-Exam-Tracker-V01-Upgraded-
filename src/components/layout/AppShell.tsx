@@ -13,6 +13,8 @@ import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useExamConfigStore } from '@/store/examConfigStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useStudyStore } from '@/store/studyStore';
+import { useDeadlineStore } from '@/store/deadlineStore';
 import { useMilestoneCelebration } from '@/hooks/useMilestoneCelebration';
 import { useNotificationSync } from '@/hooks/useNotificationSync';
 
@@ -23,6 +25,8 @@ export function AppShell() {
   const taskStore = useTaskStore();
   const configStore = useExamConfigStore();
   const settingsStore = useSettingsStore();
+  const studyStore = useStudyStore();
+  const deadlineStore = useDeadlineStore();
 
   const { celebrating, finishCelebrating } = useMilestoneCelebration();
   useNotificationSync();
@@ -37,16 +41,22 @@ export function AppShell() {
     taskStore.hydrate();
     configStore.hydrate();
     settingsStore.hydrate();
+    deadlineStore.hydrate();
+    studyStore.hydrate(user.id);
     examStore.subscribe();
     taskStore.subscribe();
     configStore.subscribe();
     settingsStore.subscribe();
+    deadlineStore.subscribe();
+    studyStore.subscribe();
 
     return () => {
       examStore.unsubscribe();
       taskStore.unsubscribe();
       configStore.unsubscribe();
       settingsStore.unsubscribe();
+      deadlineStore.unsubscribe();
+      studyStore.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);

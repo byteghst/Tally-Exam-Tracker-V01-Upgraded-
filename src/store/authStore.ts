@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
+import { useStudyStore } from '@/store/studyStore';
 
 interface AuthStore {
   session: Session | null;
@@ -61,7 +62,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signOut: async () => {
+    // Send any study changes still waiting (give it a few seconds at most),
+    // then wipe the on-device study copy so the next person starts clean.
+    try {
+      await Promise.race([
+        useStudyStore.getState().flush(),
+        new Promise<void>((resolve) => setTimeout(resolve, 4000))
+      ]);
+    } catch {
+      /* signing out matters more than a late sync */
+    }
     await supabase.auth.signOut();
+    useStudyStore.getState().reset();
     set({ session: null, user: null });
   }
 }));
