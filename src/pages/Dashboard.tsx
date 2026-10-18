@@ -7,6 +7,7 @@ import { DailyMission } from '@/components/features/dashboard/DailyMission';
 import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
+import { PrayerTimesWidget } from '@/components/widgets/PrayerTimesWidget';
 import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -48,6 +49,9 @@ export function Dashboard() {
       {/* Always shown, above the customizable widgets below — not part of the
           show/hide/reorder list, so it can't be hidden or moved. */}
       <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
+
+      {/* Also permanent: today's prayer times with each prayer's time limit. */}
+      <PrayerTimesWidget />
 
       {showMission && (
         <DailyMission
