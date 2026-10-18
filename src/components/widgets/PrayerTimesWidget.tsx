@@ -4,26 +4,17 @@ import { clsx } from 'clsx';
 import { Section } from '@/components/motion/Reveal';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
-import { Segmented } from '@/components/ui/Segmented';
 import { EASE_OUT } from '@/lib/motion';
 import { BD_CITIES, findCity } from '@/lib/prayer/cities';
 import {
   computeDay,
   formatClock,
   formatDuration,
-  METHOD_OPTIONS,
-  PROHIBITED_MINUTES,
-  type AsrMadhab,
+  IF_RULES,
   type PrayerKey,
-  type PrayerMethod,
   type PrayerWindow
 } from '@/lib/prayer/times';
 import { usePrayerStore } from '@/store/prayerStore';
-
-const MADHAB_OPTIONS = [
-  { value: 'hanafi' as AsrMadhab, label: 'Hanafi' },
-  { value: 'standard' as AsrMadhab, label: 'Shafi / standard' }
-];
 
 const SELECT_CLASS =
   'mt-2 w-full rounded-control border border-border bg-surface px-3 py-2.5 text-base text-ink';
@@ -33,13 +24,12 @@ const SELECT_CLASS =
  * and when its time runs out (Fajr until sunrise, Dhuhr until Asr, and so on),
  * the prayer that is running right now with a countdown, and what is next.
  * It also marks the three prohibited times (sunrise, the sun at its highest,
- * sunset) and warns while one of them is happening.
+ * sunset) and warns while one of them is happening. All of it follows the
+ * Islamic Foundation Bangladesh rules (see lib/prayer/times).
  * Calculated on the device; no internet needed.
  */
 export function PrayerTimesWidget() {
   const cityName = usePrayerStore((s) => s.cityName);
-  const method = usePrayerStore((s) => s.method);
-  const madhab = usePrayerStore((s) => s.madhab);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // re-check twice a minute so the countdown and highlight stay current
@@ -52,9 +42,9 @@ export function PrayerTimesWidget() {
   const city = findCity(cityName);
   const dayKey = new Date(now).toDateString();
   const day = useMemo(
-    () => computeDay(new Date(now), city.lat, city.lng, method, madhab),
+    () => computeDay(new Date(now), city.lat, city.lng),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dayKey, city.lat, city.lng, method, madhab]
+    [dayKey, city.lat, city.lng]
   );
 
   // Which prayer is running? Between midnight and Fajr it is still last night's Isha.
@@ -70,7 +60,8 @@ export function PrayerTimesWidget() {
       activeWin = found;
     }
   }
-  // between sunrise and Dhuhr no prayer is running: show what comes next
+  // between sunrise and Dhuhr (and the minutes between sunset and Maghrib) no
+  // prayer is running: show what comes next
   const nextWin = activeWin ? null : (day.windows.find((w) => w.start.getTime() > now) ?? null);
 
   const progress = activeWin
@@ -91,7 +82,7 @@ export function PrayerTimesWidget() {
       aside={
         <button
           onClick={() => setSettingsOpen(true)}
-          aria-label={`Prayer times for ${city.name}. Change place or method`}
+          aria-label={`Prayer times for ${city.name}. Change district`}
           className="text-xs font-semibold uppercase tracking-[0.16em] text-accent"
         >
           {city.name}
@@ -209,9 +200,10 @@ export function PrayerTimesWidget() {
       </div>
 
       <p className="mt-3 text-xs text-ink-faint">
-        Calculated for {city.name}. The prohibited times follow the Hanafi view and are set to {PROHIBITED_MINUTES.sunrise}{' '}
-        min after sunrise, {PROHIBITED_MINUTES.zenith} min before Dhuhr and {PROHIBITED_MINUTES.sunset} min before sunset,
-        the longer end of what the sources give. Treat all of this as a guide, and check your local timetable or imam.
+        Follows the Islamic Foundation Bangladesh rules, calculated for {city.name}: {IF_RULES.precautionMinutes} minutes
+        added to Fajr, Dhuhr and Maghrib, and no prayer for {IF_RULES.afterSunriseMinutes} min after sunrise,{' '}
+        {IF_RULES.beforeDhuhrMinutes} min before Dhuhr and {IF_RULES.beforeSunsetMinutes} min before sunset. Minutes can
+        differ by a minute or two from the printed timetable, so check it for your area.
       </p>
 
       {settingsOpen && <PrayerSettingsSheet onClose={() => setSettingsOpen(false)} />}
@@ -221,11 +213,7 @@ export function PrayerTimesWidget() {
 
 function PrayerSettingsSheet({ onClose }: { onClose: () => void }) {
   const cityName = usePrayerStore((s) => s.cityName);
-  const method = usePrayerStore((s) => s.method);
-  const madhab = usePrayerStore((s) => s.madhab);
   const setCity = usePrayerStore((s) => s.setCity);
-  const setMethod = usePrayerStore((s) => s.setMethod);
-  const setMadhab = usePrayerStore((s) => s.setMadhab);
 
   return (
     <Sheet
@@ -252,29 +240,9 @@ function PrayerSettingsSheet({ onClose }: { onClose: () => void }) {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="prayer-method" className="eyebrow">
-            Calculation method
-          </label>
-          <select
-            id="prayer-method"
-            value={method}
-            onChange={(e) => setMethod(e.target.value as PrayerMethod)}
-            className={SELECT_CLASS}
-          >
-            {METHOD_OPTIONS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <Segmented label="Asr time" options={MADHAB_OPTIONS} value={madhab} onChange={setMadhab} />
-
         <p className="text-sm text-ink-muted">
-          The usual choice in Bangladesh is Karachi with Hanafi Asr, which is already selected. These settings are kept
-          on this device only. The prohibited times always follow the Hanafi view.
+          Prayer times and prohibited times follow the Islamic Foundation Bangladesh rules (Karachi method, Hanafi Asr,
+          3 minutes added to Fajr, Dhuhr and Maghrib). Your district is kept on this device only.
         </p>
       </div>
     </Sheet>

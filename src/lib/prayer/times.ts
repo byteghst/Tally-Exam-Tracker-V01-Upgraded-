@@ -1,8 +1,6 @@
-import { CalculationMethod, Coordinates, Madhab, PrayerTimes, type CalculationParameters } from 'adhan';
+import { CalculationMethod, Coordinates, Madhab, PrayerTimes } from 'adhan';
 
 export type PrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
-export type PrayerMethod = 'karachi' | 'mwl' | 'umm' | 'egyptian';
-export type AsrMadhab = 'hanafi' | 'standard';
 
 /** One prayer's time limit: it begins at `start` and its time runs out at `end`. */
 export interface PrayerWindow {
@@ -34,32 +32,21 @@ export interface DayPrayers {
 }
 
 /**
- * How long each prohibited time lasts, in minutes. The Hanafi sources give
- * ranges (about 15 to 20 after sunrise, 5 to 10 before Dhuhr, 20 to 40 before
- * sunset), so the longer end of each is used: it is safer to wait a few
- * minutes too long than to pray inside the forbidden time.
+ * The rules of the Islamic Foundation Bangladesh timetable, which this widget
+ * follows:
+ *  - prayer times are worked out with the University of Islamic Sciences,
+ *    Karachi method (Fajr and Isha at 18 degrees) and the Hanafi Asr;
+ *  - 3 minutes are added to Fajr, Dhuhr and Maghrib as a precaution;
+ *  - no prayer for 24 minutes after sunrise, for the 6 minutes before the
+ *    (printed) Dhuhr time, and for the 24 minutes before sunset. If today's
+ *    Asr has not been prayed yet it is still prayed in that last stretch.
  */
-export const PROHIBITED_MINUTES = { sunrise: 20, zenith: 10, sunset: 30 } as const;
-
-export const METHOD_OPTIONS: Array<{ value: PrayerMethod; label: string }> = [
-  { value: 'karachi', label: 'Karachi (University of Islamic Sciences)' },
-  { value: 'mwl', label: 'Muslim World League' },
-  { value: 'umm', label: 'Umm al-Qura (Makkah)' },
-  { value: 'egyptian', label: 'Egyptian General Authority' }
-];
-
-function paramsFor(method: PrayerMethod, madhab: AsrMadhab): CalculationParameters {
-  const params =
-    method === 'mwl'
-      ? CalculationMethod.MuslimWorldLeague()
-      : method === 'umm'
-        ? CalculationMethod.UmmAlQura()
-        : method === 'egyptian'
-          ? CalculationMethod.Egyptian()
-          : CalculationMethod.Karachi();
-  params.madhab = madhab === 'hanafi' ? Madhab.Hanafi : Madhab.Shafi;
-  return params;
-}
+export const IF_RULES = {
+  precautionMinutes: 3,
+  afterSunriseMinutes: 24,
+  beforeDhuhrMinutes: 6,
+  beforeSunsetMinutes: 24
+} as const;
 
 function shiftDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -71,38 +58,44 @@ function shiftMinutes(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * 60_000);
 }
 
+function params() {
+  const p = CalculationMethod.Karachi();
+  p.madhab = Madhab.Hanafi;
+  return p;
+}
+
 /**
- * The five prayer windows for one day, plus the three prohibited times.
- * Everything is calculated on the device from the place's coordinates, so it
- * needs no internet and no account.
+ * The five prayer windows for one day, plus the three prohibited times,
+ * following the Islamic Foundation rules above. Everything is calculated on
+ * the device from the place's coordinates, so it needs no internet and no
+ * account.
  *
  * Each prayer's time ends where the next begins, except that Fajr ends at
- * sunrise and Isha ends at the next day's Fajr.
- *
- * Prohibited times (Hanafi): from sunrise until the sun has risen a spear's
- * length, while the sun is at its highest just before Dhuhr, and while the sun
- * is setting just before Maghrib. Sunset is taken as the start of Maghrib.
+ * sunrise, Asr at sunset (Maghrib then starts 3 minutes later), and Isha at
+ * the next day's printed Fajr time.
  */
-export function computeDay(
-  date: Date,
-  lat: number,
-  lng: number,
-  method: PrayerMethod,
-  madhab: AsrMadhab
-): DayPrayers {
+export function computeDay(date: Date, lat: number, lng: number): DayPrayers {
   const coords = new Coordinates(lat, lng);
-  const params = paramsFor(method, madhab);
-  const today = new PrayerTimes(coords, date, params);
-  const tomorrow = new PrayerTimes(coords, shiftDays(date, 1), params);
-  const yesterday = new PrayerTimes(coords, shiftDays(date, -1), params);
+  const p = params();
+  const today = new PrayerTimes(coords, date, p);
+  const tomorrow = new PrayerTimes(coords, shiftDays(date, 1), p);
+  const yesterday = new PrayerTimes(coords, shiftDays(date, -1), p);
+  const extra = IF_RULES.precautionMinutes;
+
+  const fajr = shiftMinutes(today.fajr, extra);
+  const dhuhr = shiftMinutes(today.dhuhr, extra);
+  // with the Karachi method Maghrib starts at sunset exactly
+  const sunset = today.maghrib;
+  const maghrib = shiftMinutes(sunset, extra);
+  const nextFajr = shiftMinutes(tomorrow.fajr, extra);
 
   return {
     windows: [
-      { key: 'fajr', name: 'Fajr', start: today.fajr, end: today.sunrise },
-      { key: 'dhuhr', name: 'Dhuhr', start: today.dhuhr, end: today.asr },
-      { key: 'asr', name: 'Asr', start: today.asr, end: today.maghrib },
-      { key: 'maghrib', name: 'Maghrib', start: today.maghrib, end: today.isha },
-      { key: 'isha', name: 'Isha', start: today.isha, end: tomorrow.fajr }
+      { key: 'fajr', name: 'Fajr', start: fajr, end: today.sunrise },
+      { key: 'dhuhr', name: 'Dhuhr', start: dhuhr, end: today.asr },
+      { key: 'asr', name: 'Asr', start: today.asr, end: sunset },
+      { key: 'maghrib', name: 'Maghrib', start: maghrib, end: today.isha },
+      { key: 'isha', name: 'Isha', start: today.isha, end: nextFajr }
     ],
     prevIshaStart: yesterday.isha,
     prohibited: [
@@ -110,23 +103,22 @@ export function computeDay(
         key: 'sunrise',
         name: 'Sunrise',
         start: today.sunrise,
-        end: shiftMinutes(today.sunrise, PROHIBITED_MINUTES.sunrise),
+        end: shiftMinutes(today.sunrise, IF_RULES.afterSunriseMinutes),
         detail: 'The sun is rising. No prayer at all, not even a make-up prayer, until it has fully risen.'
       },
       {
         key: 'zenith',
         name: 'Sun at its highest',
-        start: shiftMinutes(today.dhuhr, -PROHIBITED_MINUTES.zenith),
-        end: today.dhuhr,
+        start: shiftMinutes(dhuhr, -IF_RULES.beforeDhuhrMinutes),
+        end: dhuhr,
         detail: 'The sun is at its highest point. No prayer at all until Dhuhr begins.'
       },
       {
         key: 'sunset',
         name: 'Sunset',
-        start: shiftMinutes(today.maghrib, -PROHIBITED_MINUTES.sunset),
-        end: today.maghrib,
-        detail:
-          'The sun is setting. No voluntary or make-up prayers until Maghrib. Today\u2019s Asr, if not yet prayed, is still valid but disliked.'
+        start: shiftMinutes(sunset, -IF_RULES.beforeSunsetMinutes),
+        end: sunset,
+        detail: 'The sun is setting. No prayer until it has set. If you have not prayed today\u2019s Asr yet, pray it now.'
       }
     ]
   };
