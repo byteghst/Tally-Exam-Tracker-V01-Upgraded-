@@ -15,7 +15,7 @@ import type { Task } from '@/types';
 
 export function Calendar() {
   const { exams, hydrate: hydrateExams } = useExamStore();
-  const { tasks, hydrate: hydrateTasks, toggleComplete } = useTaskStore();
+  const { tasks, hydrate: hydrateTasks, toggleComplete, toggleSubtask } = useTaskStore();
   const { settings } = useSettingsStore();
 
   const today = parseISODate(todayISO());
@@ -120,6 +120,7 @@ export function Calendar() {
           exams={dayExams}
           tasks={dayTasks}
           onToggleTask={toggleComplete}
+          onToggleSubtask={toggleSubtask}
           onEditTask={setEditingTask}
         />
       </Section>
