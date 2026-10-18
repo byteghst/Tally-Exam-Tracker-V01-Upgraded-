@@ -3,7 +3,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
+// Where the app is served from. '/' for the Android app and normal hosting.
+// The GitHub Pages workflow sets VITE_BASE to '/<repo-name>/' because Pages
+// serves a project site from a sub-folder, not from the domain root.
+const base = process.env.VITE_BASE || '/';
+
 export default defineConfig({
+  base,
   // Stamped into the app at build time and shown at the bottom of Settings, so
   // it is always possible to tell exactly which build is installed (compare the
   // short commit id with the latest commit on GitHub). GITHUB_SHA is set
@@ -36,7 +42,8 @@ export default defineConfig({
         background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

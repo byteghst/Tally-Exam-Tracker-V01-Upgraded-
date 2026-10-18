@@ -12,26 +12,30 @@ import { Analytics } from '@/pages/Analytics';
 import { Settings } from '@/pages/Settings';
 import { NotFound } from '@/pages/NotFound';
 
-export const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
-  {
-    path: '/',
-    element: <AppShell />,
-    children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard', element: <Dashboard /> },
-      { path: 'exams', element: <Exams /> },
-      { path: 'exams/daily', element: <Exams /> },
-      { path: 'exams/weekly', element: <Exams /> },
-      { path: 'exams/monthly', element: <Exams /> },
-      { path: 'exams/:id', element: <ExamDetail /> },
-      { path: 'configs', element: <ExamConfigs /> },
-      { path: 'tasks', element: <Tasks /> },
-      { path: 'study', element: <Study /> },
-      { path: 'calendar', element: <Calendar /> },
-      { path: 'analytics', element: <Analytics /> },
-      { path: 'settings', element: <Settings /> },
-      { path: '*', element: <NotFound /> }
-    ]
-  }
-]);
+export const router = createBrowserRouter(
+  [
+    { path: '/login', element: <Login /> },
+    {
+      path: '/',
+      element: <AppShell />,
+      children: [
+        { index: true, element: <Navigate to="/dashboard" replace /> },
+        { path: 'dashboard', element: <Dashboard /> },
+        { path: 'exams', element: <Exams /> },
+        { path: 'exams/daily', element: <Exams /> },
+        { path: 'exams/weekly', element: <Exams /> },
+        { path: 'exams/monthly', element: <Exams /> },
+        { path: 'exams/:id', element: <ExamDetail /> },
+        { path: 'configs', element: <ExamConfigs /> },
+        { path: 'tasks', element: <Tasks /> },
+        { path: 'study', element: <Study /> },
+        { path: 'calendar', element: <Calendar /> },
+        { path: 'analytics', element: <Analytics /> },
+        { path: 'settings', element: <Settings /> },
+        { path: '*', element: <NotFound /> }
+      ]
+    }
+  ],
+  // '/' for the app; '/<repo>/' on GitHub Pages (set from Vite's `base`).
+  { basename: import.meta.env.BASE_URL }
+);
