@@ -12,6 +12,7 @@ import {
   formatClock,
   formatDuration,
   METHOD_OPTIONS,
+  PROHIBITED_MINUTES,
   type AsrMadhab,
   type PrayerKey,
   type PrayerMethod,
@@ -31,6 +32,8 @@ const SELECT_CLASS =
  * Always on the dashboard: today's five prayers with the time each one begins
  * and when its time runs out (Fajr until sunrise, Dhuhr until Asr, and so on),
  * the prayer that is running right now with a countdown, and what is next.
+ * It also marks the three prohibited times (sunrise, the sun at its highest,
+ * sunset) and warns while one of them is happening.
  * Calculated on the device; no internet needed.
  */
 export function PrayerTimesWidget() {
@@ -74,6 +77,9 @@ export function PrayerTimesWidget() {
     ? Math.max(0, Math.min(1, (now - activeWin.start.getTime()) / (activeWin.end.getTime() - activeWin.start.getTime())))
     : 0;
 
+  // Is a prohibited time happening right now?
+  const prohibitedNow = day.prohibited.find((p) => now >= p.start.getTime() && now < p.end.getTime()) ?? null;
+
   function statusOf(w: PrayerWindow): 'active' | 'past' | 'upcoming' {
     if (w.key === activeKey) return 'active';
     return w.end.getTime() <= now ? 'past' : 'upcoming';
@@ -92,6 +98,18 @@ export function PrayerTimesWidget() {
         </button>
       }
     >
+      {prohibitedNow && (
+        <div role="alert" className="mb-6 border-l-2 border-danger bg-danger/5 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-danger">Prohibited time now</p>
+          <p className="mt-1 text-sm text-ink">{prohibitedNow.detail}</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Until{' '}
+            <span className="font-numeric tabular-nums text-ink">{formatClock(prohibitedNow.end)}</span> ·{' '}
+            <span className="font-numeric tabular-nums">{formatDuration(prohibitedNow.end.getTime() - now)}</span> left
+          </p>
+        </div>
+      )}
+
       {activeWin ? (
         <div>
           <p className="font-serif text-5xl leading-none tracking-tight text-ink">{activeWin.name}</p>
@@ -155,8 +173,45 @@ export function PrayerTimesWidget() {
         })}
       </ul>
 
+      <div className="mt-6">
+        <p className="eyebrow">Prohibited times</p>
+        <ul className="mt-2 divide-y divide-border">
+          {day.prohibited.map((p) => {
+            const on = p.key === prohibitedNow?.key;
+            const over = p.end.getTime() <= now;
+            return (
+              <li key={p.key} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={clsx('h-2 w-2 shrink-0 rounded-full', on ? 'bg-danger' : over ? 'bg-ink/20' : 'bg-danger/40')}
+                    aria-hidden
+                  />
+                  <span className={clsx('text-sm', on ? 'font-semibold text-danger' : over ? 'text-ink-faint' : 'text-ink')}>
+                    {p.name}
+                  </span>
+                </div>
+                <span
+                  className={clsx(
+                    'font-numeric text-sm tabular-nums',
+                    on ? 'text-danger' : over ? 'text-ink-faint' : 'text-ink-muted'
+                  )}
+                >
+                  {formatClock(p.start)} – {formatClock(p.end)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 text-xs text-ink-faint">
+          Voluntary (nafl) prayers are also not allowed after praying Fajr until sunrise, and after praying Asr until
+          sunset.
+        </p>
+      </div>
+
       <p className="mt-3 text-xs text-ink-faint">
-        Calculated for {city.name}. Treat it as a guide and check your local timetable.
+        Calculated for {city.name}. The prohibited times follow the Hanafi view and are set to {PROHIBITED_MINUTES.sunrise}{' '}
+        min after sunrise, {PROHIBITED_MINUTES.zenith} min before Dhuhr and {PROHIBITED_MINUTES.sunset} min before sunset,
+        the longer end of what the sources give. Treat all of this as a guide, and check your local timetable or imam.
       </p>
 
       {settingsOpen && <PrayerSettingsSheet onClose={() => setSettingsOpen(false)} />}
@@ -219,7 +274,7 @@ function PrayerSettingsSheet({ onClose }: { onClose: () => void }) {
 
         <p className="text-sm text-ink-muted">
           The usual choice in Bangladesh is Karachi with Hanafi Asr, which is already selected. These settings are kept
-          on this device only.
+          on this device only. The prohibited times always follow the Hanafi view.
         </p>
       </div>
     </Sheet>
