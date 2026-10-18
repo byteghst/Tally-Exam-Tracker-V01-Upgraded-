@@ -1,4 +1,4 @@
-import type { Task } from '@/types';
+import type { Subtask, Task } from '@/types';
 import { parseISODate } from '@/lib/dates';
 import { subtaskProgress } from '@/lib/subtasks';
 
@@ -156,6 +156,15 @@ function hline(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number,
   ctx.stroke();
 }
 
+function vline(ctx: CanvasRenderingContext2D, x: number, y1: number, y2: number, color: string, width: number) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+}
+
 function pill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
   const r = Math.min(h / 2, w / 2);
   ctx.beginPath();
@@ -183,6 +192,49 @@ function headline(done: number, total: number): string {
   if (done * 2 >= total) return 'More than halfway there.';
   if (done > 0) return 'Moving, one task at a time.';
   return 'The day is just beginning.';
+}
+
+// Row sizes for the day's task list. The roomy set is used when everything
+// fits; otherwise the tighter set, and only then are rows left out.
+interface ListMetrics {
+  taskH: number;
+  subH: number;
+  taskFont: number;
+  subFont: number;
+}
+const ROOMY: ListMetrics = { taskH: 82, subH: 52, taskFont: 34, subFont: 28 };
+const TIGHT: ListMetrics = { taskH: 66, subH: 42, taskFont: 32, subFont: 25 };
+const MORE_H = 60;
+
+/** A tick in a circle, or an empty ring, at (cx, cy). */
+function tickCircle(
+  ctx: CanvasRenderingContext2D,
+  P: Palette,
+  cx: number,
+  cy: number,
+  r: number,
+  isDone: boolean
+) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  if (isDone) {
+    ctx.fillStyle = P.done;
+    ctx.fill();
+    const k = r / 19;
+    ctx.strokeStyle = P.onDone;
+    ctx.lineWidth = 4 * k;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 8 * k, cy + 1 * k);
+    ctx.lineTo(cx - 2 * k, cy + 8 * k);
+    ctx.lineTo(cx + 9 * k, cy - 7 * k);
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = P.faint;
+    ctx.lineWidth = r >= 19 ? 3 : 2.5;
+    ctx.stroke();
+  }
 }
 
 /**
@@ -342,49 +394,55 @@ export function drawTaskCard(
       put(ctx, letter, cx, baseY + 44, `600 26px ${FONT_UI}`, d.iso === data.endISO ? P.ink : P.faint, 'center');
     });
   } else if (total > 0) {
-    // ---- the tasks of the day ----
-    const rowH = 82;
-    const maxRows = 5;
-    const visible = ordered.length > maxRows ? ordered.slice(0, maxRows - 1) : ordered;
-    const hidden = ordered.length - visible.length;
+    // ---- the tasks of the day, each followed by its subtasks ----
+    const BOTTOM = H - 140;
+    const avail = BOTTOM - listTop;
+    const heightOf = (m: ListMetrics): number =>
+      ordered.reduce((sum, t) => sum + m.taskH + (t.subtasks?.length ?? 0) * m.subH, 0);
+    const metrics = heightOf(ROOMY) <= avail ? ROOMY : TIGHT;
+    // when even the tight set does not fit, leave room for a "+N more" line
+    const limit = heightOf(metrics) <= avail ? BOTTOM : BOTTOM - MORE_H;
 
-    visible.forEach((task, i) => {
-      const y = listTop + i * rowH;
-      const a = ease(clamp01((p - 0.3 - i * 0.07) / 0.25));
-      const cy = y + rowH / 2;
+    const blocks: Array<{ task: Task; y: number; subs: Subtask[] }> = [];
+    let y = listTop;
+    let hiddenTasks = 0;
+    let hiddenSubs = 0;
+    ordered.forEach((task, i) => {
+      const all = task.subtasks ?? [];
+      if (y + metrics.taskH > limit) {
+        hiddenTasks++;
+        hiddenSubs += all.length;
+        return;
+      }
+      // every task keeps its own row; the space left over is shared out to subtasks in order
+      const restAfter = ordered.length - i - 1;
+      const room = Math.max(0, Math.floor((limit - y - metrics.taskH - restAfter * metrics.taskH) / metrics.subH));
+      const subs = all.slice(0, room);
+      hiddenSubs += all.length - subs.length;
+      blocks.push({ task, y, subs });
+      y += metrics.taskH + subs.length * metrics.subH;
+    });
+
+    // rows appear one after another, but never later than the last 25% of the reveal
+    let seq = 0;
+    const alphaFor = (n: number): number => ease(clamp01((p - 0.3 - Math.min(n * 0.05, 0.4)) / 0.25));
+
+    blocks.forEach(({ task, y: top, subs }) => {
+      const cy = top + metrics.taskH / 2;
       const cx = PAD + 20;
       const isDone = task.status === 'completed';
       const subProgress = subtaskProgress(task);
+      const a = alphaFor(seq++);
 
       ctx.save();
       ctx.globalAlpha = a;
       ctx.translate(0, (1 - a) * 14);
 
-      hline(ctx, PAD, W - PAD, y, P.border, 2);
-
-      // tick circle
-      ctx.beginPath();
-      ctx.arc(cx, cy, 19, 0, Math.PI * 2);
-      if (isDone) {
-        ctx.fillStyle = P.done;
-        ctx.fill();
-        ctx.strokeStyle = P.onDone;
-        ctx.lineWidth = 4;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(cx - 8, cy + 1);
-        ctx.lineTo(cx - 2, cy + 8);
-        ctx.lineTo(cx + 9, cy - 7);
-        ctx.stroke();
-      } else {
-        ctx.strokeStyle = P.faint;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
+      hline(ctx, PAD, W - PAD, top, P.border, 2);
+      tickCircle(ctx, P, cx, cy, 19, isDone);
 
       // name, struck through when done
-      const nameFont = `500 34px ${FONT_UI}`;
+      const nameFont = `500 ${metrics.taskFont}px ${FONT_UI}`;
       const nameX = PAD + 60;
       const rightW = subProgress ? 120 : 0;
       const label = fit(ctx, task.name, nameFont, W - PAD - nameX - rightW - 12);
@@ -408,16 +466,45 @@ export function drawTaskCard(
           'middle'
         );
       }
-
       ctx.restore();
+
+      // subtasks: a thin branch down from the task, one small row each
+      subs.forEach((s, j) => {
+        const sy = top + metrics.taskH + j * metrics.subH;
+        const scy = sy + metrics.subH / 2;
+        const subCx = PAD + 20 + 34;
+        const last = j === subs.length - 1;
+        const sa = alphaFor(seq++);
+
+        ctx.save();
+        ctx.globalAlpha = sa;
+        ctx.translate(0, (1 - sa) * 10);
+
+        vline(ctx, cx, j === 0 ? top + metrics.taskH / 2 + 19 : sy, last ? scy : sy + metrics.subH, P.border, 2);
+        hline(ctx, cx, subCx - 14, scy, P.border, 2);
+        tickCircle(ctx, P, subCx, scy, 12, s.done);
+
+        const subFont = `500 ${metrics.subFont}px ${FONT_UI}`;
+        const subX = subCx + 26;
+        const subLabel = fit(ctx, s.name, subFont, W - PAD - subX);
+        put(ctx, subLabel, subX, scy, subFont, s.done ? P.faint : P.muted, 'left', 'middle');
+        if (s.done) {
+          ctx.font = subFont;
+          const subW = ctx.measureText(subLabel).width;
+          hline(ctx, subX, subX + subW, scy, P.faint, 2);
+        }
+        ctx.restore();
+      });
     });
 
-    if (hidden > 0) {
-      const y = listTop + visible.length * rowH;
+    if (hiddenTasks > 0 || hiddenSubs > 0) {
+      const parts: string[] = [];
+      if (hiddenTasks > 0) parts.push(`${hiddenTasks} more ${hiddenTasks === 1 ? 'task' : 'tasks'}`);
+      if (hiddenSubs > 0) parts.push(`${hiddenSubs} ${hiddenSubs === 1 ? 'subtask' : 'subtasks'}`);
       ctx.save();
-      ctx.globalAlpha = ease(clamp01((p - 0.3 - visible.length * 0.07) / 0.25));
+      ctx.globalAlpha = alphaFor(seq);
       hline(ctx, PAD, W - PAD, y, P.border, 2);
-      put(ctx, `+${hidden} more`, PAD + 60, y + rowH / 2, `italic 400 38px ${FONT_SERIF}`, P.muted, 'left', 'middle');
+      put(ctx, `+${parts.join(', ')}`, PAD + 60, y + MORE_H / 2, `italic 400 36px ${FONT_SERIF}`, P.muted, 'left', 'middle');
       ctx.restore();
     }
   }
