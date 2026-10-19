@@ -3,12 +3,14 @@ import { Download, Pencil, Plus, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { LiveCountdown } from '@/components/ui/LiveCountdown';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { DeadlineForm } from '@/components/features/deadlines/DeadlineForm';
 import { DeadlineCardSheet } from '@/components/features/deadlines/DeadlineCardSheet';
 import { useDeadlineStore, type Deadline } from '@/store/deadlineStore';
-import { describeCountdown, formatDate, todayISO } from '@/lib/dates';
+import { formatDate, todayISO } from '@/lib/dates';
+import { targetTime } from '@/lib/countdown';
 import { formatTime12 } from '@/lib/deadlineFormat';
 
 // Priority shows as a small coloured dot, the same as on Tasks.
@@ -20,6 +22,11 @@ const PRIORITY_DOT: Record<string, string> = {
 
 function byDue(a: Deadline, b: Deadline): number {
   return a.dueDate.localeCompare(b.dueDate) || (a.dueTime ?? '99:99').localeCompare(b.dueTime ?? '99:99');
+}
+
+/** A deadline with no time is due by the end of its day. */
+function dueMoment(d: Deadline): number {
+  return targetTime(d.dueDate, d.dueTime, 'end');
 }
 
 export function Deadlines() {
@@ -55,7 +62,7 @@ export function Deadlines() {
 
   function renderRows(list: Deadline[]) {
     return (
-      <ul className="divide-y divide-border">
+      <ul className="space-y-2">
         {list.map((d) => (
           <DeadlineRow
             key={d.id}
@@ -87,13 +94,16 @@ export function Deadlines() {
           <p className="eyebrow">{next.dueDate < today ? 'Most overdue' : 'Next deadline'}</p>
           <p
             className={clsx(
-              'mt-2 font-serif text-5xl leading-none tracking-tight',
+              'mt-2 truncate font-serif text-4xl leading-tight tracking-tight',
               next.dueDate < today ? 'text-danger' : 'text-ink'
             )}
           >
-            {describeCountdown(next.dueDate)}
+            {next.title}
           </p>
-          <p className="mt-2 truncate text-ink-muted">{next.title}</p>
+          <LiveCountdown target={dueMoment(next)} variant="block" pastLabel="Overdue" pastSuffix=" ago" className="mt-4" />
+          <p className="mt-3 text-sm text-ink-muted">
+            {[formatDate(next.dueDate), formatTime12(next.dueTime)].filter(Boolean).join(' · ')}
+          </p>
         </Rise>
       )}
 
@@ -169,7 +179,7 @@ function DeadlineRow({
   const when = [formatDate(deadline.dueDate), formatTime12(deadline.dueTime)].filter(Boolean).join(' · ');
 
   return (
-    <li className="py-3">
+    <li className="rounded-card bg-surface-raised px-3 py-3 shadow-soft">
       <div className="flex items-center gap-3">
         <CheckButton
           checked={done}
@@ -182,7 +192,7 @@ function DeadlineRow({
             {deadline.title}
           </StrikeText>
           <p className={clsx('mt-0.5 truncate text-xs', isOverdue ? 'text-danger' : 'text-ink-muted')}>
-            {done ? 'Done' : describeCountdown(deadline.dueDate)} · {when}
+            {done ? 'Done' : <LiveCountdown target={dueMoment(deadline)} />} · {when}
           </p>
         </div>
         <button

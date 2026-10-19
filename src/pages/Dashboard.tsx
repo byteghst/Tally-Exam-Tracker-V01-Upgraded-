@@ -12,7 +12,7 @@ import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { isFuture, todayISO } from '@/lib/dates';
+import { isPast, todayISO } from '@/lib/dates';
 import { getVisibleOrderedIds } from '@/lib/dashboardWidgets';
 import { sortExamsByDateTime } from '@/lib/examSort';
 import { computeDailyMission } from '@/lib/dailyMission';
@@ -31,7 +31,8 @@ export function Dashboard() {
   }, [hydrateExams, hydrateTasks]);
 
   const todaysTasks = tasks.filter((t) => t.date === todayISO());
-  const nextExam = sortExamsByDateTime(exams.filter((e) => e.status === 'upcoming' && isFuture(e.date)))[0];
+  // Includes an exam that is today, so its live countdown shows on exam day.
+  const nextExam = sortExamsByDateTime(exams.filter((e) => e.status === 'upcoming' && !isPast(e.date)))[0];
 
   const visibleIds = getVisibleOrderedIds(settings.dashboardLayout);
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { LiveCountdown } from '@/components/ui/LiveCountdown';
 import { Rise, Rule, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
@@ -11,6 +12,8 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { calculateScore } from '@/lib/scoring';
 import { compareToPrevious } from '@/lib/examComparison';
 import { formatDate } from '@/lib/dates';
+import { targetTime } from '@/lib/countdown';
+import { formatTime12 } from '@/lib/deadlineFormat';
 
 /** Goes back one step in history, or to the exam list if the page was opened directly. */
 function useGoBack() {
@@ -106,6 +109,7 @@ export function ExamDetail() {
       <Rise as="header">
         <p className="eyebrow">
           {exam.type} exam · {formatDate(exam.date)}
+          {exam.startTime ? ` · ${formatTime12(exam.startTime)}` : ''}
         </p>
         <h1 className="mt-3 font-serif text-[clamp(2.75rem,12vw,4.5rem)] leading-[0.95] tracking-tight text-ink">
           {exam.name}
@@ -122,6 +126,20 @@ export function ExamDetail() {
           </Button>
         </div>
       </Rise>
+
+      {/* Live clock to the start time, only while the exam is still ahead. */}
+      {exam.status === 'upcoming' && exam.startTime && (
+        <Rise>
+          <p className="eyebrow">Starts in</p>
+          <LiveCountdown
+            target={targetTime(exam.date, exam.startTime)}
+            variant="block"
+            pastLabel="Started"
+            pastSuffix=" ago"
+            className="mt-3"
+          />
+        </Rise>
+      )}
 
       <Rise>
         <ScoreHero percentage={score.percentage} finalScore={score.finalScore} totalMarks={score.totalMarks} />

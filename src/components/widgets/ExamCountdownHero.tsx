@@ -2,10 +2,13 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LiveCountdown } from '@/components/ui/LiveCountdown';
 import { Rise, Rule } from '@/components/motion/Reveal';
 import { maskUp } from '@/lib/motion';
 import { useCountUp } from '@/hooks/useCountUp';
 import { daysBetween, todayISO, formatDate } from '@/lib/dates';
+import { targetTime } from '@/lib/countdown';
+import { formatTime12 } from '@/lib/deadlineFormat';
 import type { Exam } from '@/types';
 
 interface ExamCountdownHeroProps {
@@ -59,8 +62,22 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
           <p className="eyebrow !text-ink-muted">{days === 0 ? 'Today' : days === 1 ? 'Day to go' : 'Days to go'}</p>
         </div>
 
+        {/* Live clock to the exact start time, when the exam has one. */}
+        {exam.startTime && (
+          <LiveCountdown
+            target={targetTime(exam.date, exam.startTime)}
+            variant="block"
+            pastLabel="Started"
+            pastSuffix=" ago"
+            className="mt-5"
+          />
+        )}
+
         <p className="mt-5 font-serif text-3xl italic leading-tight text-ink">{exam.name}</p>
-        <p className="mt-1 text-sm text-ink-muted">{formatDate(exam.date)}</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          {formatDate(exam.date)}
+          {exam.startTime ? ` · ${formatTime12(exam.startTime)}` : ''}
+        </p>
 
         {hasScore && <p className="mt-3 text-xs text-ink-faint">A result is already recorded for this exam.</p>}
 

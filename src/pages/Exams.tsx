@@ -4,15 +4,19 @@ import { motion } from 'framer-motion';
 import { ChevronRight, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { LiveCountdown } from '@/components/ui/LiveCountdown';
 import { Rise, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
 import { useOpenAddFromNavState } from '@/hooks/useOpenAddFromNavState';
 import { calculateScore } from '@/lib/scoring';
-import { parseISODate } from '@/lib/dates';
+import { describeCountdown, formatDate, isPast, parseISODate } from '@/lib/dates';
+import { targetTime } from '@/lib/countdown';
+import { formatTime12 } from '@/lib/deadlineFormat';
 import { sortExamsByDateTime } from '@/lib/examSort';
 import { spring } from '@/lib/motion';
-import type { ExamType } from '@/types';
+import type { Exam, ExamType } from '@/types';
 
 const FILTERS: Array<{ label: string; value: ExamType | 'all' }> = [
   { label: 'All', value: 'all' },
@@ -37,6 +41,33 @@ function filterFromPath(pathname: string): ExamType | 'all' {
   return 'all';
 }
 
+/** The exam coming up next, with a live clock to its start time. */
+function NextExamBanner({ exam }: { exam: Exam }) {
+  const target = exam.startTime ? targetTime(exam.date, exam.startTime) : null;
+  return (
+    <Rise>
+      <Link to={`/exams/${exam.id}`} className="block">
+        <GlassCard interactive className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Next exam</p>
+            <p className="eyebrow">{exam.type}</p>
+          </div>
+          <p className="mt-2 truncate font-serif text-3xl leading-tight tracking-tight text-ink">{exam.name}</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {formatDate(exam.date)}
+            {exam.startTime ? ` \u00b7 ${formatTime12(exam.startTime)}` : ''}
+          </p>
+          {target !== null ? (
+            <LiveCountdown target={target} variant="block" pastLabel="Started" pastSuffix=" ago" className="mt-4" />
+          ) : (
+            <p className="mt-4 font-serif text-3xl leading-none text-ink">{describeCountdown(exam.date)}</p>
+          )}
+        </GlassCard>
+      </Link>
+    </Rise>
+  );
+}
+
 export function Exams() {
   const { exams, hydrate } = useExamStore();
   const location = useLocation();
@@ -54,6 +85,7 @@ export function Exams() {
   }, [location.pathname]);
 
   const filtered = sortExamsByDateTime(filter === 'all' ? exams : exams.filter((e) => e.type === filter));
+  const nextExam = sortExamsByDateTime(exams.filter((e) => e.status === 'upcoming' && !isPast(e.date)))[0];
   const addDefaultType: ExamType = filter === 'all' ? 'daily' : filter;
   const countOf = (value: ExamType | 'all') => (value === 'all' ? exams.length : exams.filter((e) => e.type === value).length);
 
@@ -69,7 +101,9 @@ export function Exams() {
         </Button>
       </Rise>
 
-      <Rise className="flex gap-6 border-b border-border">
+      {nextExam && <NextExamBanner exam={nextExam} />}
+
+      <Rise className="flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => {
           const active = filter === f.value;
           return (
@@ -77,19 +111,21 @@ export function Exams() {
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={clsx(
-                'relative pb-3 text-sm font-semibold transition-colors duration-200',
-                active ? 'text-ink' : 'text-ink-faint hover:text-ink'
+                'relative shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-200',
+                active ? 'text-accent-on' : 'bg-ink/[0.05] text-ink-muted hover:text-ink'
               )}
             >
-              {f.label}
-              <span className="ml-1.5 font-numeric text-xs tabular-nums text-ink-faint">{countOf(f.value)}</span>
               {active && (
                 <motion.span
                   layoutId="exam-filter"
                   transition={spring}
-                  className="absolute inset-x-0 -bottom-px h-0.5 bg-accent"
+                  className="absolute inset-0 rounded-full bg-accent"
                 />
               )}
+              <span className="relative">
+                {f.label}
+                <span className="ml-1.5 font-numeric text-xs tabular-nums opacity-70">{countOf(f.value)}</span>
+              </span>
             </button>
           );
         })}
@@ -104,7 +140,7 @@ export function Exams() {
           </Button>
         </Rise>
       ) : (
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="space-y-2.5">
           {filtered.map((exam) => {
             const score = calculateScore({
               mcqCount: exam.mcqCount,
@@ -122,7 +158,10 @@ export function Exams() {
             const completed = exam.status === 'completed';
             return (
               <Rise as="li" key={exam.id}>
-                <Link to={`/exams/${exam.id}`} className="group flex items-center gap-4 py-4 transition-colors hover:bg-ink/5">
+                <Link
+                  to={`/exams/${exam.id}`}
+                  className="group flex items-center gap-4 rounded-card bg-surface-raised px-4 py-3.5 shadow-soft transition-shadow duration-200 hover:shadow-raise"
+                >
                   <div className="w-12 shrink-0 text-center">
                     <p className="font-serif text-3xl leading-none text-ink">{date.getDate()}</p>
                     <p className="eyebrow mt-1">{date.toLocaleDateString(undefined, { month: 'short' })}</p>
@@ -133,14 +172,25 @@ export function Exams() {
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs capitalize text-ink-muted">
                       <span className={clsx('h-2 w-2 rounded-full', TYPE_DOT[exam.type])} />
                       {exam.type}
-                      {!completed && ` · ${exam.status}`}
+                      {!completed && ` \u00b7 ${exam.status}`}
+                      {exam.startTime && ` \u00b7 ${formatTime12(exam.startTime)}`}
                     </p>
+                    {exam.status === 'upcoming' && exam.startTime && (
+                      <p className="mt-1 text-xs font-semibold text-accent">
+                        <LiveCountdown
+                          target={targetTime(exam.date, exam.startTime)}
+                          futureSuffix=" to go"
+                          pastPrefix="Started"
+                          pastSuffix=" ago"
+                        />
+                      </p>
+                    )}
                   </div>
 
                   {completed && (
                     <div className="text-right">
                       <p className="font-serif text-3xl leading-none tracking-tight text-ink">
-                        {score.percentage !== null ? `${Math.round(score.percentage)}%` : '—'}
+                        {score.percentage !== null ? `${Math.round(score.percentage)}%` : '\u2014'}
                       </p>
                       <p className="mt-1 font-numeric text-xs tabular-nums text-ink-muted">
                         {score.finalScore} / {score.totalMarks}
