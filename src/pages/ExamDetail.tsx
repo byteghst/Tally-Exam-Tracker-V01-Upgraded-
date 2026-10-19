@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { LiveCountdown } from '@/components/ui/LiveCountdown';
-import { Rise, Rule, Section, Stagger } from '@/components/motion/Reveal';
+import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
 import { useUIStore } from '@/store/uiStore';
@@ -101,7 +102,7 @@ export function ExamDetail() {
   ];
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise>
         <BackButton />
       </Rise>
@@ -159,9 +160,12 @@ export function ExamDetail() {
       </Rise>
 
       <Section label="Breakdown">
-        <dl className="divide-y divide-border">
+        <dl className="space-y-1.5">
           {rows.map(([label, value]) => (
-            <div key={label} className="flex items-baseline justify-between gap-4 py-3">
+            <div
+              key={label}
+              className="flex items-baseline justify-between gap-4 rounded-control bg-ink/[0.04] px-4 py-3"
+            >
               <dt className="text-ink-muted">{label}</dt>
               <dd className="font-numeric text-lg font-medium tabular-nums text-ink">{value}</dd>
             </div>
@@ -171,7 +175,9 @@ export function ExamDetail() {
 
       {exam.notes && (
         <Section label="Notes">
-          <p className="whitespace-pre-line font-serif text-xl italic leading-snug text-ink">{exam.notes}</p>
+          <GlassCard className="p-5">
+            <p className="whitespace-pre-line font-serif text-xl italic leading-snug text-ink">{exam.notes}</p>
+          </GlassCard>
         </Section>
       )}
 
@@ -201,14 +207,13 @@ function ScoreHero({
   const animated = useCountUp(percentage ?? 0, 1300, 1);
 
   return (
-    <div>
+    <GlassCard className="p-5">
       <p className="eyebrow">Result</p>
-      <Rule strong className="mt-3" />
       {percentage === null ? (
-        <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">No result yet.</p>
+        <p className="mt-4 font-serif text-5xl leading-none tracking-tight text-ink">No result yet.</p>
       ) : (
         <>
-          <p className="mt-5 font-serif text-[clamp(5.5rem,30vw,9rem)] leading-[0.85] tracking-tight text-ink">
+          <p className="mt-3 font-serif text-[clamp(5.5rem,30vw,9rem)] leading-[0.85] tracking-tight text-ink">
             {animated}
             <span className="text-[0.45em] text-ink-faint">%</span>
           </p>
@@ -217,7 +222,7 @@ function ScoreHero({
           </p>
         </>
       )}
-    </div>
+    </GlassCard>
   );
 }
 
@@ -228,7 +233,7 @@ function Comparison({ diff, detail }: { diff: number; detail: string }) {
   const tone = flat ? 'text-ink-muted' : improved ? 'text-forest' : 'text-danger';
 
   return (
-    <div className={`mt-5 flex items-center gap-2 border-t border-border pt-4 ${tone}`}>
+    <div className={`mt-3 flex items-center gap-2 rounded-control bg-ink/[0.04] px-4 py-3 ${tone}`}>
       {!flat && <Icon size={20} />}
       <span className="font-numeric text-lg font-semibold tabular-nums">
         {flat ? 'No change' : `${improved ? '+' : ''}${diff}%`}

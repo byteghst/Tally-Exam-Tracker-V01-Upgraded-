@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Award, BarChart3, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Badge';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamScoreTrendChart } from '@/components/features/analytics/ExamScoreTrendChart';
 import { TaskCompletionTrendChart } from '@/components/features/analytics/TaskCompletionTrendChart';
@@ -75,24 +76,28 @@ export function Analytics() {
   }
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise as="header">
         <p className="eyebrow">Insights</p>
         <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Analytics</h1>
       </Rise>
 
-      <Rise className="flex items-center gap-4 border-y border-border py-4">
-        <FileText size={22} className="shrink-0 text-accent" />
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-ink">Monthly report</p>
-          <p className="text-sm text-ink-muted">Download a detailed breakdown of any month.</p>
-        </div>
-        <Button size="sm" onClick={() => setReportOpen(true)}>
-          Open
-        </Button>
+      <Rise>
+        <GlassCard className="flex items-center gap-4 p-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+            <FileText size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-ink">Monthly report</p>
+            <p className="text-sm text-ink-muted">Download a detailed breakdown of any month.</p>
+          </div>
+          <Button size="sm" onClick={() => setReportOpen(true)}>
+            Open
+          </Button>
+        </GlassCard>
       </Rise>
 
-      <Rise className="grid grid-cols-2 gap-x-6 gap-y-7 border-b border-border pb-7 md:grid-cols-4">
+      <Rise className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Metric label="Total exams" value={exams.length} />
         <Metric label="Average" value={avgPercentage} suffix="%" />
         <Metric label="Total tasks" value={tasks.length} />
@@ -106,9 +111,9 @@ export function Analytics() {
 
       {milestones.length > 0 && (
         <Section label="Milestones">
-          <ul className="divide-y divide-border">
+          <ul className="space-y-2">
             {milestones.map((m) => (
-              <li key={m.id} className="flex items-start gap-3 py-3">
+              <li key={m.id} className="flex items-start gap-3 rounded-control bg-ink/[0.04] px-4 py-3">
                 <Award size={18} className="mt-0.5 shrink-0 text-accent" />
                 <div>
                   <p className="text-base text-ink">{m.label}</p>
@@ -128,11 +133,11 @@ export function Analytics() {
 function Metric({ label, value, suffix }: { label: string; value: number | null; suffix?: string }) {
   const animated = useCountUp(value ?? 0, 900, suffix === '%' ? 1 : 0);
   return (
-    <div>
+    <GlassCard className="p-4">
       <p className="eyebrow">{label}</p>
       <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">
-        {value === null ? '—' : `${animated}${suffix ?? ''}`}
+        {value === null ? '\u2014' : `${animated}${suffix ?? ''}`}
       </p>
-    </div>
+    </GlassCard>
   );
 }

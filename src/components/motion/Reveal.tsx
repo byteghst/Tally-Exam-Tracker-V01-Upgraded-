@@ -1,12 +1,12 @@
 import { type ReactNode, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { drawX, maskUp, rise, staggerContainer } from '@/lib/motion';
+import { maskUp, rise, staggerContainer } from '@/lib/motion';
 
 /**
  * Page-level reveal building blocks. Wrap a screen in <Stagger>; everything
- * inside (Rise, Section, Rule, SplitWords, or any motion element using the
- * shared variants) animates in one after another.
+ * inside (Rise, Section, SplitWords, or any motion element using the shared
+ * variants) animates in one after another.
  */
 
 export function Stagger({
@@ -47,15 +47,13 @@ export function Rise({
   );
 }
 
-/** A hairline that draws itself in. `strong` = ink-coloured masthead rule. */
-export function Rule({ className, strong }: { className?: string; strong?: boolean }) {
-  return (
-    <motion.div
-      aria-hidden
-      variants={drawX}
-      className={clsx('h-px w-full origin-left', strong ? 'bg-ink' : 'bg-border', className)}
-    />
-  );
+/**
+ * Used to be a drawn hairline. The app no longer uses lines, so this is now an
+ * empty spacer that keeps the margin its callers give it (and the `strong`
+ * prop, which no longer does anything, so existing screens still compile).
+ */
+export function Rule({ className }: { className?: string; strong?: boolean }) {
+  return <div aria-hidden className={clsx('h-0 w-full', className)} />;
 }
 
 const wordsContainer = staggerContainer(0.06, 0);
@@ -79,7 +77,7 @@ export function SplitWords({ text, className }: { text: string; className?: stri
   );
 }
 
-/** A flat titled block: hairline on top, small label, optional aside, then content. */
+/** A titled block: small label, optional aside, then content. No lines. */
 export function Section({
   label,
   aside,
@@ -93,12 +91,11 @@ export function Section({
 }) {
   return (
     <motion.section variants={rise} className={className}>
-      <Rule />
-      <div className="mt-4 flex items-baseline justify-between gap-3">
+      <div className="flex items-baseline justify-between gap-3">
         <p className="eyebrow">{label}</p>
         {aside}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-4">{children}</div>
     </motion.section>
   );
 }

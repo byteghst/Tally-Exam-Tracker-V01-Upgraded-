@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Sheet } from '@/components/ui/Sheet';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Rise, Rule, Section, Stagger } from '@/components/motion/Reveal';
+import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { useStudyStore, elapsedMs, type StudySubject } from '@/store/studyStore';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
@@ -228,7 +228,7 @@ export function Study() {
   const recent = useMemo(() => [...sessions].sort((a, b) => b.end - a.end).slice(0, 8), [sessions]);
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise as="header" className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Focus</p>
@@ -241,13 +241,12 @@ export function Study() {
 
       <Rise>
         {active && activeSubject ? (
-          <div>
+          <GlassCard accented={running} className="p-5">
             <div className="flex items-center justify-between">
               <p className="eyebrow">{running ? 'Studying now' : 'Paused'}</p>
               {running && <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />}
             </div>
-            <Rule strong className="mt-3" />
-            <div className="mt-5 flex items-center gap-3">
+            <div className="mt-4 flex items-center gap-3">
               <SubjectCover subject={activeSubject} className="h-12 w-12 shrink-0 rounded-control" />
               <p className="truncate font-serif text-3xl italic leading-none text-ink">{activeSubject.name}</p>
             </div>
@@ -268,35 +267,31 @@ export function Study() {
                 <Square className="h-4 w-4" /> Stop &amp; save
               </Button>
             </div>
-            <button
-              onClick={() => setDiscardOpen(true)}
-              className="mt-4 w-full text-center text-sm text-ink-faint underline-offset-2 hover:text-danger hover:underline"
-            >
+            <Button variant="ghost" size="sm" className="mt-3 w-full text-ink-muted hover:text-danger" onClick={() => setDiscardOpen(true)}>
               Discard this session
-            </button>
+            </Button>
             <p className="mt-2 text-center text-xs text-ink-faint">
               The timer keeps running if you switch apps or close Tally.
             </p>
-          </div>
+          </GlassCard>
         ) : (
-          <div>
+          <GlassCard className="p-5">
             <p className="eyebrow">Timer</p>
-            <Rule strong className="mt-3" />
-            <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">Ready when you are.</p>
+            <p className="mt-4 font-serif text-5xl leading-none tracking-tight text-ink">Ready when you are.</p>
             <p className="mt-3 text-ink-muted">Tap a subject below to start the clock.</p>
-          </div>
+          </GlassCard>
         )}
       </Rise>
 
-      <Rise className="grid grid-cols-2 border-y border-border">
-        <div className="py-5 pr-4">
+      <Rise className="grid grid-cols-2 gap-3">
+        <GlassCard className="p-4">
           <p className="eyebrow">Today</p>
           <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">{formatShort(todayTotal)}</p>
-        </div>
-        <div className="border-l border-border py-5 pl-5">
+        </GlassCard>
+        <GlassCard className="p-4">
           <p className="eyebrow">Last 7 days</p>
           <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">{formatShort(weekTotal)}</p>
-        </div>
+        </GlassCard>
       </Rise>
 
       <Section label="Subjects">
@@ -325,7 +320,7 @@ export function Study() {
                   <div className="relative">
                     <SubjectCover subject={subject} className="h-28 w-full" />
                     {isActive && (
-                      <span className="absolute left-2 top-2 bg-ink px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-surface">
+                      <span className="absolute left-2 top-2 rounded-full bg-ink px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-surface">
                         {running ? 'Studying' : 'Paused'}
                       </span>
                     )}
@@ -370,11 +365,11 @@ export function Study() {
 
       {recent.length > 0 && (
         <Section label="Recent sessions">
-          <ul className="divide-y divide-border">
+          <ul className="space-y-2">
             {recent.map((session) => {
               const subject = subjects.find((s) => s.id === session.subjectId);
               return (
-                <li key={session.id} className="flex items-center gap-3 py-3">
+                <li key={session.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-4 py-3">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: subject ? toneColor(subject.color) : '#7A7165' }}
