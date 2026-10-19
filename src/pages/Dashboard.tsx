@@ -7,7 +7,7 @@ import { DailyMission } from '@/components/features/dashboard/DailyMission';
 import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
-import { PrayerTimesWidget } from '@/components/widgets/PrayerTimesWidget';
+import { PrayerFab } from '@/components/widgets/PrayerFab';
 import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -50,9 +50,6 @@ export function Dashboard() {
           show/hide/reorder list, so it can't be hidden or moved. */}
       <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
 
-      {/* Also permanent: today's prayer times with each prayer's time limit. */}
-      <PrayerTimesWidget />
-
       {showMission && (
         <DailyMission
           items={missionItems}
@@ -90,6 +87,10 @@ export function Dashboard() {
 
       <ExamForm open={examFormOpen} onClose={() => setExamFormOpen(false)} />
       <TaskForm open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
+
+      {/* Prayer times: a floating button with the current prayer, opening a popup.
+          It draws itself into document.body, so it is not part of this layout. */}
+      <PrayerFab />
     </Stagger>
   );
 }
