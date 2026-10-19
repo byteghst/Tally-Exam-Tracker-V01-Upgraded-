@@ -46,7 +46,7 @@ export function EmptyState({
   icon?: LucideIcon;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-card bg-ink/[0.04] px-6 py-12 text-center">
       {Icon && (
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
           <Icon size={22} strokeWidth={1.75} />

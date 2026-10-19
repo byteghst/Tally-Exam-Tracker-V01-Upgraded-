@@ -48,14 +48,20 @@ export default {
         card: 'var(--radius-card)',
         control: 'var(--radius-control)'
       },
-      // Flat design: no blur and no shadows anywhere. These keys remain only so
-      // class names in not-yet-redesigned files still resolve (to nothing).
-      backdropBlur: {
-        glass: 'var(--blur)'
-      },
+      // Soft tonal design: surfaces are told apart by fill and a gentle, diffuse
+      // shadow, never by outlines. `soft` = resting card, `raise` = pressed/hovered
+      // card, `sheet` = panels that slide up over the page.
       boxShadow: {
+        soft: '0 1px 2px rgb(var(--shadow) / 0.05), 0 8px 24px -10px rgb(var(--shadow) / 0.12)',
+        raise: '0 2px 4px rgb(var(--shadow) / 0.06), 0 16px 32px -12px rgb(var(--shadow) / 0.2)',
+        sheet: '0 -10px 40px -12px rgb(var(--shadow) / 0.25)',
+        // legacy keys, still resolve to nothing for not-yet-redesigned files
         glass: 'none',
         'glass-lg': 'none'
+      },
+      // Blur stays switched off.
+      backdropBlur: {
+        glass: 'var(--blur)'
       },
       backgroundImage: {
         'app-gradient': 'none'

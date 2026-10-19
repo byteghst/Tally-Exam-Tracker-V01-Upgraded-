@@ -41,10 +41,14 @@ export function BottomNav() {
       {/* Tapping anywhere outside the open bar closes it. */}
       <AnimatePresence>{moreOpen && <Scrim key="more-scrim" onClick={() => setMoreOpen(false)} />}</AnimatePresence>
 
-      {/* Flat bar fixed to the bottom edge: a hairline on top, solid paper
-          behind. The active tab gets an accent line that slides between tabs. */}
+      {/* Soft raised bar fixed to the bottom edge: lighter than the page, a
+          gentle shadow above it and no outline. The active tab gets a soft
+          tinted pill behind its icon that slides between tabs. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-safe-bottom md:hidden"
+        className={clsx(
+          'fixed inset-x-0 bottom-0 z-40 bg-surface-raised pb-safe-bottom shadow-sheet md:hidden',
+          !moreOpen && 'rounded-t-[24px]'
+        )}
         aria-label="Primary"
       >
         {/* "More" grows upward out of the bar itself. Each row starts at the
@@ -58,9 +62,9 @@ export function BottomNav() {
               animate={{ height: 'auto' }}
               exit={{ height: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="absolute inset-x-0 bottom-full overflow-hidden border-t border-border bg-surface"
+              className="absolute inset-x-0 bottom-full overflow-hidden rounded-t-[24px] bg-surface-raised"
             >
-              <ul className="divide-y divide-border">
+              <ul className="space-y-0.5 px-2 pb-1 pt-3">
                 {secondary.map((item, i) => (
                   <motion.li
                     key={item.path}
@@ -74,8 +78,8 @@ export function BottomNav() {
                       onClick={() => setMoreOpen(false)}
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-4 px-5 py-4 text-base font-medium transition-colors active:bg-ink/5',
-                          isActive ? 'text-accent' : 'text-ink'
+                          'flex items-center gap-4 rounded-control px-4 py-3.5 text-base font-medium transition-colors active:bg-ink/5',
+                          isActive ? 'bg-accent-soft text-accent' : 'text-ink'
                         )
                       }
                     >
@@ -108,11 +112,15 @@ export function BottomNav() {
                     <motion.span
                       layoutId="bottom-nav-indicator"
                       transition={spring}
-                      className="absolute inset-x-3 -top-px h-0.5 bg-accent"
+                      className="absolute inset-x-0 top-1.5 mx-auto h-8 w-14 rounded-full bg-accent-soft"
                     />
                   )}
-                  <item.icon size={21} strokeWidth={isActive ? 2.2 : 1.7} className={isActive ? 'text-accent' : ''} />
-                  {item.label}
+                  <item.icon
+                    size={21}
+                    strokeWidth={isActive ? 2.2 : 1.7}
+                    className={clsx('relative', isActive && 'text-accent')}
+                  />
+                  <span className="relative">{item.label}</span>
                 </>
               )}
             </NavLink>
@@ -128,9 +136,13 @@ export function BottomNav() {
               moreOpen ? 'text-ink' : 'text-ink-faint active:text-ink'
             )}
           >
-            {moreOpen && <span className="absolute inset-x-3 -top-px h-0.5 bg-accent" />}
-            <MoreHorizontal size={21} strokeWidth={moreOpen ? 2.2 : 1.7} className={moreOpen ? 'text-accent' : ''} />
-            More
+            {moreOpen && <span className="absolute inset-x-0 top-1.5 mx-auto h-8 w-14 rounded-full bg-accent-soft" />}
+            <MoreHorizontal
+              size={21}
+              strokeWidth={moreOpen ? 2.2 : 1.7}
+              className={clsx('relative', moreOpen && 'text-accent')}
+            />
+            <span className="relative">More</span>
           </button>
         </div>
       </nav>

@@ -13,7 +13,7 @@ export function Sidebar() {
   return (
     <aside
       className={clsx(
-        'hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-300 md:flex',
+        'hidden shrink-0 flex-col bg-surface-raised transition-[width] duration-300 md:flex',
         collapsed ? 'w-[76px]' : 'w-[240px]'
       )}
     >
@@ -41,11 +41,11 @@ export function Sidebar() {
                   <motion.span
                     layoutId="sidebar-indicator"
                     transition={spring}
-                    className="absolute inset-y-1.5 left-0 w-0.5 bg-accent"
+                    className="absolute inset-0 rounded-control bg-accent-soft"
                   />
                 )}
-                <item.icon size={20} className={clsx('shrink-0', isActive && 'text-accent')} />
-                {!collapsed && <span>{item.label}</span>}
+                <item.icon size={20} className={clsx('relative shrink-0', isActive && 'text-accent')} />
+                {!collapsed && <span className="relative">{item.label}</span>}
               </>
             )}
           </NavLink>

@@ -2,24 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tally design system: warm paper and ink, flat, editorial.
+/* Tally design system: soft tonal paper.
 
    Palette
    - Surfaces are warm cream (light) or warm charcoal (dark), never blue-tinted.
    - Persimmon is the one main accent. Forest, saffron and rose support it for
      categories, charts and states. There is deliberately no blue or purple.
-   - Surfaces are separated by hairlines and whitespace: no blur, no
-     translucency, no shadows.
+   - There are no outlines. Surfaces are told apart by tone (a lighter card on a
+     deeper page), a gentle diffuse shadow, rounded corners and whitespace.
+     Fields are filled, not underlined. No blur, no translucency.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
 :root {
-  --surface: 246 241 232;
-  --surface-raised: 251 248 242;
+  --surface: 240 234 222;
+  --surface-raised: 253 251 247;
   --ink: 28 24 20;
   --ink-muted: 104 96 86;
-  --ink-faint: 146 137 125;
+  --ink-faint: 140 131 119;
   --border: 221 213 199;
+  --shadow: 70 45 20;
 
   --accent: 217 79 45;
   --accent-soft: 249 227 216;
@@ -30,20 +32,21 @@
   --rose: 201 72 107;
   --danger: 168 32 56;
 
-  --radius-card: 16px;
-  --radius-control: 10px;
+  --radius-card: 20px;
+  --radius-control: 14px;
   --blur: 0px;
   --glass-alpha: 1;
   --glass-hi-a: 0;
 }
 
 .dark {
-  --surface: 18 16 14;
-  --surface-raised: 27 24 21;
+  --surface: 16 14 12;
+  --surface-raised: 31 28 24;
   --ink: 245 238 227;
   --ink-muted: 173 164 151;
   --ink-faint: 120 112 101;
   --border: 50 45 39;
+  --shadow: 0 0 0;
 
   --accent: 255 122 84;
   --accent-soft: 62 33 24;
@@ -122,8 +125,10 @@ body {
   font-family: 'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif;
 }
 
+/* No visible borders by default; a border only shows where a screen gives it
+   an explicit accent/danger colour (for example a selected state). */
 * {
-  @apply border-border;
+  border-color: transparent;
 }
 
 /* Numerals for anything showing scores/stats: tabular figures in a
@@ -142,13 +147,28 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Safety net for screens that have not been redesigned yet.
-   Older markup used white/black overlays (made for a dark glass look) for
-   hover fills, tracks and backdrops. On warm paper those are invisible or
-   muddy, so they are remapped to ink tints, and any blur is switched off.
+   Safety net for screens that have not been moved to the soft tonal look yet.
+
+   1. Hairlines are hidden: dividers, "border-border" outlines and the faint
+      ink-tinted outlines. An outlined element that had no fill of its own gets
+      a light ink tint instead, so it still reads as a shape.
+   2. Older markup used white/black overlays (made for a dark glass look) for
+      hover fills, tracks and backdrops. On warm paper those are invisible or
+      muddy, so they are remapped to ink tints, and any blur is switched off.
    Each screen drops these classes as it is rebuilt; once none remain, this
    block can be deleted.
    --------------------------------------------------------------------------- */
+.border-border,
+[class*='border-border/'],
+[class*='divide-'] > *,
+[class*='border-ink/'] {
+  border-color: transparent !important;
+}
+.border[class*='border-ink/']:not([class*='bg-']),
+.border.border-dashed:not([class*='bg-']) {
+  background-color: rgb(var(--ink) / 0.05);
+}
+
 .bg-white\/5,
 .hover\:bg-white\/5:hover,
 .active\:bg-white\/5:active {
