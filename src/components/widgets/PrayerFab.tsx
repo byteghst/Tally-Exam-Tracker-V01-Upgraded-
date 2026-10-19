@@ -22,7 +22,7 @@ import { usePrayerStore } from '@/store/prayerStore';
 import { fullDayStreak, lastDays, previousDayISO, PRAYER_KEYS, usePrayerLogStore } from '@/store/prayerLogStore';
 
 const SELECT_CLASS =
-  'mt-3 w-full rounded-control border border-border bg-surface px-3 py-2.5 text-base text-ink';
+  'mt-3 h-12 w-full rounded-control border-0 bg-ink/[0.05] px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
 
 /** Everything the button and the popup need, worked out once per tick. */
 interface PrayerView {
@@ -117,7 +117,7 @@ export function PrayerFab() {
         animate={{ opacity: open ? 0 : 1, scale: open ? 0.85 : 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)', pointerEvents: open ? 'none' : 'auto' }}
-        className="fixed right-4 z-40 flex items-center gap-3 rounded-full bg-ink py-3 pl-4 pr-5 text-surface shadow-lg md:bottom-8 md:right-8"
+        className="fixed right-4 z-40 flex items-center gap-3 rounded-full bg-ink py-3 pl-4 pr-5 text-surface shadow-raise md:bottom-8 md:right-8"
       >
         <span className="relative flex h-2.5 w-2.5" aria-hidden>
           <span
@@ -154,7 +154,7 @@ function Block({ index, className, children }: { index: number; className?: stri
   );
 }
 
-/** A labelled on/off switch row. */
+/** A labelled on/off switch row, shown as a soft tile. */
 function ReminderSwitch({
   label,
   hint,
@@ -174,7 +174,7 @@ function ReminderSwitch({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 py-3 text-left"
+      className="flex w-full items-center justify-between gap-4 rounded-control bg-ink/[0.04] px-4 py-3 text-left transition-colors active:bg-ink/[0.07]"
     >
       <span>
         <span className="block text-sm text-ink">{label}</span>
@@ -183,13 +183,13 @@ function ReminderSwitch({
       <span
         className={clsx(
           'relative h-6 w-10 shrink-0 rounded-full transition-colors',
-          checked ? (danger ? 'bg-danger' : 'bg-accent') : 'bg-border'
+          checked ? (danger ? 'bg-danger' : 'bg-accent') : 'bg-ink/20'
         )}
         aria-hidden
       >
         <span
           className={clsx(
-            'absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all',
+            'absolute top-0.5 h-5 w-5 rounded-full bg-surface-raised shadow transition-all',
             checked ? 'left-[18px]' : 'left-0.5'
           )}
         />
@@ -256,13 +256,13 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden />
 
       <motion.div
         role="dialog"
         aria-modal="true"
         aria-label="Prayer times"
-        className="relative max-h-[86dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-border bg-surface p-6 shadow-2xl"
+        className="relative max-h-[86dvh] w-full max-w-md overflow-y-auto rounded-[28px] bg-surface-raised p-6 shadow-sheet"
         // grows out of the floating button (bottom right) and shrinks back into it
         style={{ transformOrigin: '100% 100%' }}
         initial={{ opacity: 0, scale: 0.45, y: 40 }}
@@ -270,13 +270,13 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
         exit={{ opacity: 0, scale: 0.55, y: 30, transition: { duration: 0.24, ease: EASE_OUT } }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       >
-        <Block index={0} className="flex items-center justify-between">
+        <Block index={0} className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
             autoFocus
             aria-label="Back"
-            className="-ml-2 flex items-center gap-1.5 rounded-full px-2 py-1.5 text-sm text-ink-muted hover:bg-ink/5 hover:text-ink"
+            className="flex items-center gap-1.5 rounded-full bg-ink/[0.06] py-2 pl-3 pr-4 text-sm font-semibold text-ink transition-colors hover:bg-ink/10"
           >
             <ArrowLeft size={18} />
             Back
@@ -286,7 +286,7 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
             onClick={() => setChangingCity((v) => !v)}
             aria-expanded={changingCity}
             aria-label={`Prayer times for ${city.name}. Change district`}
-            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+            className="flex items-center gap-1 rounded-full bg-accent-soft py-2 pl-4 pr-3 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
           >
             {city.name}
             <ChevronDown size={14} className={clsx('transition-transform duration-300', changingCity && 'rotate-180')} />
@@ -309,8 +309,8 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
         )}
 
         {prohibitedNow && (
-          <Block index={1} className="mt-6">
-            <div role="alert" className="border-l-2 border-danger bg-danger/5 px-4 py-3">
+          <Block index={1} className="mt-5">
+            <div role="alert" className="rounded-control bg-danger/10 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-danger">Prohibited time now</p>
               <p className="mt-1 text-sm text-ink">{prohibitedNow.detail}</p>
               <p className="mt-1 text-sm text-ink-muted">
@@ -323,91 +323,101 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </Block>
         )}
 
-        <Block index={2} className="mt-8">
-          {activeWin ? (
-            <>
-              <p className="eyebrow">Now</p>
-              <p className="mt-2 font-serif text-6xl leading-none tracking-tight text-ink">{activeWin.name}</p>
-              <p className="mt-3 text-sm text-ink-muted">
-                <span className="font-numeric tabular-nums text-ink">
-                  {formatDuration(activeWin.end.getTime() - now)}
-                </span>{' '}
-                left · ends {formatClock(activeWin.end)}
-              </p>
-              <div className="mt-4 h-0.5 w-full overflow-hidden bg-border">
-                <motion.div
-                  className="h-full bg-accent"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.round(progress * 100)}%` }}
-                  transition={{ delay: 0.35, duration: 0.8, ease: EASE_OUT }}
-                />
-              </div>
-            </>
-          ) : nextWin ? (
-            <>
-              <p className="eyebrow">Next prayer</p>
-              <p className="mt-2 font-serif text-6xl leading-none tracking-tight text-ink">{nextWin.name}</p>
-              <p className="mt-3 text-sm text-ink-muted">
-                in{' '}
-                <span className="font-numeric tabular-nums text-ink">
-                  {formatDuration(nextWin.start.getTime() - now)}
-                </span>{' '}
-                · starts {formatClock(nextWin.start)}
-              </p>
-            </>
-          ) : null}
+        <Block index={2} className="mt-5">
+          <div className="rounded-card bg-accent-soft p-5">
+            {activeWin ? (
+              <>
+                <p className="eyebrow">Now</p>
+                <p className="mt-2 font-serif text-6xl leading-none tracking-tight text-ink">{activeWin.name}</p>
+                <p className="mt-3 text-sm text-ink-muted">
+                  <span className="font-numeric tabular-nums text-ink">
+                    {formatDuration(activeWin.end.getTime() - now)}
+                  </span>{' '}
+                  left · ends {formatClock(activeWin.end)}
+                </p>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-ink/10">
+                  <motion.div
+                    className="h-full rounded-full bg-accent"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.round(progress * 100)}%` }}
+                    transition={{ delay: 0.35, duration: 0.8, ease: EASE_OUT }}
+                  />
+                </div>
+              </>
+            ) : nextWin ? (
+              <>
+                <p className="eyebrow">Next prayer</p>
+                <p className="mt-2 font-serif text-6xl leading-none tracking-tight text-ink">{nextWin.name}</p>
+                <p className="mt-3 text-sm text-ink-muted">
+                  in{' '}
+                  <span className="font-numeric tabular-nums text-ink">
+                    {formatDuration(nextWin.start.getTime() - now)}
+                  </span>{' '}
+                  · starts {formatClock(nextWin.start)}
+                </p>
+              </>
+            ) : null}
+          </div>
         </Block>
 
         {/* tracker summary: how many today, the streak, and the last seven days */}
-        <Block index={3} className="mt-8">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow">Prayed today</p>
-              <p className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink">
-                <span className="font-numeric tabular-nums">{prayedToday}</span>
-                <span className="text-ink-faint">/5</span>
-              </p>
+        <Block index={3} className="mt-3">
+          <div className="rounded-card bg-ink/[0.04] p-5">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow">Prayed today</p>
+                <p className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink">
+                  <span className="font-numeric tabular-nums">{prayedToday}</span>
+                  <span className="text-ink-faint">/5</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="eyebrow">Streak</p>
+                <p className="mt-1 font-numeric text-xl tabular-nums text-ink">
+                  {streak} {streak === 1 ? 'day' : 'days'}
+                </p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="eyebrow">Streak</p>
-              <p className="mt-1 font-numeric text-xl tabular-nums text-ink">
-                {streak} {streak === 1 ? 'day' : 'days'}
-              </p>
-            </div>
-          </div>
 
-          <div className="mt-5 flex items-end justify-between gap-2" aria-label="Prayers marked in the last seven days">
-            {week.map((date) => {
-              const count = logDays[date]?.length ?? 0;
-              const isToday = date === todayKey;
-              return (
-                <div key={date} className="flex flex-1 flex-col items-center gap-1.5">
-                  <div className="flex h-10 w-full items-end justify-center">
-                    <div
-                      className={clsx(
-                        'w-2.5 rounded-full transition-[height] duration-500',
-                        count >= 5 ? 'bg-forest' : count > 0 ? 'bg-accent' : 'bg-border'
-                      )}
-                      style={{ height: count > 0 ? `${Math.max(14, (count / 5) * 100)}%` : '6px' }}
-                    />
+            <div className="mt-5 flex items-end justify-between gap-2" aria-label="Prayers marked in the last seven days">
+              {week.map((date) => {
+                const count = logDays[date]?.length ?? 0;
+                const isToday = date === todayKey;
+                return (
+                  <div key={date} className="flex flex-1 flex-col items-center gap-1.5">
+                    <div className="flex h-10 w-full items-end justify-center">
+                      <div
+                        className={clsx(
+                          'w-2.5 rounded-full transition-[height] duration-500',
+                          count >= 5 ? 'bg-forest' : count > 0 ? 'bg-accent' : 'bg-ink/15'
+                        )}
+                        style={{ height: count > 0 ? `${Math.max(14, (count / 5) * 100)}%` : '6px' }}
+                      />
+                    </div>
+                    <span className={clsx('text-[11px] font-semibold', isToday ? 'text-ink' : 'text-ink-faint')}>
+                      {parseISODate(date).toLocaleDateString('en-US', { weekday: 'narrow' })}
+                    </span>
                   </div>
-                  <span className={clsx('text-[11px] font-semibold', isToday ? 'text-ink' : 'text-ink-faint')}>
-                    {parseISODate(date).toLocaleDateString('en-US', { weekday: 'narrow' })}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </Block>
 
-        <Block index={4} className="mt-6">
-          <ul className="divide-y divide-border">
+        <Block index={4} className="mt-3">
+          <ul className="space-y-1.5">
             {day.windows.map((w) => {
               const status = statusOf(w);
               const started = status !== 'upcoming';
               const prayed = isPrayed(w.key);
               return (
-                <li key={w.key} className="flex items-center justify-between gap-3 py-3">
+                <li
+                  key={w.key}
+                  className={clsx(
+                    'flex items-center justify-between gap-3 rounded-control px-3 py-2.5',
+                    status === 'active' ? 'bg-accent-soft' : 'bg-ink/[0.04]'
+                  )}
+                >
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -416,12 +426,12 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
                       aria-pressed={prayed}
                       aria-label={started ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}` : `${w.name} has not started yet`}
                       className={clsx(
-                        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors',
-                        prayed ? 'border-forest bg-forest text-surface' : 'border-ink-faint text-transparent',
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
+                        prayed ? 'bg-forest text-surface-raised' : 'bg-ink/10 text-transparent',
                         !started && 'cursor-not-allowed opacity-30'
                       )}
                     >
-                      <Check size={15} strokeWidth={3} />
+                      <Check size={16} strokeWidth={3} />
                     </button>
                     <span
                       className={clsx(
@@ -447,14 +457,20 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </ul>
         </Block>
 
-        <Block index={5} className="mt-8">
+        <Block index={5} className="mt-7">
           <p className="eyebrow">Prohibited times</p>
-          <ul className="mt-2 divide-y divide-border">
+          <ul className="mt-3 space-y-1.5">
             {day.prohibited.map((p) => {
               const on = p.key === prohibitedNow?.key;
               const over = p.end.getTime() <= now;
               return (
-                <li key={p.key} className="flex items-center justify-between gap-3 py-2.5">
+                <li
+                  key={p.key}
+                  className={clsx(
+                    'flex items-center justify-between gap-3 rounded-control px-3 py-2.5',
+                    on ? 'bg-danger/10' : 'bg-ink/[0.04]'
+                  )}
+                >
                   <div className="flex items-center gap-3">
                     <span
                       className={clsx('h-2 w-2 shrink-0 rounded-full', on ? 'bg-danger' : over ? 'bg-ink/20' : 'bg-danger/40')}
@@ -478,9 +494,9 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </ul>
         </Block>
 
-        <Block index={6} className="mt-8">
+        <Block index={6} className="mt-7">
           <p className="eyebrow">Reminders</p>
-          <div className="mt-1 divide-y divide-border">
+          <div className="mt-3 space-y-1.5">
             <ReminderSwitch
               label="When a prayer begins"
               hint="A notification as each prayer time starts"
