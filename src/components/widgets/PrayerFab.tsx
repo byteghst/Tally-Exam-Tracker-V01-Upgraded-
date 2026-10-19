@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { EASE_OUT } from '@/lib/motion';
+import { parseISODate, todayISO } from '@/lib/dates';
 import { BD_CITIES, findCity, type BdCity } from '@/lib/prayer/cities';
 import {
   computeDay,
@@ -15,6 +16,7 @@ import {
   type ProhibitedWindow
 } from '@/lib/prayer/times';
 import { usePrayerStore } from '@/store/prayerStore';
+import { fullDayStreak, lastDays, previousDayISO, PRAYER_KEYS, usePrayerLogStore } from '@/store/prayerLogStore';
 
 const SELECT_CLASS =
   'mt-3 w-full rounded-control border border-border bg-surface px-3 py-2.5 text-base text-ink';
@@ -73,8 +75,9 @@ function usePrayerView(): PrayerView {
 /**
  * A small floating button on the dashboard that always shows the prayer that
  * is running now, with a softly pulsing light (red during a prohibited time).
- * Tapping it opens the full prayer times in a popup that grows out of the
- * button; the Back button (or Escape, or a tap outside) closes it again.
+ * Tapping it opens the full prayer times, and the prayer tracker, in a popup
+ * that grows out of the button; the Back button (or Escape, or a tap outside)
+ * closes it again.
  *
  * It is drawn into document.body so it floats above everything and is not
  * tied to the page's layout or animations.
@@ -141,8 +144,15 @@ function Block({ index, className, children }: { index: number; className?: stri
 function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => void }) {
   const cityName = usePrayerStore((s) => s.cityName);
   const setCity = usePrayerStore((s) => s.setCity);
+  const logDays = usePrayerLogStore((s) => s.days);
+  const toggle = usePrayerLogStore((s) => s.toggle);
   const [changingCity, setChangingCity] = useState(false);
   const { now, city, day, activeKey, activeWin, nextWin, progress, prohibitedNow } = view;
+
+  // Read the tracker from the account when the popup opens.
+  useEffect(() => {
+    void usePrayerLogStore.getState().hydrate();
+  }, []);
 
   // Escape closes it, and the page behind does not scroll while it is open.
   useEffect(() => {
@@ -162,6 +172,16 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
     if (w.key === activeKey) return 'active';
     return w.end.getTime() <= now ? 'past' : 'upcoming';
   }
+
+  // Tracker. Between midnight and Fajr the running Isha is still last night's,
+  // so that one is saved against yesterday; everything else is today's.
+  const todayKey = todayISO();
+  const beforeFajr = now < day.windows[0].start.getTime();
+  const dateFor = (key: PrayerKey): string => (key === 'isha' && beforeFajr ? previousDayISO(todayKey) : todayKey);
+  const isPrayed = (key: PrayerKey): boolean => (logDays[dateFor(key)] ?? []).includes(key);
+  const prayedToday = PRAYER_KEYS.filter((k) => (logDays[todayKey] ?? []).includes(k)).length;
+  const streak = fullDayStreak(logDays, todayKey);
+  const week = lastDays(todayKey, 7);
 
   return (
     <motion.div
@@ -274,24 +294,80 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           ) : null}
         </Block>
 
+        {/* tracker summary: how many today, the streak, and the last seven days */}
         <Block index={3} className="mt-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Prayed today</p>
+              <p className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink">
+                <span className="font-numeric tabular-nums">{prayedToday}</span>
+                <span className="text-ink-faint">/5</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="eyebrow">Streak</p>
+              <p className="mt-1 font-numeric text-xl tabular-nums text-ink">
+                {streak} {streak === 1 ? 'day' : 'days'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-end justify-between gap-2" aria-label="Prayers marked in the last seven days">
+            {week.map((date) => {
+              const count = logDays[date]?.length ?? 0;
+              const isToday = date === todayKey;
+              return (
+                <div key={date} className="flex flex-1 flex-col items-center gap-1.5">
+                  <div className="flex h-10 w-full items-end justify-center">
+                    <div
+                      className={clsx(
+                        'w-2.5 rounded-full transition-[height] duration-500',
+                        count >= 5 ? 'bg-forest' : count > 0 ? 'bg-accent' : 'bg-border'
+                      )}
+                      style={{ height: count > 0 ? `${Math.max(14, (count / 5) * 100)}%` : '6px' }}
+                    />
+                  </div>
+                  <span
+                    className={clsx(
+                      'text-[11px] font-semibold',
+                      isToday ? 'text-ink' : 'text-ink-faint'
+                    )}
+                  >
+                    {parseISODate(date).toLocaleDateString('en-US', { weekday: 'narrow' })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Block>
+
+        <Block index={4} className="mt-6">
           <ul className="divide-y divide-border">
             {day.windows.map((w) => {
               const status = statusOf(w);
+              const started = status !== 'upcoming';
+              const prayed = isPrayed(w.key);
               return (
                 <li key={w.key} className="flex items-center justify-between gap-3 py-3">
                   <div className="flex items-center gap-3">
-                    <span
+                    <button
+                      type="button"
+                      disabled={!started}
+                      onClick={() => void toggle(dateFor(w.key), w.key)}
+                      aria-pressed={prayed}
+                      aria-label={started ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}` : `${w.name} has not started yet`}
                       className={clsx(
-                        'h-2 w-2 shrink-0 rounded-full',
-                        status === 'active' ? 'bg-accent' : status === 'past' ? 'bg-ink/20' : 'bg-border'
+                        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors',
+                        prayed ? 'border-forest bg-forest text-surface' : 'border-ink-faint text-transparent',
+                        !started && 'cursor-not-allowed opacity-30'
                       )}
-                      aria-hidden
-                    />
+                    >
+                      <Check size={15} strokeWidth={3} />
+                    </button>
                     <span
                       className={clsx(
                         'text-base',
-                        status === 'past' ? 'text-ink-faint' : 'text-ink',
+                        status === 'past' && !prayed ? 'text-ink-muted' : 'text-ink',
                         status === 'active' && 'font-semibold'
                       )}
                     >
@@ -312,7 +388,7 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </ul>
         </Block>
 
-        <Block index={4} className="mt-8">
+        <Block index={5} className="mt-8">
           <p className="eyebrow">Prohibited times</p>
           <ul className="mt-2 divide-y divide-border">
             {day.prohibited.map((p) => {
@@ -343,7 +419,7 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </ul>
         </Block>
 
-        <Block index={5} className="mt-6">
+        <Block index={6} className="mt-6">
           <p className="text-xs text-ink-faint">
             Voluntary (nafl) prayers are also not allowed after praying Fajr until sunrise, and after praying Asr until
             sunset.
