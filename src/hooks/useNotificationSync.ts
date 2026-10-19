@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { useAuthStore } from '@/store/authStore';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { usePrayerStore } from '@/store/prayerStore';
+import { usePrayerLogStore } from '@/store/prayerLogStore';
+import { findCity } from '@/lib/prayer/cities';
 import {
   RESYNC_EVENT,
   registerNotificationTapHandler,
   syncNativeReminders
 } from '@/lib/notifications/nativeScheduler';
+import { planPrayerNotifications } from '@/lib/notifications/prayerPlan';
 import { checkAndFireWebReminders } from '@/lib/notifications/webChecker';
 import type { Exam, Task } from '@/types';
 
@@ -20,7 +25,8 @@ const NO_EXAMS: Exam[] = [];
 const NO_TASKS: Task[] = [];
 
 /**
- * Keeps scheduled reminders in sync with current exam/task data.
+ * Keeps scheduled reminders in sync with current exam/task data, and with the
+ * prayer reminders (prayer start, ten minutes left, prohibited times).
  *
  * Native: hands the full reminder plan to the OS whenever the data or the
  * notification settings change, when the app comes back to the foreground,
@@ -30,16 +36,23 @@ const NO_TASKS: Task[] = [];
  * about", which would cancel every scheduled reminder.
  *
  * Web: re-checks on an interval and whenever the tab regains visibility,
- * since that's the only time web notifications can act at all.
+ * since that's the only time web notifications can act at all. (Prayer
+ * reminders are Android-only: a web page can't wake up at prayer time.)
  */
 export function useNotificationSync() {
   const navigate = useNavigate();
+  const userId = useAuthStore((s) => s.user?.id);
   const exams = useExamStore((s) => s.exams);
   const examsLoaded = useExamStore((s) => s.loaded);
   const tasks = useTaskStore((s) => s.tasks);
   const tasksLoaded = useTaskStore((s) => s.loaded);
   const { settings, updateSettings, loaded: settingsLoaded } = useSettingsStore();
   const prefs = settings.notificationPrefs;
+  const cityName = usePrayerStore((s) => s.cityName);
+  const remindStart = usePrayerStore((s) => s.remindStart);
+  const remindEnding = usePrayerStore((s) => s.remindEnding);
+  const remindProhibited = usePrayerStore((s) => s.remindProhibited);
+  const prayerLog = usePrayerLogStore((s) => s.days);
   const isNative = Capacitor.isNativePlatform();
   const [resyncTick, setResyncTick] = useState(0);
 
@@ -71,17 +84,34 @@ export function useNotificationSync() {
     };
   }, [isNative]);
 
+  // ---- Native: the prayer tracker is read once signed in, so a prayer that is
+  // already marked as prayed gets no "10 minutes left" warning ----
+  useEffect(() => {
+    if (isNative && userId) void usePrayerLogStore.getState().hydrate();
+  }, [isNative, userId]);
+
   // ---- Native: schedule ----
   const ready = examsLoaded && tasksLoaded && settingsLoaded;
   useEffect(() => {
     if (!isNative || !ready) return;
     const timer = setTimeout(() => {
-      syncNativeReminders(exams, tasks, prefs).catch(() => {
+      const city = findCity(cityName);
+      const prayed = new Set<string>();
+      for (const [date, keys] of Object.entries(prayerLog)) {
+        for (const key of keys) prayed.add(`${date}:${key}`);
+      }
+      const prayerPlan = planPrayerNotifications(
+        city.lat,
+        city.lng,
+        { remindStart, remindEnding, remindProhibited },
+        prayed
+      );
+      syncNativeReminders(exams, tasks, prefs, prayerPlan).catch(() => {
         // scheduling is best-effort; a failure here shouldn't break the app
       });
     }, SYNC_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [isNative, ready, exams, tasks, prefs, resyncTick]);
+  }, [isNative, ready, exams, tasks, prefs, resyncTick, cityName, remindStart, remindEnding, remindProhibited, prayerLog]);
 
   // ---- Web: check while the app is open ----
   const eligibleExams = useMemo(() => (prefs.exams ? exams : NO_EXAMS), [prefs.exams, exams]);

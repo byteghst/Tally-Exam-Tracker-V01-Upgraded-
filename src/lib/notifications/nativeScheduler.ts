@@ -1,18 +1,41 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { planNotifications, type PlannedNotification } from './scheduling';
+import type { NotificationChannelKind, PlannedPrayerNotification } from './prayerPlan';
 import { hashToInt32 } from './hash';
 import type { Exam, NotificationPrefs, Task } from '@/types';
 
 /** Channel every Tally reminder is posted to (high priority: sound + heads-up banner). */
 export const REMINDER_CHANNEL_ID = 'tally-reminders';
+/** Prayer start and "time running out" notifications. */
+export const PRAYER_CHANNEL_ID = 'tally-prayer';
+/** Prohibited prayer times: its own maximum-priority channel with a red light, so it stands apart. */
+export const PROHIBITED_CHANNEL_ID = 'tally-prohibited';
 /** White Tally glyph added to the Android project at build time (see ci/force-signing.sh). */
 const SMALL_ICON = 'ic_stat_tally';
 /** Persimmon: tints the notification icon and the phone's notification light. */
 const ICON_COLOR = '#D94F2D';
+const PRAYER_COLOR = '#2F7D5B';
+const PROHIBITED_COLOR = '#A82038';
 /** Dispatch this on `window` to make the sync hook re-plan and re-schedule right away. */
 export const RESYNC_EVENT = 'tally:resync-notifications';
 
 const ASKED_KEY = 'tally-notification-permission-asked';
+
+const CHANNEL_FOR: Record<NotificationChannelKind, string> = {
+  reminders: REMINDER_CHANNEL_ID,
+  prayer: PRAYER_CHANNEL_ID,
+  prohibited: PROHIBITED_CHANNEL_ID
+};
+
+const COLOR_FOR: Record<NotificationChannelKind, string> = {
+  reminders: ICON_COLOR,
+  prayer: PRAYER_COLOR,
+  prohibited: PROHIBITED_COLOR
+};
+
+interface ScheduledEntry extends PlannedNotification {
+  channel: NotificationChannelKind;
+}
 
 export type ExactAlarmState = 'granted' | 'denied' | 'unknown';
 
@@ -75,20 +98,36 @@ export async function openExactAlarmSettings(): Promise<void> {
   }
 }
 
-async function ensureReminderChannel(): Promise<void> {
-  try {
-    await LocalNotifications.createChannel({
+async function ensureChannels(): Promise<void> {
+  const channels = [
+    {
       id: REMINDER_CHANNEL_ID,
       name: 'Reminders',
       description: 'Exam and task reminders',
-      importance: 4,
-      visibility: 1,
-      vibration: true,
-      lights: true,
+      importance: 4 as const,
       lightColor: ICON_COLOR
-    });
-  } catch {
-    // already exists (channels can't be changed once created) or unsupported
+    },
+    {
+      id: PRAYER_CHANNEL_ID,
+      name: 'Prayer times',
+      description: 'When a prayer time begins and when it is about to run out',
+      importance: 4 as const,
+      lightColor: PRAYER_COLOR
+    },
+    {
+      id: PROHIBITED_CHANNEL_ID,
+      name: 'Prohibited prayer times',
+      description: 'A special alert when a prohibited prayer time begins',
+      importance: 5 as const,
+      lightColor: PROHIBITED_COLOR
+    }
+  ];
+  for (const c of channels) {
+    try {
+      await LocalNotifications.createChannel({ ...c, visibility: 1, vibration: true, lights: true });
+    } catch {
+      // already exists (channels can't be changed once created) or unsupported
+    }
   }
 }
 
@@ -107,8 +146,17 @@ function summarize(planned: PlannedNotification[]) {
   };
 }
 
-async function applySync(exams: Exam[], tasks: Task[], prefs: NotificationPrefs): Promise<void> {
-  const planned = planNotifications(exams, tasks, prefs);
+async function applySync(
+  exams: Exam[],
+  tasks: Task[],
+  prefs: NotificationPrefs,
+  prayer: PlannedPrayerNotification[]
+): Promise<void> {
+  const reminders: ScheduledEntry[] = planNotifications(exams, tasks, prefs).map((p) => ({
+    ...p,
+    channel: 'reminders' as const
+  }));
+  const planned: ScheduledEntry[] = [...reminders, ...prayer].sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
 
   let granted = await getNativeNotificationPermission().catch(() => false);
   if (!granted && planned.length > 0) granted = await askForPermissionOnce().catch(() => false);
@@ -119,17 +167,19 @@ async function applySync(exams: Exam[], tasks: Task[], prefs: NotificationPrefs)
     return;
   }
 
-  await ensureReminderChannel();
+  await ensureChannels();
 
   // Numeric ids for the OS; nudge on the (very unlikely) hash collision.
-  const byId = new Map<number, PlannedNotification>();
+  const byId = new Map<number, ScheduledEntry>();
   for (const p of planned) {
     let id = hashToInt32(p.key);
     while (byId.has(id)) id = (id + 1) % 2147483647;
     byId.set(id, p);
   }
 
-  const signature = JSON.stringify([...byId].map(([id, p]) => [id, p.fireAt.getTime(), p.title, p.body, p.path]));
+  const signature = JSON.stringify(
+    [...byId].map(([id, p]) => [id, p.fireAt.getTime(), p.title, p.body, p.path, p.channel])
+  );
   const pending = await LocalNotifications.getPending();
 
   // Already exactly what we want: don't churn the alarms.
@@ -148,9 +198,9 @@ async function applySync(exams: Exam[], tasks: Task[], prefs: NotificationPrefs)
         id,
         title: p.title,
         body: p.body,
-        channelId: REMINDER_CHANNEL_ID,
+        channelId: CHANNEL_FOR[p.channel],
         smallIcon: SMALL_ICON,
-        iconColor: ICON_COLOR,
+        iconColor: COLOR_FOR[p.channel],
         // allowWhileIdle: deliver even while the phone is in Doze (idle) mode;
         // without it Android can hold reminders back for a long time.
         schedule: { at: p.fireAt, allowWhileIdle: true },
@@ -169,9 +219,17 @@ async function applySync(exams: Exam[], tasks: Task[], prefs: NotificationPrefs)
  * cancel/schedule steps. Only call this once exams, tasks and settings have
  * finished loading — an empty list here means "nothing to remind", and the
  * old reminders will be cancelled.
+ *
+ * `prayer` is the prayer plan (see prayerPlan.ts). It is scheduled together
+ * with everything else because each sync replaces every pending alarm.
  */
-export function syncNativeReminders(exams: Exam[], tasks: Task[], prefs: NotificationPrefs): Promise<void> {
-  const run = syncChain.then(() => applySync(exams, tasks, prefs));
+export function syncNativeReminders(
+  exams: Exam[],
+  tasks: Task[],
+  prefs: NotificationPrefs,
+  prayer: PlannedPrayerNotification[] = []
+): Promise<void> {
+  const run = syncChain.then(() => applySync(exams, tasks, prefs, prayer));
   syncChain = run.catch(() => undefined);
   return run;
 }
@@ -185,7 +243,7 @@ export async function getNativeReminderStatus(): Promise<NativeReminderStatus> {
 }
 
 export async function sendTestNativeNotification(): Promise<void> {
-  await ensureReminderChannel();
+  await ensureChannels();
   await LocalNotifications.schedule({
     notifications: [
       {

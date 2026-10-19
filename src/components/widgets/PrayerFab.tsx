@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { clsx } from 'clsx';
 import { EASE_OUT } from '@/lib/motion';
 import { parseISODate, todayISO } from '@/lib/dates';
 import { BD_CITIES, findCity, type BdCity } from '@/lib/prayer/cities';
+import { ENDING_WARNING_MINUTES } from '@/lib/notifications/prayerPlan';
 import {
   computeDay,
   formatClock,
@@ -75,9 +78,10 @@ function usePrayerView(): PrayerView {
 /**
  * A small floating button on the dashboard that always shows the prayer that
  * is running now, with a softly pulsing light (red during a prohibited time).
- * Tapping it opens the full prayer times, and the prayer tracker, in a popup
- * that grows out of the button; the Back button (or Escape, or a tap outside)
- * closes it again.
+ * Tapping it opens the full prayer times, the prayer tracker and the reminder
+ * switches in a popup that grows out of the button; the Back button (or
+ * Escape, or a tap outside) closes it again. Tapping a prayer notification
+ * opens the same popup.
  *
  * It is drawn into document.body so it floats above everything and is not
  * tied to the page's layout or animations.
@@ -85,6 +89,15 @@ function usePrayerView(): PrayerView {
 export function PrayerFab() {
   const view = usePrayerView();
   const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // a prayer notification opens /dashboard?prayer=1: show the popup, then tidy the address
+  useEffect(() => {
+    if (searchParams.get('prayer') === '1') {
+      setOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const label = view.activeWin ? view.activeWin.name : view.nextWin ? `Next · ${view.nextWin.name}` : 'Prayer';
   const sub = view.activeWin
@@ -141,13 +154,64 @@ function Block({ index, className, children }: { index: number; className?: stri
   );
 }
 
+/** A labelled on/off switch row. */
+function ReminderSwitch({
+  label,
+  hint,
+  checked,
+  onChange,
+  danger
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (on: boolean) => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between gap-4 py-3 text-left"
+    >
+      <span>
+        <span className="block text-sm text-ink">{label}</span>
+        <span className="mt-0.5 block text-xs text-ink-faint">{hint}</span>
+      </span>
+      <span
+        className={clsx(
+          'relative h-6 w-10 shrink-0 rounded-full transition-colors',
+          checked ? (danger ? 'bg-danger' : 'bg-accent') : 'bg-border'
+        )}
+        aria-hidden
+      >
+        <span
+          className={clsx(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all',
+            checked ? 'left-[18px]' : 'left-0.5'
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
 function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => void }) {
   const cityName = usePrayerStore((s) => s.cityName);
   const setCity = usePrayerStore((s) => s.setCity);
+  const remindStart = usePrayerStore((s) => s.remindStart);
+  const remindEnding = usePrayerStore((s) => s.remindEnding);
+  const remindProhibited = usePrayerStore((s) => s.remindProhibited);
+  const setRemindStart = usePrayerStore((s) => s.setRemindStart);
+  const setRemindEnding = usePrayerStore((s) => s.setRemindEnding);
+  const setRemindProhibited = usePrayerStore((s) => s.setRemindProhibited);
   const logDays = usePrayerLogStore((s) => s.days);
   const toggle = usePrayerLogStore((s) => s.toggle);
   const [changingCity, setChangingCity] = useState(false);
   const { now, city, day, activeKey, activeWin, nextWin, progress, prohibitedNow } = view;
+  const isNative = Capacitor.isNativePlatform();
 
   // Read the tracker from the account when the popup opens.
   useEffect(() => {
@@ -327,12 +391,7 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
                       style={{ height: count > 0 ? `${Math.max(14, (count / 5) * 100)}%` : '6px' }}
                     />
                   </div>
-                  <span
-                    className={clsx(
-                      'text-[11px] font-semibold',
-                      isToday ? 'text-ink' : 'text-ink-faint'
-                    )}
-                  >
+                  <span className={clsx('text-[11px] font-semibold', isToday ? 'text-ink' : 'text-ink-faint')}>
                     {parseISODate(date).toLocaleDateString('en-US', { weekday: 'narrow' })}
                   </span>
                 </div>
@@ -419,7 +478,37 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
           </ul>
         </Block>
 
-        <Block index={6} className="mt-6">
+        <Block index={6} className="mt-8">
+          <p className="eyebrow">Reminders</p>
+          <div className="mt-1 divide-y divide-border">
+            <ReminderSwitch
+              label="When a prayer begins"
+              hint="A notification as each prayer time starts"
+              checked={remindStart}
+              onChange={setRemindStart}
+            />
+            <ReminderSwitch
+              label={`${ENDING_WARNING_MINUTES} minutes before it ends`}
+              hint="Skipped for a prayer you have already ticked"
+              checked={remindEnding}
+              onChange={setRemindEnding}
+            />
+            <ReminderSwitch
+              label="Prohibited times"
+              hint="A special red alert when one begins"
+              checked={remindProhibited}
+              onChange={setRemindProhibited}
+              danger
+            />
+          </div>
+          {!isNative && (
+            <p className="mt-2 text-xs text-ink-faint">
+              Prayer reminders arrive in the Android app. A web page can’t wake up at prayer time.
+            </p>
+          )}
+        </Block>
+
+        <Block index={7} className="mt-6">
           <p className="text-xs text-ink-faint">
             Voluntary (nafl) prayers are also not allowed after praying Fajr until sunrise, and after praying Asr until
             sunset.
