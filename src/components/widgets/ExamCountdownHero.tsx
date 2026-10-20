@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { LiveCountdown } from '@/components/ui/LiveCountdown';
-import { Rise, Rule } from '@/components/motion/Reveal';
+import { Rise } from '@/components/motion/Reveal';
 import { maskUp } from '@/lib/motion';
 import { useCountUp } from '@/hooks/useCountUp';
 import { daysBetween, todayISO, formatDate } from '@/lib/dates';
@@ -23,13 +24,14 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
   if (!exam) {
     return (
       <Rise>
-        <p className="eyebrow">Next exam</p>
-        <Rule strong className="mt-3" />
-        <p className="mt-6 font-serif text-5xl leading-none tracking-tight text-ink">Nothing ahead.</p>
-        <p className="mt-3 max-w-xs text-ink-muted">Exams you add will show up here with a live countdown.</p>
-        <Button size="sm" variant="secondary" className="mt-5" onClick={onAddExam}>
-          Add exam
-        </Button>
+        <GlassCard className="p-5">
+          <p className="eyebrow">Next exam</p>
+          <p className="mt-5 font-serif text-5xl leading-none tracking-tight text-ink">Nothing ahead.</p>
+          <p className="mt-3 max-w-xs text-ink-muted">Exams you add will show up here with a live countdown.</p>
+          <Button size="sm" variant="secondary" className="mt-5" onClick={onAddExam}>
+            Add exam
+          </Button>
+        </GlassCard>
       </Rise>
     );
   }
@@ -38,17 +40,15 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
 
   return (
     <Rise>
-      {/* className="block" on the Link is load-bearing: <Link> renders an <a>,
-          which is display:inline by default, and an inline element ignores
-          its own margin-top. */}
-      <Link to={`/exams/${exam.id}`} className="group block">
+      <GlassCard className="p-5">
         <div className="flex items-center justify-between">
           <p className="eyebrow">Next exam</p>
-          <p className="eyebrow">{exam.type}</p>
+          <span className="rounded-full bg-ink/[0.06] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+            {exam.type}
+          </span>
         </div>
-        <Rule strong className="mt-3" />
 
-        <div className="mt-5 overflow-hidden pb-2">
+        <div className="mt-4 overflow-hidden pb-2">
           <motion.p
             variants={maskUp}
             className="font-serif text-[clamp(6.5rem,38vw,11rem)] leading-[0.82] tracking-tight text-ink"
@@ -81,11 +81,15 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
 
         {hasScore && <p className="mt-3 text-xs text-ink-faint">A result is already recorded for this exam.</p>}
 
-        <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent">
+        {/* A real button: solid accent fill, full width, easy to hit with a thumb. */}
+        <Link
+          to={`/exams/${exam.id}`}
+          className="group mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-control bg-accent text-base font-semibold text-accent-on transition-[transform,filter] duration-150 hover:brightness-105 active:scale-[0.98] active:brightness-95"
+        >
           Open exam
-          <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1.5" />
-        </span>
-      </Link>
+          <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+        </Link>
+      </GlassCard>
     </Rise>
   );
 }
