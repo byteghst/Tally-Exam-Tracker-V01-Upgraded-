@@ -22,7 +22,7 @@ export function UpdateCard() {
   else if (phase === 'available' && update) status = `Build ${update.build} is available.`;
 
   return (
-    <Section label="App updates">
+    <Section label="App updates" card>
       <p className="font-serif text-4xl leading-none tracking-tight text-ink">Build {INSTALLED_BUILD}</p>
       <p className="mt-2 text-sm text-ink-muted">{status}</p>
       <div className="mt-4 flex flex-wrap gap-2">

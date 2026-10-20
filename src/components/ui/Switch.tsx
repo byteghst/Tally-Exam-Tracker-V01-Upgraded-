@@ -34,7 +34,7 @@ export function Switch({ checked, onChange, label }: SwitchProps) {
   );
 }
 
-/** A labelled row with a switch on the right. */
+/** A labelled row with a switch on the right, shown as a soft tinted tile. */
 export function ToggleRow({
   label,
   hint,
@@ -47,7 +47,7 @@ export function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex items-center justify-between gap-4 rounded-control bg-ink/[0.04] px-4 py-3">
       <div className="min-w-0">
         <p className="text-base text-ink">{label}</p>
         {hint && <p className="mt-0.5 text-xs text-ink-faint">{hint}</p>}
