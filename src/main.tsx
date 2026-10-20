@@ -5,6 +5,7 @@ import { router } from './router';
 import { ThemeProvider } from './ThemeProvider';
 import { setupServiceWorker } from './setupServiceWorker';
 import { useAuthStore } from './store/authStore';
+import { AppDownloadPrompt } from './components/features/update/AppDownloadPrompt';
 // Bundled fonts (work offline inside the Android app)
 import '@fontsource/plus-jakarta-sans/400.css';
 import '@fontsource/plus-jakarta-sans/500.css';
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <RouterProvider router={router} />
+      <AppDownloadPrompt />
     </ThemeProvider>
   </StrictMode>
 );
