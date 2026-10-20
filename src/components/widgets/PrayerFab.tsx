@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -23,6 +23,39 @@ import { fullDayStreak, lastDays, previousDayISO, PRAYER_KEYS, usePrayerLogStore
 
 const SELECT_CLASS =
   'mt-3 h-12 w-full rounded-control border-0 bg-ink/[0.05] px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
+
+/** Where the pill rests after being moved: which screen edge, and how far down. */
+interface PillPos {
+  side: 'left' | 'right';
+  y: number;
+}
+
+const POS_KEY = 'tally.prayerPill';
+const EDGE = 8; // gap to the left/right/bottom screen edge
+const TOP_EDGE = 48; // keeps the pill clear of the status bar
+const DRAG_THRESHOLD = 6; // px of movement before a press becomes a drag
+
+const clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
+
+function loadPos(): PillPos | null {
+  try {
+    const raw = window.localStorage.getItem(POS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Partial<PillPos>;
+    if ((p.side === 'left' || p.side === 'right') && typeof p.y === 'number') return { side: p.side, y: p.y };
+  } catch {
+    /* storage unavailable or corrupt: use the default spot */
+  }
+  return null;
+}
+
+function savePos(p: PillPos): void {
+  try {
+    window.localStorage.setItem(POS_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Everything the button and the popup need, worked out once per tick. */
 interface PrayerView {
@@ -83,6 +116,9 @@ function usePrayerView(): PrayerView {
  * Escape, or a tap outside) closes it again. Tapping a prayer notification
  * opens the same popup.
  *
+ * The pill can be dragged anywhere on screen so it never covers anything; it
+ * snaps to the nearest side edge on release and remembers where it was left.
+ *
  * It is drawn into document.body so it floats above everything and is not
  * tied to the page's layout or animations.
  */
@@ -90,6 +126,14 @@ export function PrayerFab() {
   const view = usePrayerView();
   const [open, setOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<PillPos | null>(loadPos);
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [viewportH, setViewportH] = useState(() => window.innerHeight);
+  const gesture = useRef<{ dx: number; dy: number; sx: number; sy: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
 
   // a prayer notification opens /dashboard?prayer=1: show the popup, then tidy the address
   useEffect(() => {
@@ -99,6 +143,63 @@ export function PrayerFab() {
     }
   }, [searchParams, setSearchParams]);
 
+  // keep a saved spot on screen if the window is resized or rotated
+  useEffect(() => {
+    const onResize = () => setViewportH(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    if (open || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    gesture.current = { dx: e.clientX - r.left, dy: e.clientY - r.top, sx: e.clientX, sy: e.clientY, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    const g = gesture.current;
+    if (!g) return;
+    if (!g.moved) {
+      if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < DRAG_THRESHOLD) return;
+      g.moved = true;
+      setDragging(true);
+    }
+    const w = e.currentTarget.offsetWidth;
+    const h = e.currentTarget.offsetHeight;
+    setDrag({
+      x: clamp(e.clientX - g.dx, EDGE, window.innerWidth - w - EDGE),
+      y: clamp(e.clientY - g.dy, TOP_EDGE, window.innerHeight - h - EDGE)
+    });
+  }
+
+  function endGesture(e: React.PointerEvent<HTMLButtonElement>) {
+    const g = gesture.current;
+    gesture.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!g || !g.moved) return;
+
+    // swallow the click that follows a drag so it does not open the popup
+    suppressClick.current = true;
+    window.setTimeout(() => (suppressClick.current = false), 60);
+
+    const w = e.currentTarget.offsetWidth;
+    const h = e.currentTarget.offsetHeight;
+    const x = clamp(e.clientX - g.dx, EDGE, window.innerWidth - w - EDGE);
+    const y = clamp(e.clientY - g.dy, TOP_EDGE, window.innerHeight - h - EDGE);
+    const side: PillPos['side'] = x + w / 2 < window.innerWidth / 2 ? 'left' : 'right';
+
+    // glide to the edge, then hand over to the saved position
+    setDragging(false);
+    setDrag({ x: side === 'left' ? EDGE : window.innerWidth - w - EDGE, y });
+    const next: PillPos = { side, y };
+    savePos(next);
+    window.setTimeout(() => {
+      setPos(next);
+      setDrag(null);
+    }, 240);
+  }
+
   const label = view.activeWin ? view.activeWin.name : view.nextWin ? `Next · ${view.nextWin.name}` : 'Prayer';
   const sub = view.activeWin
     ? `${formatDuration(view.activeWin.end.getTime() - view.now)} left`
@@ -107,17 +208,43 @@ export function PrayerFab() {
       : '';
   const danger = view.prohibitedNow !== null;
 
+  // default: bottom right above the nav. Moved: wherever it was left.
+  let placement: CSSProperties;
+  if (drag) {
+    placement = { left: drag.x, top: drag.y };
+  } else if (pos) {
+    const h = btnRef.current?.offsetHeight ?? 52;
+    const top = clamp(pos.y, TOP_EDGE, Math.max(TOP_EDGE, viewportH - h - EDGE));
+    placement = pos.side === 'left' ? { left: EDGE, top } : { right: EDGE, top };
+  } else {
+    placement = { right: '1rem', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)' };
+  }
+  const popupSide: PillPos['side'] = (drag ? drag.x + 70 < window.innerWidth / 2 : pos?.side === 'left') ? 'left' : 'right';
+  const popupBottom = !drag && !pos;
+
   return createPortal(
     <>
       <motion.button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen(true)}
-        aria-label={`Prayer times. ${label}${sub ? `, ${sub}` : ''}${danger ? '. Prohibited time now' : ''}`}
+        onClick={() => {
+          if (suppressClick.current) return;
+          setOpen(true);
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endGesture}
+        onPointerCancel={endGesture}
+        aria-label={`Prayer times. ${label}${sub ? `, ${sub}` : ''}${danger ? '. Prohibited time now' : ''}. Drag to move`}
         initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: open ? 0 : 1, scale: open ? 0.85 : 1 }}
+        animate={{ opacity: open ? 0 : 1, scale: dragging ? 1.06 : open ? 0.85 : 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)', pointerEvents: open ? 'none' : 'auto' }}
-        className="fixed right-4 z-40 flex items-center gap-3 rounded-full bg-ink py-3 pl-4 pr-5 text-surface shadow-raise md:bottom-8 md:right-8"
+        style={{ ...placement, pointerEvents: open ? 'none' : 'auto', touchAction: 'none' }}
+        className={clsx(
+          'fixed z-40 flex cursor-grab select-none items-center gap-3 rounded-full bg-ink py-3 pl-4 pr-5 text-surface shadow-raise active:cursor-grabbing',
+          !dragging && 'transition-[left,top] duration-200 ease-out',
+          popupBottom && 'md:bottom-8 md:right-8'
+        )}
       >
         <span className="relative flex h-2.5 w-2.5" aria-hidden>
           <span
@@ -134,7 +261,9 @@ export function PrayerFab() {
         </span>
       </motion.button>
 
-      <AnimatePresence>{open && <PrayerOverlay view={view} onClose={() => setOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {open && <PrayerOverlay view={view} originX={popupSide} onClose={() => setOpen(false)} />}
+      </AnimatePresence>
     </>,
     document.body
   );
@@ -198,7 +327,15 @@ function ReminderSwitch({
   );
 }
 
-function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => void }) {
+function PrayerOverlay({
+  view,
+  originX,
+  onClose
+}: {
+  view: PrayerView;
+  originX: 'left' | 'right';
+  onClose: () => void;
+}) {
   const cityName = usePrayerStore((s) => s.cityName);
   const setCity = usePrayerStore((s) => s.setCity);
   const remindStart = usePrayerStore((s) => s.remindStart);
@@ -263,8 +400,8 @@ function PrayerOverlay({ view, onClose }: { view: PrayerView; onClose: () => voi
         aria-modal="true"
         aria-label="Prayer times"
         className="relative max-h-[86dvh] w-full max-w-md overflow-y-auto rounded-[28px] bg-surface-raised p-6 shadow-sheet"
-        // grows out of the floating button (bottom right) and shrinks back into it
-        style={{ transformOrigin: '100% 100%' }}
+        // grows out of the floating button (on whichever side it sits) and shrinks back into it
+        style={{ transformOrigin: originX === 'left' ? '0% 100%' : '100% 100%' }}
         initial={{ opacity: 0, scale: 0.45, y: 40 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.55, y: 30, transition: { duration: 0.24, ease: EASE_OUT } }}
