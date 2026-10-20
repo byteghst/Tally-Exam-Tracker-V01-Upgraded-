@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CalendarGrid, type DayMarkers } from '@/components/features/calendar/CalendarGrid';
 import { DayAgenda } from '@/components/features/calendar/DayAgenda';
@@ -69,7 +70,7 @@ export function Calendar() {
   const dayTasks = tasks.filter((t) => t.date === selectedDate);
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise as="header" className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Schedule</p>
@@ -85,17 +86,17 @@ export function Calendar() {
           <button
             onClick={() => goToMonth(-1)}
             aria-label="Previous month"
-            className="rounded-control p-2 text-ink-muted hover:bg-ink/5 hover:text-ink"
+            className="rounded-full bg-ink/[0.06] p-2.5 text-ink-muted transition-colors hover:bg-ink/10 hover:text-ink"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={20} />
           </button>
           <p className="font-serif text-3xl italic leading-none text-ink">{formatMonthYear(year, month)}</p>
           <button
             onClick={() => goToMonth(1)}
             aria-label="Next month"
-            className="rounded-control p-2 text-ink-muted hover:bg-ink/5 hover:text-ink"
+            className="rounded-full bg-ink/[0.06] p-2.5 text-ink-muted transition-colors hover:bg-ink/10 hover:text-ink"
           >
-            <ChevronRight size={22} />
+            <ChevronRight size={20} />
           </button>
         </div>
         <motion.div
@@ -104,14 +105,16 @@ export function Calendar() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: EASE_OUT }}
         >
-          <CalendarGrid
-            days={days}
-            currentMonth={month}
-            selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
-            markersByDate={markersByDate}
-            firstDayOfWeek={settings.firstDayOfWeek}
-          />
+          <GlassCard className="p-3">
+            <CalendarGrid
+              days={days}
+              currentMonth={month}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              markersByDate={markersByDate}
+              firstDayOfWeek={settings.firstDayOfWeek}
+            />
+          </GlassCard>
         </motion.div>
       </Rise>
 

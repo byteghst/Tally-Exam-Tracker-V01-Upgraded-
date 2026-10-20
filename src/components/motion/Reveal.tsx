@@ -77,17 +77,22 @@ export function SplitWords({ text, className }: { text: string; className?: stri
   );
 }
 
-/** A titled block: small label, optional aside, then content. No lines. */
+/**
+ * A titled block: small label, optional aside, then content. No lines. With
+ * `card`, the content sits in a soft raised panel (the same look as GlassCard).
+ */
 export function Section({
   label,
   aside,
   children,
-  className
+  className,
+  card
 }: {
   label: string;
   aside?: ReactNode;
   children: ReactNode;
   className?: string;
+  card?: boolean;
 }) {
   return (
     <motion.section variants={rise} className={className}>
@@ -95,7 +100,7 @@ export function Section({
         <p className="eyebrow">{label}</p>
         {aside}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className={clsx('mt-4', card && 'rounded-card bg-surface-raised p-5 shadow-soft')}>{children}</div>
     </motion.section>
   );
 }

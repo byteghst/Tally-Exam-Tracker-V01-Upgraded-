@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Pencil, Trash2, Repeat, Plus, ChevronDown, Share2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { TaskForm } from '@/components/features/tasks/TaskForm';
@@ -54,7 +55,7 @@ export function Tasks() {
   }
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise as="header" className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">To do</p>
@@ -68,7 +69,7 @@ export function Tasks() {
       <Section
         label="Today"
         aside={
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {today.length > 0 && (
               <span className="font-numeric text-sm tabular-nums text-ink-muted">
                 {todayDone} of {today.length}
@@ -77,7 +78,7 @@ export function Tasks() {
             {/* Share is always there: it also makes yesterday's and the week's cards */}
             <button
               onClick={() => setShareOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+              className="flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-accent"
             >
               <Share2 size={14} /> Share
             </button>
@@ -85,15 +86,15 @@ export function Tasks() {
         }
       >
         {today.length === 0 ? (
-          <div>
+          <GlassCard className="p-5">
             <p className="font-serif text-4xl leading-none tracking-tight text-ink">You're clear.</p>
             <p className="mt-3 text-sm text-ink-muted">Nothing needs your attention today.</p>
             <Button size="sm" variant="secondary" className="mt-4" onClick={openAdd}>
               Add a task
             </Button>
-          </div>
+          </GlassCard>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="space-y-2">
             {today.map((task) => (
               <TaskRow
                 key={task.id}
@@ -110,7 +111,7 @@ export function Tasks() {
 
       {upcoming.length > 0 && (
         <Section label="Upcoming">
-          <ul className="divide-y divide-border">
+          <ul className="space-y-2">
             {upcoming.slice(0, 15).map((task) => (
               <TaskRow
                 key={task.id}
@@ -153,7 +154,7 @@ function TaskRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <li className="py-3">
+    <li className="rounded-card bg-surface-raised px-3 py-3 shadow-soft">
       <div className="flex items-center gap-3">
         <CheckButton
           checked={done}
@@ -177,7 +178,7 @@ function TaskRow({
             onClick={() => setExpanded((e) => !e)}
             aria-expanded={expanded}
             aria-label={`${expanded ? 'Hide' : 'Show'} subtasks of ${task.name}`}
-            className="flex shrink-0 items-center gap-0.5 rounded-control px-1.5 py-1 font-numeric text-xs tabular-nums text-ink-muted hover:bg-ink/5"
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-ink/[0.06] px-2 py-1 font-numeric text-xs tabular-nums text-ink-muted hover:bg-ink/10"
           >
             {progress.done}/{progress.total}
             <ChevronDown size={14} className={clsx('transition-transform duration-300', expanded && 'rotate-180')} />
@@ -203,7 +204,7 @@ function TaskRow({
       {progress && (
         <div className="mt-2.5 pl-9">
           {/* the task's own progress bar: it fills as subtasks are finished */}
-          <div className="h-1 w-full overflow-hidden rounded-full bg-ink/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
             <motion.div
               className={clsx('h-full rounded-full', progress.percent === 100 ? 'bg-forest' : 'bg-accent')}
               initial={false}
@@ -219,7 +220,7 @@ function TaskRow({
               expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
             )}
           >
-            <ul aria-hidden={!expanded} className="min-h-0 divide-y divide-border overflow-hidden">
+            <ul aria-hidden={!expanded} className="min-h-0 overflow-hidden">
               {(task.subtasks ?? []).map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-2">
                   <CheckButton

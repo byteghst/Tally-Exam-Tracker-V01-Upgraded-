@@ -18,6 +18,7 @@ export function DailyMission({ items, onDismiss }: { items: MissionItem[]; onDis
   return (
     <Section
       label="Today's mission"
+      card
       aside={
         <div className="flex items-center gap-2">
           <span className="font-numeric text-sm tabular-nums text-ink-muted">
@@ -26,17 +27,20 @@ export function DailyMission({ items, onDismiss }: { items: MissionItem[]; onDis
           <button
             onClick={onDismiss}
             aria-label="Dismiss today's mission"
-            className="-mr-1 rounded-control p-1 text-ink-faint hover:bg-ink/5 hover:text-ink"
+            className="-mr-1 rounded-full p-1 text-ink-faint hover:bg-ink/5 hover:text-ink"
           >
             <X size={16} />
           </button>
         </div>
       }
     >
-      <ul className="divide-y divide-border">
+      <ul className="space-y-1.5">
         {items.map((item) => (
           <li key={item.id}>
-            <Link to={ITEM_PATH[item.id] ?? '/dashboard'} className="flex items-center gap-3 py-3">
+            <Link
+              to={ITEM_PATH[item.id] ?? '/dashboard'}
+              className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-3 py-3 transition-colors active:bg-ink/[0.07]"
+            >
               <AnimatedCheck checked={item.done} size={22} />
               <StrikeText done={item.done} className="text-base">
                 {item.label}

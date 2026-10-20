@@ -47,7 +47,7 @@ export function StudyTimeWidget() {
 
   if (rows.length === 0) {
     return (
-      <Section label="Study time today">
+      <Section label="Study time today" card>
         <p className="font-serif text-4xl leading-none tracking-tight text-ink">Nothing yet.</p>
         <p className="mt-3 text-sm text-ink-muted">Start a subject's timer on the Study tab to see it here.</p>
         <Link to="/study" className="mt-4 inline-block">
@@ -60,7 +60,7 @@ export function StudyTimeWidget() {
   }
 
   return (
-    <Section label="Study time today">
+    <Section label="Study time today" card>
       <p className="font-serif text-6xl leading-none tracking-tight text-ink">{formatShort(total)}</p>
 
       <div className="mt-6 space-y-4">
@@ -72,9 +72,9 @@ export function StudyTimeWidget() {
                 <span className="truncate text-ink">{subject.name}</span>
                 <span className="shrink-0 pl-2 font-numeric tabular-nums text-ink-muted">{formatShort(ms)}</span>
               </div>
-              <div className="h-0.5 w-full overflow-hidden bg-border">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-ink/10">
                 <motion.div
-                  className="h-full"
+                  className="h-full rounded-full"
                   style={{ backgroundColor: toneColor(subject.color) }}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
@@ -86,7 +86,10 @@ export function StudyTimeWidget() {
         })}
       </div>
 
-      <Link to="/study" className="mt-5 inline-block text-sm font-semibold text-accent hover:underline">
+      <Link
+        to="/study"
+        className="mt-5 inline-flex rounded-full bg-accent-soft px-4 py-2 text-sm font-semibold text-accent"
+      >
         View all subjects
       </Link>
     </Section>

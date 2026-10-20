@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { clsx } from 'clsx';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { EASE_OUT } from '@/lib/motion';
 import { subtaskProgress } from '@/lib/subtasks';
@@ -27,18 +28,21 @@ export function DayAgenda({ exams, tasks, onToggleTask, onToggleSubtask, onEditT
 
   if (isEmpty) {
     return (
-      <div>
+      <GlassCard className="p-5">
         <p className="font-serif text-4xl leading-none tracking-tight text-ink">Nothing on this day.</p>
         <p className="mt-3 text-sm text-ink-muted">Exams and tasks for the selected date will show up here.</p>
-      </div>
+      </GlassCard>
     );
   }
 
   return (
-    <ul className="divide-y divide-border">
+    <ul className="space-y-2">
       {exams.map((exam) => (
         <li key={exam.id}>
-          <Link to={`/exams/${exam.id}`} className="group flex items-center gap-3 py-3 transition-colors hover:bg-ink/5">
+          <Link
+            to={`/exams/${exam.id}`}
+            className="group flex items-center gap-3 rounded-card bg-surface-raised px-3 py-3 shadow-soft transition-shadow hover:shadow-raise"
+          >
             <span className={clsx('h-2.5 w-2.5 shrink-0 rounded-full', TYPE_DOT[exam.type])} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-base text-ink">{exam.name}</p>
@@ -86,7 +90,7 @@ function AgendaTask({
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <li className="py-3">
+    <li className="rounded-card bg-surface-raised px-3 py-3 shadow-soft">
       <div className="flex items-center gap-3">
         <CheckButton
           checked={done}
@@ -102,7 +106,7 @@ function AgendaTask({
             onClick={() => setExpanded((e) => !e)}
             aria-expanded={expanded}
             aria-label={`${expanded ? 'Hide' : 'Show'} subtasks of ${task.name}`}
-            className="flex shrink-0 items-center gap-0.5 rounded-control px-1.5 py-1 font-numeric text-xs tabular-nums text-ink-muted hover:bg-ink/5"
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-ink/[0.06] px-2 py-1 font-numeric text-xs tabular-nums text-ink-muted hover:bg-ink/10"
           >
             {progress.done}/{progress.total}
             <ChevronDown size={14} className={clsx('transition-transform duration-300', expanded && 'rotate-180')} />
@@ -119,7 +123,7 @@ function AgendaTask({
 
       {progress && (
         <div className="mt-2.5 pl-9">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-ink/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
             <motion.div
               className={clsx('h-full rounded-full', progress.percent === 100 ? 'bg-forest' : 'bg-accent')}
               initial={false}
@@ -134,7 +138,7 @@ function AgendaTask({
               expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
             )}
           >
-            <ul aria-hidden={!expanded} className="min-h-0 divide-y divide-border overflow-hidden">
+            <ul aria-hidden={!expanded} className="min-h-0 overflow-hidden">
               {(task.subtasks ?? []).map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-2">
                   <CheckButton

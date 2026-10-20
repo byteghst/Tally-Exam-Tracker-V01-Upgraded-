@@ -19,7 +19,7 @@ export function TodaysTasksWidget({ tasks, onToggle, onAddTask }: TodaysTasksWid
   const pct = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
 
   return (
-    <Section label="Today's tasks">
+    <Section label="Today's tasks" card>
       {tasks.length === 0 ? (
         <div>
           <p className="font-serif text-4xl leading-none tracking-tight text-ink">You're clear.</p>
@@ -34,20 +34,20 @@ export function TodaysTasksWidget({ tasks, onToggle, onAddTask }: TodaysTasksWid
             {animatedCompleted}
             <span className="text-ink-faint">/{tasks.length}</span>
           </p>
-          <div className="mt-4 h-0.5 w-full overflow-hidden bg-border">
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-ink/10">
             <motion.div
-              className="h-full bg-ink"
+              className="h-full rounded-full bg-accent"
               initial={{ width: 0 }}
               animate={{ width: `${pct}%` }}
               transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.3 }}
             />
           </div>
-          <ul className="mt-4 divide-y divide-border">
+          <ul className="mt-4 space-y-1.5">
             {tasks.slice(0, 4).map((task) => {
               const done = task.status === 'completed';
               const sub = subtaskProgress(task);
               return (
-                <li key={task.id} className="flex items-center gap-3 py-3">
+                <li key={task.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-3 py-2.5">
                   <CheckButton
                     checked={done}
                     onToggle={() => onToggle(task.id)}

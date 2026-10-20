@@ -54,7 +54,7 @@ function formatWhen(d: Date): string {
   });
 }
 
-/** A row of mutually exclusive options: the chosen one is filled with ink. */
+/** A row of mutually exclusive options: the chosen one is filled with the accent. */
 function Choice<T extends string>({
   options,
   value,
@@ -72,8 +72,8 @@ function Choice<T extends string>({
           onClick={() => onChange(option)}
           aria-pressed={value === option}
           className={clsx(
-            'rounded-full border px-4 py-1.5 text-sm font-semibold capitalize transition-colors duration-200',
-            value === option ? 'border-ink bg-ink text-surface' : 'border-border text-ink-muted hover:text-ink'
+            'rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors duration-200',
+            value === option ? 'bg-accent text-accent-on' : 'bg-ink/[0.06] text-ink-muted hover:text-ink'
           )}
         >
           {option}
@@ -179,13 +179,13 @@ export function Settings() {
   const prefs = settings.notificationPrefs;
 
   return (
-    <Stagger className="space-y-10 py-8">
+    <Stagger className="space-y-8 py-8">
       <Rise as="header">
         <p className="eyebrow">Preferences</p>
         <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Settings</h1>
       </Rise>
 
-      <Section label="Account">
+      <Section label="Account" card>
         <p className="font-serif text-2xl italic leading-snug text-ink">{user?.email}</p>
         <p className="mt-2 text-sm text-ink-muted">
           Your exams, tasks and configs sync to every device you sign in on.
@@ -195,7 +195,7 @@ export function Settings() {
         </Button>
       </Section>
 
-      <Section label="Personal">
+      <Section label="Personal" card>
         <div className="space-y-4">
           <Input
             label="Your name (optional)"
@@ -218,12 +218,12 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section label="Appearance">
+      <Section label="Appearance" card>
         <Choice options={THEME_OPTIONS} value={settings.theme} onChange={(theme) => updateSettings({ theme })} />
       </Section>
 
-      <Section label="Dashboard">
-        <div className="divide-y divide-border">
+      <Section label="Dashboard" card>
+        <div className="space-y-1.5">
           <ToggleRow
             label="Momentum tracker"
             checked={settings.streaksEnabled}
@@ -250,15 +250,15 @@ export function Settings() {
         </div>
 
         <p className="eyebrow mt-6">Widgets</p>
-        <ul className="mt-2 divide-y divide-border">
+        <ul className="mt-3 space-y-1.5">
           {widgetItems.map((w, i) => (
-            <li key={w.id} className="flex items-center gap-2 py-3">
+            <li key={w.id} className="flex items-center gap-2 rounded-control bg-ink/[0.04] py-2.5 pl-4 pr-3">
               <span className="min-w-0 flex-1 text-base text-ink">{WIDGET_LABELS[w.id]}</span>
               <button
                 onClick={() => moveWidget(i, -1)}
                 disabled={i === 0}
                 aria-label={`Move ${WIDGET_LABELS[w.id]} up`}
-                className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
+                className="rounded-full p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
               >
                 <ChevronUp size={16} />
               </button>
@@ -266,7 +266,7 @@ export function Settings() {
                 onClick={() => moveWidget(i, 1)}
                 disabled={i === widgetItems.length - 1}
                 aria-label={`Move ${WIDGET_LABELS[w.id]} down`}
-                className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
+                className="rounded-full p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink disabled:opacity-30"
               >
                 <ChevronDown size={16} />
               </button>
@@ -276,7 +276,7 @@ export function Settings() {
         </ul>
       </Section>
 
-      <Section label="Notifications">
+      <Section label="Notifications" card>
         {permission === 'unsupported' ? (
           <p className="text-sm text-ink-muted">Notifications aren't supported in this browser.</p>
         ) : (
@@ -304,7 +304,7 @@ export function Settings() {
             )}
 
             {isNative && permission === 'granted' && native?.exactAlarms === 'denied' && (
-              <div className="mt-4 border-l-2 border-saffron bg-saffron/10 p-3">
+              <div className="mt-4 rounded-control bg-saffron/10 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
                   <AlertTriangle size={14} className="text-saffron" /> Exact timing is off
                 </p>
@@ -326,7 +326,7 @@ export function Settings() {
               </p>
             )}
 
-            <div className="mt-3 divide-y divide-border border-t border-border">
+            <div className="mt-4 space-y-1.5">
               <ToggleRow
                 label="Exam reminders"
                 checked={prefs.exams}

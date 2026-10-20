@@ -34,14 +34,14 @@ export function CalendarGrid({
 
   return (
     <div>
-      <div className="grid grid-cols-7 border-b border-border pb-2">
+      <div className="grid grid-cols-7 pb-2">
         {labels.map((label, i) => (
           <div key={`${label}-${i}`} className="eyebrow text-center">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 gap-1">
         {days.map((date) => {
           const inMonth = parseISODate(date).getMonth() === currentMonth;
           const isToday = date === today;
@@ -54,22 +54,21 @@ export function CalendarGrid({
               key={date}
               onClick={() => onSelectDate(date)}
               className={clsx(
-                'relative flex aspect-square flex-col items-center justify-center gap-1 text-base transition-colors duration-200',
-                !inMonth && 'text-ink-faint/40',
-                inMonth && !isSelected && 'text-ink hover:bg-ink/5',
-                isSelected && 'bg-ink text-surface',
-                isToday && !isSelected && 'font-bold text-accent'
+                'relative flex aspect-square flex-col items-center justify-center gap-1 rounded-control text-base transition-colors duration-200',
+                !inMonth && !isSelected && 'text-ink-faint/40',
+                inMonth && !isSelected && !isToday && 'text-ink hover:bg-ink/5',
+                isToday && !isSelected && 'bg-accent-soft font-bold text-accent',
+                isSelected && 'bg-accent text-accent-on'
               )}
               aria-current={isToday ? 'date' : undefined}
               aria-label={formatDate(date)}
             >
               <span className="font-numeric tabular-nums">{dayNum}</span>
-              {/* dot colours: exam = persimmon, task = forest */}
+              {/* dot colours: exam = persimmon, task = forest (both turn white on the selected day) */}
               <span className="flex h-1.5 gap-1">
-                {markers && markers.examCount > 0 && <Dot color="bg-accent" />}
-                {markers && markers.taskCount > 0 && <Dot color="bg-forest" />}
+                {markers && markers.examCount > 0 && <Dot color={isSelected ? 'bg-accent-on' : 'bg-accent'} />}
+                {markers && markers.taskCount > 0 && <Dot color={isSelected ? 'bg-accent-on/60' : 'bg-forest'} />}
               </span>
-              {isToday && <span className="absolute inset-x-3 bottom-1 h-0.5 bg-accent" aria-hidden />}
             </button>
           );
         })}
