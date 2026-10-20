@@ -68,8 +68,9 @@ function toFormState(exam: Exam | undefined, defaultDate: string | undefined, de
   };
 }
 
+/** A small label that starts a new group of fields. Spacing separates it from the group above; no line. */
 function SectionHead({ children }: { children: string }) {
-  return <p className="eyebrow border-t border-border pt-6">{children}</p>;
+  return <p className="eyebrow pt-4">{children}</p>;
 }
 
 export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: ExamFormProps) {
@@ -294,7 +295,7 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
 
         <SectionHead>Scoring structure</SectionHead>
         {form.configId && (
-          <div className="-mt-3 flex items-center justify-between gap-4">
+          <div className="-mt-2 flex items-center justify-between gap-4 rounded-control bg-ink/[0.04] px-4 py-3">
             <p className="text-sm text-ink-muted">Numbers come from the config.</p>
             <div className="flex items-center gap-3">
               <span className="text-sm text-ink">Override</span>
@@ -408,7 +409,7 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
               transition={{ duration: 0.4, ease: EASE_OUT }}
               className="overflow-hidden"
             >
-              <div className="border-l-2 border-accent bg-accent/10 px-4 py-3">
+              <div className="rounded-card bg-accent-soft p-4">
                 <p className="eyebrow !text-accent">Live score</p>
                 <p className="mt-1 font-serif text-5xl leading-none tracking-tight text-ink">
                   {preview.finalScore}

@@ -197,9 +197,9 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
         <div>
           <p className="eyebrow">Subtasks</p>
           {form.subtasks.length > 0 && (
-            <ul className="mt-2 divide-y divide-border border-y border-border">
+            <ul className="mt-3 space-y-1.5">
               {form.subtasks.map((s) => (
-                <li key={s.id} className="flex items-center gap-3 py-2.5">
+                <li key={s.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] py-2 pl-4 pr-2">
                   <span className={clsx('h-2 w-2 shrink-0 rounded-full', s.done ? 'bg-forest' : 'bg-ink/25')} />
                   <span className={clsx('min-w-0 flex-1 truncate text-base', s.done && 'text-ink-faint line-through')}>
                     {s.name}
@@ -208,7 +208,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
                     type="button"
                     onClick={() => removeSubtask(s.id)}
                     aria-label={`Remove subtask ${s.name}`}
-                    className="shrink-0 rounded-control p-1.5 text-ink-muted hover:bg-danger/10 hover:text-danger"
+                    className="shrink-0 rounded-full p-1.5 text-ink-muted hover:bg-danger/10 hover:text-danger"
                   >
                     <X size={16} />
                   </button>
@@ -216,7 +216,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
               ))}
             </ul>
           )}
-          <div className="mt-2 flex items-end gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <Input
                 value={form.subtaskDraft}
@@ -231,11 +231,11 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
                 aria-label="New subtask"
               />
             </div>
-            <Button type="button" size="sm" variant="secondary" onClick={addSubtask} className="mb-1.5">
+            <Button type="button" size="lg" variant="secondary" onClick={addSubtask}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           </div>
-          <p className="mt-1 text-xs text-ink-faint">
+          <p className="mt-2 text-xs text-ink-faint">
             The task's progress bar fills as you finish subtasks, and the task completes when the last one is done.
           </p>
         </div>
@@ -289,7 +289,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           error={errors.category}
         />
 
-        <div className="border-y border-border">
+        <div>
           <ToggleRow
             label="Repeat this task"
             checked={form.recurrenceEnabled}
@@ -306,7 +306,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
                 transition={{ duration: 0.4, ease: EASE_OUT }}
                 className="overflow-hidden"
               >
-                <div className="space-y-5 pb-5 pt-1">
+                <div className="space-y-5 pt-4">
                   <Segmented options={FREQ_OPTIONS} value={form.recurrenceFreq} onChange={(f) => set('recurrenceFreq', f)} />
 
                   {(form.recurrenceFreq === 'weekly' || form.recurrenceFreq === 'custom') && (
@@ -321,8 +321,8 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
                               onClick={() => toggleDay(i)}
                               aria-pressed={on}
                               className={clsx(
-                                'h-10 flex-1 rounded-control border text-xs font-semibold transition-colors duration-200',
-                                on ? 'border-ink bg-ink text-surface' : 'border-ink/20 text-ink-muted hover:text-ink'
+                                'h-10 flex-1 rounded-control text-xs font-semibold transition-colors duration-200',
+                                on ? 'bg-accent text-accent-on' : 'bg-ink/[0.06] text-ink-muted hover:text-ink'
                               )}
                             >
                               {label}

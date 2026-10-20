@@ -169,14 +169,14 @@ export function ExamConfigForm({ open, onClose, config }: ExamConfigFormProps) {
           error={errors.negativeMarkPerWrong}
         />
 
-        <div className="divide-y divide-border border-y border-border">
+        <div className="space-y-3">
           {(['daily', 'weekly', 'monthly'] as ExamType[]).map((type) => {
             const row = form[type];
             const total =
               (Number(row.mcqCount || 0) * Number(row.mcqMarksEach || 0) +
                 Number(row.writtenCount || 0) * Number(row.writtenMarksEach || 0)) || 0;
             return (
-              <div key={type}>
+              <div key={type} className="rounded-card bg-ink/[0.04] px-4">
                 <div className="flex items-center gap-3 py-3">
                   <span className={clsx('h-2.5 w-2.5 shrink-0 rounded-full', TYPE_DOT[type])} />
                   <p className="flex-1 text-base font-medium text-ink">{TYPE_LABELS[type]}</p>

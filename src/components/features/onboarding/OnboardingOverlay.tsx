@@ -34,12 +34,12 @@ export function OnboardingOverlay() {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" role="presentation">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/50 p-4" role="presentation">
       <GlassCard
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
-        className="w-full max-w-md p-6"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto p-6 shadow-sheet"
       >
         <div className="flex items-center gap-2">
           <TallyMark size={26} className="text-ink" />
@@ -48,26 +48,28 @@ export function OnboardingOverlay() {
           </span>
         </div>
 
-        <h1 id="onboarding-title" className="mt-4 font-display text-xl font-semibold text-ink">
+        <h1 id="onboarding-title" className="mt-4 font-serif text-4xl leading-none tracking-tight text-ink">
           Welcome to Tally
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        <p className="mt-2 text-sm text-ink-muted">
           Your exams and tasks are entered manually and synced securely to your account.
         </p>
 
-        <ul className="mt-5 space-y-4">
+        <ul className="mt-5 space-y-2">
           {HIGHLIGHTS.map((h) => (
-            <li key={h.title} className="flex items-start gap-3">
-              <h.icon size={20} className="mt-0.5 shrink-0 text-accent" />
+            <li key={h.title} className="flex items-start gap-3 rounded-control bg-ink/[0.04] px-3 py-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+                <h.icon size={18} />
+              </span>
               <div>
-                <p className="text-sm font-medium text-ink">{h.title}</p>
+                <p className="text-sm font-semibold text-ink">{h.title}</p>
                 <p className="text-sm text-ink-muted">{h.body}</p>
               </div>
             </li>
           ))}
         </ul>
 
-        <Button onClick={finish} className="mt-6 w-full">
+        <Button onClick={finish} size="lg" className="mt-6 w-full">
           Get started
         </Button>
       </GlassCard>
