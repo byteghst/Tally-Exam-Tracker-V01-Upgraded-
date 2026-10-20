@@ -41,14 +41,14 @@ All data is entered manually. Nothing is auto-graded, ranked or inferred. Derive
 | **Tasks** | One-off and recurring (daily, weekdays, weekly, custom days) tasks with subtasks, priority, category, notes and reminders. |
 | **Deadlines** | Due dates with an optional time, priority and a live countdown. Each deadline can be exported as a shareable card. |
 | **Calendar** | Month grid with exam and task markers and a per-day agenda. |
-| **Study** | Per-subject timers. Elapsed time is derived from stored timestamps, so timing continues with the screen off or the app closed. |
+| **Study** | Per-subject timers with custom colours and pictures. Elapsed time is derived from stored timestamps, so timing continues with the screen off or the app closed. |
 | **Prayer times** | Daily prayer windows and prohibited times by Bangladeshi district (Islamic Foundation Bangladesh method), a prayer tracker with streak, and start, ending and prohibited-time reminders. |
 | **Analytics** | Totals, averages and completion rate; exam score trend with highest and lowest results marked; task completion chart; milestones; downloadable monthly report; shareable score-trend image. |
 | **Settings** | Theme (light, dark, system), dashboard layout and density, notification preferences, account and update controls. |
 | **Reminders** | Native Android notifications that fire while the app is closed, with optional evening-before and morning briefings. |
 | **Updates** | In-app detection of newer builds with one-step installation. |
 
-**Data scope.** Exams, tasks, configs, deadlines and settings synchronise through Supabase. Study subjects and sessions are stored on the device.
+**Data scope.** Exams, tasks, configs, deadlines, study subjects (with pictures) and sessions, and settings synchronise through Supabase. A running study timer exists on the device only until it is stopped and saved.
 
 ---
 
@@ -112,7 +112,7 @@ The logo, Android adaptive-icon layers and launch screen are generated from a si
 | Styling | Tailwind CSS driven by CSS variables |
 | Motion | Framer Motion |
 | State | Zustand |
-| Data and auth | Supabase (Postgres with Row Level Security, email and password authentication, realtime) |
+| Data and auth | Supabase (Postgres with Row Level Security, storage, email and password authentication, realtime) |
 | Charts | Recharts |
 | Validation | Zod |
 | Native | Capacitor 6 (Android), local notifications |
