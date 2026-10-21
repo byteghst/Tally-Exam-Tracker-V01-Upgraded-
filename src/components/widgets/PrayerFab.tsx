@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, Ban, Check, ChevronDown, MapPin, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { clsx } from 'clsx';
 import { EASE_OUT } from '@/lib/motion';
@@ -270,7 +270,7 @@ export function PrayerFab() {
 }
 
 /** One block of the popup, fading up a moment after the one before it. */
-function Block({ index, className, children }: { index: number; className?: string; children: React.ReactNode }) {
+function Block({ index, className, children }: { index: number; className?: string; children: ReactNode }) {
   return (
     <motion.div
       className={className}
@@ -324,6 +324,61 @@ function ReminderSwitch({
         />
       </span>
     </button>
+  );
+}
+
+/** Key to the three circle states in the prayer list: one small picture per meaning. */
+function TrackerLegend() {
+  const items: Array<{ chip: string; icon: ReactNode; text: string }> = [
+    { chip: 'bg-forest text-surface-raised', icon: <Check size={11} strokeWidth={3.5} />, text: 'Prayed' },
+    { chip: 'bg-danger/15 text-danger', icon: <X size={11} strokeWidth={3.5} />, text: 'Missed' },
+    { chip: 'bg-ink/10 opacity-60', icon: null, text: 'Locked' }
+  ];
+  return (
+    <ul
+      className="mt-3 flex items-center justify-between rounded-full bg-ink/[0.04] px-5 py-2.5"
+      aria-label="What the circles mean: prayed, missed, locked"
+    >
+      {items.map((it) => (
+        <li key={it.text} className="flex items-center gap-2">
+          <span className={clsx('flex h-[18px] w-[18px] items-center justify-center rounded-full', it.chip)} aria-hidden>
+            {it.icon}
+          </span>
+          <span className="font-serif text-[15px] italic text-ink-muted">{it.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** A short note with its own icon, set in the serif face so it reads apart from the data. */
+function Note({
+  icon,
+  tone,
+  title,
+  children
+}: {
+  icon: ReactNode;
+  tone: 'danger' | 'accent';
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3.5 rounded-card bg-ink/[0.04] p-4">
+      <span
+        className={clsx(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+          tone === 'danger' ? 'bg-danger/10 text-danger' : 'bg-accent-soft text-accent'
+        )}
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <div>
+        <p className="font-serif text-lg leading-tight text-ink">{title}</p>
+        <p className="mt-1 font-serif text-[15px] leading-snug text-ink-muted">{children}</p>
+      </div>
+    </div>
   );
 }
 
@@ -625,9 +680,7 @@ function PrayerOverlay({
               );
             })}
           </ul>
-          <p className="mt-2 text-xs text-ink-faint">
-            A prayer can only be ticked while its time is running. A cross means its time ended without a tick.
-          </p>
+          <TrackerLegend />
         </Block>
 
         <Block index={5} className="mt-7">
@@ -697,15 +750,16 @@ function PrayerOverlay({
           )}
         </Block>
 
-        <Block index={7} className="mt-6">
-          <p className="text-xs text-ink-faint">
-            Voluntary (nafl) prayers are also not allowed after praying Fajr until sunrise, and after praying Asr until
-            sunset.
-          </p>
-          <p className="mt-2 text-xs text-ink-faint">
-            Follows the Islamic Foundation Bangladesh rules, calculated for {city.name}. A minute or two can differ from
-            the printed timetable, so check it for your area.
-          </p>
+        <Block index={7} className="mt-7">
+          <p className="eyebrow">Good to know</p>
+          <div className="mt-3 space-y-2">
+            <Note icon={<Ban size={17} />} tone="danger" title="No nafl after Fajr and Asr">
+              Voluntary prayers are not allowed after praying Fajr until sunrise, and after praying Asr until sunset.
+            </Note>
+            <Note icon={<MapPin size={17} />} tone="accent" title={`Timed for ${city.name}`}>
+              Follows the Islamic Foundation Bangladesh rules. A minute or two can differ from the printed timetable.
+            </Note>
+          </div>
         </Block>
       </motion.div>
     </motion.div>
