@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { enqueue, flushOutbox, isNetworkFailure, isOffline, makeId, pendingCount } from '@/lib/outbox';
 import type { Exam, ExamStatus } from '@/types';
 
 interface ExamRow {
@@ -98,6 +99,47 @@ function toRow(data: ExamPayload) {
   return row;
 }
 
+/** A blank row, so an exam built on the device has every column the mapper reads. */
+const EMPTY_ROW = {
+  id: '',
+  config_id: null,
+  name: '',
+  type: 'daily',
+  date: '',
+  start_time: null,
+  status: 'upcoming',
+  mcq_count: 0,
+  mcq_marks_each: 0,
+  written_count: 0,
+  written_marks_each: 0,
+  negative_mark_per_wrong: 0,
+  mcq_correct: null,
+  mcq_wrong: null,
+  mcq_unanswered: null,
+  written_marks_obtained: null,
+  manual_score_override: null,
+  rank: null,
+  participants: null,
+  notes: null,
+  reminder_minutes_before: null,
+  created_at: '',
+  updated_at: ''
+} as unknown as ExamRow;
+
+/** The exam as it should look after `payload` is applied on top of `base` (offline, no server round-trip). */
+function localExam(id: string, base: Exam | null, payload: ExamPayload): Exam {
+  const now = new Date().toISOString();
+  const row = {
+    ...EMPTY_ROW,
+    ...(base ? toRow(base) : {}),
+    ...toRow(payload),
+    id,
+    created_at: base ? new Date(base.createdAt).toISOString() : now,
+    updated_at: now
+  } as unknown as ExamRow;
+  return mapExam(row);
+}
+
 interface ExamStore {
   exams: Exam[];
   loading: boolean;
@@ -122,6 +164,12 @@ export const useExamStore = create<ExamStore>((set, get) => ({
   subscribed: false,
 
   hydrate: async () => {
+    const userId = useAuthStore.getState().user?.id;
+    if (userId) {
+      // Send changes made offline first, so the read below can't overwrite them.
+      await flushOutbox(userId);
+      if (pendingCount(userId) > 0) return;
+    }
     set({ loading: true });
     const { data, error } = await supabase.from('exams').select('*').order('date', { ascending: true });
     // A failed read (offline, expired session...) must not look like "no exams":
@@ -163,12 +211,25 @@ export const useExamStore = create<ExamStore>((set, get) => ({
   addExam: async (data) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) return null;
-    const { data: row, error } = await supabase
+    const id = makeId();
+
+    // No connection: show the exam now and queue it to be sent later.
+    const saveOffline = (): Exam => {
+      const exam = localExam(id, null, data);
+      enqueue(userId, { table: 'exams', kind: 'insert', rowId: id, row: { id, user_id: userId, ...toRow(data) } });
+      set((s) => ({ exams: [...s.exams, exam] }));
+      void flushOutbox(userId);
+      return exam;
+    };
+    if (isOffline()) return saveOffline();
+
+    const { data: row, error, status } = await supabase
       .from('exams')
-      .insert({ user_id: userId, ...toRow(data) })
+      .insert({ id, user_id: userId, ...toRow(data) })
       .select()
       .single();
     if (error || !row) {
+      if (error && isNetworkFailure(error, status)) return saveOffline();
       useUIStore.getState().pushToast('Could not save the exam. Please try again.', undefined, 'error');
       return null;
     }
@@ -178,8 +239,24 @@ export const useExamStore = create<ExamStore>((set, get) => ({
   },
 
   updateExam: async (id, changes) => {
-    const { data: row, error } = await supabase.from('exams').update(toRow(changes)).eq('id', id).select().single();
+    const saveOffline = (): boolean => {
+      const userId = useAuthStore.getState().user?.id;
+      const existing = get().exams.find((e) => e.id === id);
+      if (!userId || !existing) return false;
+      const exam = localExam(id, existing, changes);
+      set((s) => ({ exams: s.exams.map((e) => (e.id === id ? exam : e)) }));
+      const patch = toRow(changes);
+      if (Object.keys(patch).length > 0) {
+        enqueue(userId, { table: 'exams', kind: 'update', rowId: id, row: patch });
+        void flushOutbox(userId);
+      }
+      return true;
+    };
+    if (isOffline() && saveOffline()) return;
+
+    const { data: row, error, status } = await supabase.from('exams').update(toRow(changes)).eq('id', id).select().single();
     if (error || !row) {
+      if (error && isNetworkFailure(error, status) && saveOffline()) return;
       useUIStore.getState().pushToast('Could not save the change. Check your connection and try again.', undefined, 'error');
       return;
     }
@@ -189,10 +266,22 @@ export const useExamStore = create<ExamStore>((set, get) => ({
 
   deleteExam: async (id) => {
     const exam = get().exams.find((e) => e.id === id);
-    const { error } = await supabase.from('exams').delete().eq('id', id);
-    // Only drop it from the screen if the account really deleted it; otherwise an
-    // offline delete would look done and the exam would reappear later.
+    const removeOffline = (): boolean => {
+      const userId = useAuthStore.getState().user?.id;
+      if (!userId) return false;
+      set((s) => ({ exams: s.exams.filter((e) => e.id !== id) }));
+      enqueue(userId, { table: 'exams', kind: 'delete', rowId: id });
+      void flushOutbox(userId);
+      if (exam) useUIStore.getState().pushToast(`Deleted "${exam.name}"`);
+      return true;
+    };
+    if (isOffline() && removeOffline()) return;
+
+    const { error, status } = await supabase.from('exams').delete().eq('id', id);
+    // Only drop it from the screen if the delete is saved (or queued); otherwise it
+    // would look done and the exam would reappear later.
     if (error) {
+      if (isNetworkFailure(error, status) && removeOffline()) return;
       useUIStore.getState().pushToast('Could not delete the exam. Check your connection and try again.', undefined, 'error');
       return;
     }

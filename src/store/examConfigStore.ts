@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
+import { isOffline } from '@/lib/outbox';
 import type { ExamConfig, ExamConfigTypeSetting, ExamType } from '@/types';
 
 interface ConfigRow {
@@ -59,6 +61,13 @@ interface ExamConfigStore {
 
 let channel: ReturnType<typeof supabase.channel> | null = null;
 
+/** Configs span two tables, so they are not queued offline; say so instead of failing silently. */
+function blockedOffline(): boolean {
+  if (!isOffline()) return false;
+  useUIStore.getState().pushToast('Exam configs can only be changed while online.', undefined, 'error');
+  return true;
+}
+
 export const useExamConfigStore = create<ExamConfigStore>((set, get) => ({
   configs: [],
   loading: false,
@@ -101,6 +110,7 @@ export const useExamConfigStore = create<ExamConfigStore>((set, get) => ({
   addConfig: async ({ name, negativeMarkPerWrong, types }) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) return null;
+    if (blockedOffline()) return null;
 
     const { data: configRow, error } = await supabase
       .from('exam_configs')
@@ -126,6 +136,7 @@ export const useExamConfigStore = create<ExamConfigStore>((set, get) => ({
   },
 
   updateConfig: async (id, { name, negativeMarkPerWrong, types }) => {
+    if (blockedOffline()) return;
     await supabase
       .from('exam_configs')
       .update({ name, negative_mark_per_wrong: negativeMarkPerWrong })
@@ -149,6 +160,7 @@ export const useExamConfigStore = create<ExamConfigStore>((set, get) => ({
   },
 
   deleteConfig: async (id) => {
+    if (blockedOffline()) return;
     await supabase.from('exam_configs').delete().eq('id', id);
     set({ configs: get().configs.filter((c) => c.id !== id) });
   }

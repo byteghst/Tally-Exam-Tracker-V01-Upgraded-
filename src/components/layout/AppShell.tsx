@@ -19,6 +19,7 @@ import { useDeadlineStore } from '@/store/deadlineStore';
 import { useMilestoneCelebration } from '@/hooks/useMilestoneCelebration';
 import { useNotificationSync } from '@/hooks/useNotificationSync';
 import { useReconnectSync } from '@/hooks/useReconnectSync';
+import { loadOutboxCount } from '@/lib/outbox';
 
 export function AppShell() {
   const { session, initializing, user } = useAuthStore();
@@ -32,7 +33,7 @@ export function AppShell() {
 
   const { celebrating, finishCelebrating } = useMilestoneCelebration();
   useNotificationSync();
-  // Re-read everything from the account when the connection comes back.
+  // Send offline changes and re-read everything from the account when the connection comes back.
   useReconnectSync(Boolean(user));
 
   // Hydrate everything once signed in, and subscribe to realtime so any
@@ -41,6 +42,8 @@ export function AppShell() {
   // subscriptions down on sign-out so a later sign-in starts clean.
   useEffect(() => {
     if (!user) return;
+    // Changes made offline in an earlier session are sent by the hydrate calls below.
+    loadOutboxCount(user.id);
     examStore.hydrate();
     taskStore.hydrate();
     configStore.hydrate();

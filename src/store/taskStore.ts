@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { enqueue, flushOutbox, isNetworkFailure, isOffline, makeId, pendingCount } from '@/lib/outbox';
 import { expandRecurrence } from '@/lib/dates';
 import { statusFromSubtasks } from '@/lib/subtasks';
 import type { Subtask, Task } from '@/types';
@@ -66,6 +67,46 @@ function toRow(data: Partial<TaskPayload>) {
   return row;
 }
 
+/** A blank row, so a task built on the device has every column the mapper reads. */
+const EMPTY_ROW = {
+  id: '',
+  name: '',
+  date: null,
+  time: null,
+  estimated_duration: null,
+  actual_duration: null,
+  priority: 'medium',
+  status: 'todo',
+  category: null,
+  notes: null,
+  subtasks: [],
+  recurrence: null,
+  series_id: null,
+  reminder_minutes_before: null,
+  created_at: '',
+  updated_at: ''
+} as unknown as TaskRow;
+
+/** The task as it should look after `payload` is applied on top of `base` (offline, no server round-trip). */
+function localTask(id: string, base: Task | null, payload: Partial<TaskPayload>): Task {
+  const now = new Date().toISOString();
+  const row = {
+    ...EMPTY_ROW,
+    ...(base ? toRow(base) : {}),
+    ...toRow(payload),
+    id,
+    created_at: base ? new Date(base.createdAt).toISOString() : now,
+    updated_at: now
+  } as unknown as TaskRow;
+  return mapTask(row);
+}
+
+function horizonISO(): string {
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + 60);
+  return horizon.toISOString().slice(0, 10);
+}
+
 interface TaskStore {
   tasks: Task[];
   loading: boolean;
@@ -127,6 +168,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   subscribed: false,
 
   hydrate: async () => {
+    const userId = useAuthStore.getState().user?.id;
+    if (userId) {
+      // Send changes made offline first, so the read below can't overwrite them.
+      await flushOutbox(userId);
+      if (pendingCount(userId) > 0) return;
+    }
     set({ loading: true });
     const { data, error } = await supabase
       .from('tasks')
@@ -160,20 +207,55 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   addTask: async (data) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) return null;
-    const { data: row, error } = await supabase
+    const id = makeId();
+
+    // No connection: show the task now and queue it (and, for a repeating task,
+    // its upcoming days) to be sent later.
+    const saveOffline = (): Task => {
+      const task = localTask(id, null, data);
+      const added: Task[] = [task];
+      enqueue(userId, { table: 'tasks', kind: 'insert', rowId: id, row: { id, user_id: userId, ...toRow(data) } });
+      if (task.recurrence && task.date) {
+        const fresh = (task.subtasks ?? []).map((s) => ({ ...s, done: false }));
+        const dates = expandRecurrence(task.recurrence, task.date, task.date, horizonISO()).filter((d) => d !== task.date);
+        for (const date of dates) {
+          const instanceId = makeId();
+          const instance: Partial<TaskPayload> = {
+            ...data,
+            date,
+            status: 'todo',
+            subtasks: fresh,
+            seriesId: id,
+            actualDuration: undefined
+          };
+          added.push(localTask(instanceId, null, instance));
+          enqueue(userId, {
+            table: 'tasks',
+            kind: 'insert',
+            rowId: instanceId,
+            row: { id: instanceId, user_id: userId, ...toRow(instance) }
+          });
+        }
+      }
+      set((s) => ({ tasks: [...s.tasks, ...added] }));
+      void flushOutbox(userId);
+      return task;
+    };
+    if (isOffline()) return saveOffline();
+
+    const { data: row, error, status } = await supabase
       .from('tasks')
-      .insert({ user_id: userId, ...toRow(data) })
+      .insert({ id, user_id: userId, ...toRow(data) })
       .select()
       .single();
     if (error || !row) {
+      if (error && isNetworkFailure(error, status)) return saveOffline();
       useUIStore.getState().pushToast('Could not save the task. Please try again.', undefined, 'error');
       return null;
     }
     const task = mapTask(row as TaskRow);
     if (task.recurrence && task.date) {
-      const horizon = new Date();
-      horizon.setDate(horizon.getDate() + 60);
-      await ensureRecurringInstances(task, task.date, horizon.toISOString().slice(0, 10));
+      await ensureRecurringInstances(task, task.date, horizonISO());
       await get().hydrate();
       return task;
     }
@@ -202,8 +284,24 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   updateTask: async (id, changes) => {
-    const { data: row, error } = await supabase.from('tasks').update(toRow(changes)).eq('id', id).select().single();
+    const saveOffline = (): boolean => {
+      const userId = useAuthStore.getState().user?.id;
+      const existing = get().tasks.find((t) => t.id === id);
+      if (!userId || !existing) return false;
+      const updatedTask = localTask(id, existing, changes);
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? updatedTask : t)) }));
+      const patch = toRow(changes);
+      if (Object.keys(patch).length > 0) {
+        enqueue(userId, { table: 'tasks', kind: 'update', rowId: id, row: patch });
+        void flushOutbox(userId);
+      }
+      return true;
+    };
+    if (isOffline() && saveOffline()) return;
+
+    const { data: row, error, status } = await supabase.from('tasks').update(toRow(changes)).eq('id', id).select().single();
     if (error || !row) {
+      if (error && isNetworkFailure(error, status) && saveOffline()) return;
       useUIStore.getState().pushToast('Could not save the change. Check your connection and try again.', undefined, 'error');
       return;
     }
@@ -211,19 +309,29 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? updated : t)) }));
 
     if (updated.recurrence && updated.date) {
-      const horizon = new Date();
-      horizon.setDate(horizon.getDate() + 60);
-      await ensureRecurringInstances(updated, updated.date, horizon.toISOString().slice(0, 10));
+      await ensureRecurringInstances(updated, updated.date, horizonISO());
       await get().hydrate();
     }
   },
 
   deleteTask: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
-    // Only drop it from the screen if the account really deleted it; otherwise an
-    // offline delete would look done and the task would reappear later.
+    const removeOffline = (): boolean => {
+      const userId = useAuthStore.getState().user?.id;
+      if (!userId) return false;
+      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+      enqueue(userId, { table: 'tasks', kind: 'delete', rowId: id });
+      void flushOutbox(userId);
+      if (task) useUIStore.getState().pushToast(`Deleted "${task.name}"`);
+      return true;
+    };
+    if (isOffline() && removeOffline()) return;
+
+    const { error, status } = await supabase.from('tasks').delete().eq('id', id);
+    // Only drop it from the screen if the delete is saved (or queued); otherwise it
+    // would look done and the task would reappear later.
     if (error) {
+      if (isNetworkFailure(error, status) && removeOffline()) return;
       useUIStore.getState().pushToast('Could not delete the task. Check your connection and try again.', undefined, 'error');
       return;
     }

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { clearStoredSession, readStoredSession, supabase } from '@/lib/supabase/client';
 import { clearSnapshots } from '@/lib/offlineCache';
+import { flushOutbox } from '@/lib/outbox';
 import { useStudyStore } from '@/store/studyStore';
 
 interface AuthStore {
@@ -27,7 +28,7 @@ function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   session: null,
   user: null,
   initializing: true,
@@ -104,6 +105,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signOut: async () => {
+    // Send any changes still waiting (give it a few seconds at most). Anything
+    // that can't be sent stays on the device under this account and goes out the
+    // next time the same account is signed in.
+    const userId = get().user?.id;
+    if (userId) {
+      try {
+        await Promise.race([flushOutbox(userId), new Promise<void>((resolve) => setTimeout(resolve, 4000))]);
+      } catch {
+        /* signing out matters more than a late sync */
+      }
+    }
     // Send any study changes still waiting (give it a few seconds at most),
     // then wipe the on-device study copy so the next person starts clean.
     try {
