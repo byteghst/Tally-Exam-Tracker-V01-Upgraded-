@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Sheet } from '@/components/ui/Sheet';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
+import { StudyHeatmap } from '@/components/features/study/StudyHeatmap';
 import { useStudyStore, elapsedMs, type StudySubject } from '@/store/studyStore';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
@@ -361,6 +362,10 @@ export function Study() {
             })}
           </div>
         )}
+      </Section>
+
+      <Section label="Activity">
+        <StudyHeatmap sessions={sessions} subjects={subjects} />
       </Section>
 
       {recent.length > 0 && (
