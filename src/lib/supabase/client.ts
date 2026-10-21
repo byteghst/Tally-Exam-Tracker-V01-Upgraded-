@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -31,6 +31,8 @@ if (isMisconfigured) {
   });
 }
 
+const resolvedUrl = isMisconfigured ? 'https://placeholder.supabase.co' : (url as string);
+
 /**
  * Single Supabase client for the whole app. Auth session is persisted to
  * localStorage by the SDK itself (just the session token, not app data) so
@@ -42,14 +44,53 @@ if (isMisconfigured) {
  * this placeholder client will simply fail, which is fine since nothing
  * useful could have happened anyway without real credentials.
  */
-export const supabase = createClient(
-  isMisconfigured ? 'https://placeholder.supabase.co' : (url as string),
-  isMisconfigured ? 'placeholder-anon-key' : (key as string),
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
-    }
+export const supabase = createClient(resolvedUrl, isMisconfigured ? 'placeholder-anon-key' : (key as string), {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
   }
-);
+});
+
+/** The localStorage key the SDK saves the session under: `sb-<project ref>-auth-token`. */
+function savedSessionKey(): string | null {
+  try {
+    return `sb-${new URL(resolvedUrl).hostname.split('.')[0]}-auth-token`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reads the saved login straight from the device, with no network call.
+ *
+ * The SDK's own getSession() tries to refresh an expired access token first,
+ * and offline that retry loop can take ~30 seconds — which is what kept the app
+ * on "Loading" with no connection. The saved copy lets the app open instantly;
+ * the SDK still refreshes the token in the background once a connection exists.
+ */
+export function readStoredSession(): Session | null {
+  try {
+    const storageKey = savedSessionKey();
+    if (!storageKey) return null;
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Session> | null;
+    if (parsed && typeof parsed.access_token === 'string' && typeof parsed.refresh_token === 'string' && parsed.user) {
+      return parsed as Session;
+    }
+  } catch {
+    /* unreadable or unavailable: treat as signed out */
+  }
+  return null;
+}
+
+/** Removes the saved login from the device (used on sign-out, which may happen offline). */
+export function clearStoredSession(): void {
+  try {
+    const storageKey = savedSessionKey();
+    if (storageKey) localStorage.removeItem(storageKey);
+  } catch {
+    /* ignore */
+  }
+}

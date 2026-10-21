@@ -43,6 +43,8 @@ function mapConfig(row: ConfigRow, typeRows: ConfigTypeRow[]): ExamConfig {
 interface ExamConfigStore {
   configs: ExamConfig[];
   loading: boolean;
+  /** true once configs have been read successfully at least once (an empty list is then genuinely empty). */
+  loaded: boolean;
   subscribed: boolean;
   hydrate: () => Promise<void>;
   subscribe: () => void;
@@ -60,16 +62,24 @@ let channel: ReturnType<typeof supabase.channel> | null = null;
 export const useExamConfigStore = create<ExamConfigStore>((set, get) => ({
   configs: [],
   loading: false,
+  loaded: false,
   subscribed: false,
 
   hydrate: async () => {
     set({ loading: true });
-    const [{ data: configs }, { data: types }] = await Promise.all([
+    const [configsRes, typesRes] = await Promise.all([
       supabase.from('exam_configs').select('*').order('created_at', { ascending: true }),
       supabase.from('exam_config_types').select('*')
     ]);
-    const mapped = (configs ?? []).map((c) => mapConfig(c as ConfigRow, (types ?? []) as ConfigTypeRow[]));
-    set({ configs: mapped, loading: false });
+    // A failed read (offline, expired session...) must not look like "no configs":
+    // keep what we already have instead of replacing it with an empty list.
+    if (configsRes.error || typesRes.error || !configsRes.data || !typesRes.data) {
+      set({ loading: false });
+      return;
+    }
+    const typeRows = typesRes.data as ConfigTypeRow[];
+    const mapped = configsRes.data.map((c) => mapConfig(c as ConfigRow, typeRows));
+    set({ configs: mapped, loading: false, loaded: true });
   },
 
   subscribe: () => {
