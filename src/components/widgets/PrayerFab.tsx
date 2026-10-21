@@ -384,6 +384,21 @@ function PrayerOverlay({
   const streak = fullDayStreak(logDays, todayKey);
   const week = lastDays(todayKey, 7);
 
+  // A prayer can only be marked while it is running: not before it starts, and
+  // not once its time is over. Checked against the live clock, so a popup left
+  // open past the end of a prayer cannot still tick it.
+  function canMark(w: PrayerWindow): boolean {
+    const t = Date.now();
+    const start = w.key === 'isha' && beforeFajr ? day.prevIshaStart.getTime() : w.start.getTime();
+    const end = w.key === 'isha' && beforeFajr ? day.windows[0].start.getTime() : w.end.getTime();
+    return t >= start && t < end;
+  }
+
+  function markPrayer(w: PrayerWindow): void {
+    if (!canMark(w)) return;
+    void toggle(dateFor(w.key), w.key);
+  }
+
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center"
@@ -545,8 +560,9 @@ function PrayerOverlay({
           <ul className="space-y-1.5">
             {day.windows.map((w) => {
               const status = statusOf(w);
-              const started = status !== 'upcoming';
               const prayed = isPrayed(w.key);
+              // only the running prayer can be marked; a finished one is locked as it was
+              const markable = status === 'active';
               return (
                 <li
                   key={w.key}
@@ -558,14 +574,21 @@ function PrayerOverlay({
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      disabled={!started}
-                      onClick={() => void toggle(dateFor(w.key), w.key)}
+                      disabled={!markable}
+                      onClick={() => markPrayer(w)}
                       aria-pressed={prayed}
-                      aria-label={started ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}` : `${w.name} has not started yet`}
+                      aria-label={
+                        markable
+                          ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}`
+                          : status === 'past'
+                            ? `${w.name} time has ended, so it can no longer be changed`
+                            : `${w.name} has not started yet`
+                      }
                       className={clsx(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
                         prayed ? 'bg-forest text-surface-raised' : 'bg-ink/10 text-transparent',
-                        !started && 'cursor-not-allowed opacity-30'
+                        !markable && 'cursor-not-allowed',
+                        !markable && (status === 'upcoming' || !prayed) && 'opacity-30'
                       )}
                     >
                       <Check size={16} strokeWidth={3} />
@@ -592,6 +615,7 @@ function PrayerOverlay({
               );
             })}
           </ul>
+          <p className="mt-2 text-xs text-ink-faint">A prayer can only be ticked while its time is running.</p>
         </Block>
 
         <Block index={5} className="mt-7">
