@@ -179,14 +179,23 @@ export const useExamStore = create<ExamStore>((set, get) => ({
 
   updateExam: async (id, changes) => {
     const { data: row, error } = await supabase.from('exams').update(toRow(changes)).eq('id', id).select().single();
-    if (error || !row) return;
+    if (error || !row) {
+      useUIStore.getState().pushToast('Could not save the change. Check your connection and try again.', undefined, 'error');
+      return;
+    }
     const exam = mapExam(row as ExamRow);
     set((s) => ({ exams: s.exams.map((e) => (e.id === id ? exam : e)) }));
   },
 
   deleteExam: async (id) => {
     const exam = get().exams.find((e) => e.id === id);
-    await supabase.from('exams').delete().eq('id', id);
+    const { error } = await supabase.from('exams').delete().eq('id', id);
+    // Only drop it from the screen if the account really deleted it; otherwise an
+    // offline delete would look done and the exam would reappear later.
+    if (error) {
+      useUIStore.getState().pushToast('Could not delete the exam. Check your connection and try again.', undefined, 'error');
+      return;
+    }
     set((s) => ({ exams: s.exams.filter((e) => e.id !== id) }));
     if (exam) useUIStore.getState().pushToast(`Deleted "${exam.name}"`);
   },

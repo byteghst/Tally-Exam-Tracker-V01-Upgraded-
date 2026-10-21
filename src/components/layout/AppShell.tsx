@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { ToastStack } from './ToastStack';
 import { PageTransition } from './PageTransition';
+import { OfflineBanner } from './OfflineBanner';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
 import { UpdatePrompt } from '@/components/features/update/UpdatePrompt';
@@ -17,6 +18,7 @@ import { useStudyStore } from '@/store/studyStore';
 import { useDeadlineStore } from '@/store/deadlineStore';
 import { useMilestoneCelebration } from '@/hooks/useMilestoneCelebration';
 import { useNotificationSync } from '@/hooks/useNotificationSync';
+import { useReconnectSync } from '@/hooks/useReconnectSync';
 
 export function AppShell() {
   const { session, initializing, user } = useAuthStore();
@@ -30,6 +32,8 @@ export function AppShell() {
 
   const { celebrating, finishCelebrating } = useMilestoneCelebration();
   useNotificationSync();
+  // Re-read everything from the account when the connection comes back.
+  useReconnectSync(Boolean(user));
 
   // Hydrate everything once signed in, and subscribe to realtime so any
   // change made on another device (or the web app, if this is the
@@ -81,6 +85,7 @@ export function AppShell() {
         <Sidebar />
         <div className="min-w-0 flex-1">
           <main className="mx-auto max-w-6xl px-5 pb-28 pt-safe-top md:px-10 md:pb-10">
+            <OfflineBanner />
             <PageTransition>
               <Outlet />
             </PageTransition>

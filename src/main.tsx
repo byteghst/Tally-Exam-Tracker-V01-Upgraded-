@@ -5,6 +5,7 @@ import { router } from './router';
 import { ThemeProvider } from './ThemeProvider';
 import { setupServiceWorker } from './setupServiceWorker';
 import { useAuthStore } from './store/authStore';
+import { restoreSnapshots, startSnapshotPersistence } from './lib/snapshotSync';
 import { AppDownloadPrompt } from './components/features/update/AppDownloadPrompt';
 // Bundled fonts (work offline inside the Android app)
 import '@fontsource/plus-jakarta-sans/400.css';
@@ -27,6 +28,13 @@ import './styles/globals.css';
 
 setupServiceWorker();
 useAuthStore.getState().init();
+
+// init() reads the login saved on the device synchronously, so the last saved
+// copy of the lists can be in place before the first screen is drawn — the app
+// opens with data even with no connection.
+const savedUserId = useAuthStore.getState().user?.id;
+if (savedUserId) restoreSnapshots(savedUserId);
+startSnapshotPersistence();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

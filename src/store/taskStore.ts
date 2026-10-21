@@ -203,7 +203,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   updateTask: async (id, changes) => {
     const { data: row, error } = await supabase.from('tasks').update(toRow(changes)).eq('id', id).select().single();
-    if (error || !row) return;
+    if (error || !row) {
+      useUIStore.getState().pushToast('Could not save the change. Check your connection and try again.', undefined, 'error');
+      return;
+    }
     const updated = mapTask(row as TaskRow);
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? updated : t)) }));
 
@@ -217,7 +220,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   deleteTask: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
-    await supabase.from('tasks').delete().eq('id', id);
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    // Only drop it from the screen if the account really deleted it; otherwise an
+    // offline delete would look done and the task would reappear later.
+    if (error) {
+      useUIStore.getState().pushToast('Could not delete the task. Check your connection and try again.', undefined, 'error');
+      return;
+    }
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
     if (task) useUIStore.getState().pushToast(`Deleted "${task.name}"`);
   }
