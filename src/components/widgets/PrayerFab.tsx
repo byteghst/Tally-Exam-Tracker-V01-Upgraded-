@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { clsx } from 'clsx';
 import { EASE_OUT } from '@/lib/motion';
@@ -345,6 +345,7 @@ function PrayerOverlay({
   const setRemindEnding = usePrayerStore((s) => s.setRemindEnding);
   const setRemindProhibited = usePrayerStore((s) => s.setRemindProhibited);
   const logDays = usePrayerLogStore((s) => s.days);
+  const logLoaded = usePrayerLogStore((s) => s.loaded);
   const toggle = usePrayerLogStore((s) => s.toggle);
   const [changingCity, setChangingCity] = useState(false);
   const { now, city, day, activeKey, activeWin, nextWin, progress, prohibitedNow } = view;
@@ -563,6 +564,9 @@ function PrayerOverlay({
               const prayed = isPrayed(w.key);
               // only the running prayer can be marked; a finished one is locked as it was
               const markable = status === 'active';
+              // time ended with no tick: missed or qada. Only judged once the log has
+              // really loaded, so a failed read or being offline never shows false crosses.
+              const missed = logLoaded && status === 'past' && !prayed;
               return (
                 <li
                   key={w.key}
@@ -580,18 +584,24 @@ function PrayerOverlay({
                       aria-label={
                         markable
                           ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}`
-                          : status === 'past'
-                            ? `${w.name} time has ended, so it can no longer be changed`
-                            : `${w.name} has not started yet`
+                          : missed
+                            ? `${w.name} was missed: its time ended without being ticked`
+                            : status === 'past'
+                              ? `${w.name} time has ended, so it can no longer be changed`
+                              : `${w.name} has not started yet`
                       }
                       className={clsx(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
-                        prayed ? 'bg-forest text-surface-raised' : 'bg-ink/10 text-transparent',
+                        prayed
+                          ? 'bg-forest text-surface-raised'
+                          : missed
+                            ? 'bg-danger/15 text-danger'
+                            : 'bg-ink/10 text-transparent',
                         !markable && 'cursor-not-allowed',
-                        !markable && (status === 'upcoming' || !prayed) && 'opacity-30'
+                        !markable && !missed && (status === 'upcoming' || !prayed) && 'opacity-30'
                       )}
                     >
-                      <Check size={16} strokeWidth={3} />
+                      {missed ? <X size={16} strokeWidth={3} /> : <Check size={16} strokeWidth={3} />}
                     </button>
                     <span
                       className={clsx(
@@ -615,7 +625,9 @@ function PrayerOverlay({
               );
             })}
           </ul>
-          <p className="mt-2 text-xs text-ink-faint">A prayer can only be ticked while its time is running.</p>
+          <p className="mt-2 text-xs text-ink-faint">
+            A prayer can only be ticked while its time is running. A cross means its time ended without a tick.
+          </p>
         </Block>
 
         <Block index={5} className="mt-7">
