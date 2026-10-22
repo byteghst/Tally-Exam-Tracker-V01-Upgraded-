@@ -139,7 +139,7 @@ export function ExamConfigForm({ open, onClose, config }: ExamConfigFormProps) {
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} loading={submitting}>
             {isEdit ? 'Save changes' : 'Add config'}
           </Button>
         </div>

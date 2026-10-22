@@ -252,7 +252,7 @@ export function ExamForm({ open, onClose, exam, defaultDate, defaultType }: Exam
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} loading={submitting}>
             {isEdit ? 'Save changes' : 'Add exam'}
           </Button>
         </div>

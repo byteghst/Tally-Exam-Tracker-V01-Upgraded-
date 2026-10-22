@@ -179,7 +179,7 @@ export function TaskForm({ open, onClose, task }: TaskFormProps) {
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} loading={submitting}>
             {isEdit ? 'Save changes' : 'Add task'}
           </Button>
         </div>
