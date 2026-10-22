@@ -4,9 +4,11 @@ import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Stagger } from '@/components/motion/Reveal';
 import { ExamConfigForm } from '@/components/features/examConfigs/ExamConfigForm';
 import { useExamConfigStore } from '@/store/examConfigStore';
+import { isFirstLoad } from '@/lib/firstLoad';
 import type { ExamConfig } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
@@ -14,6 +16,7 @@ const TYPE_DOT: Record<string, string> = { daily: 'bg-accent', weekly: 'bg-saffr
 
 export function ExamConfigs() {
   const { configs, deleteConfig } = useExamConfigStore();
+  const firstLoad = useExamConfigStore(isFirstLoad);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExamConfig | undefined>(undefined);
   const [toDelete, setToDelete] = useState<ExamConfig | undefined>(undefined);
@@ -37,16 +40,19 @@ export function ExamConfigs() {
         </Button>
       </Rise>
 
-      {configs.length === 0 && (
-        <Rise>
-          <GlassCard className="p-5">
-            <p className="font-serif text-5xl leading-none tracking-tight text-ink">No configs yet.</p>
-            <p className="mt-3 max-w-sm text-ink-muted">
-              Add one to auto-fill the MCQ and written structure whenever you add an exam.
-            </p>
-          </GlassCard>
-        </Rise>
-      )}
+      {configs.length === 0 &&
+        (firstLoad ? (
+          <PageLoader label="Loading configs" />
+        ) : (
+          <Rise>
+            <GlassCard className="p-5">
+              <p className="font-serif text-5xl leading-none tracking-tight text-ink">No configs yet.</p>
+              <p className="mt-3 max-w-sm text-ink-muted">
+                Add one to auto-fill the MCQ and written structure whenever you add an exam.
+              </p>
+            </GlassCard>
+          </Rise>
+        ))}
 
       {configs.map((config) => (
         <Rise key={config.id}>

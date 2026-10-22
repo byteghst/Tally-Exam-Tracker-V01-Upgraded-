@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LiveCountdown } from '@/components/ui/LiveCountdown';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { DeadlineForm } from '@/components/features/deadlines/DeadlineForm';
@@ -118,21 +119,19 @@ export function Deadlines() {
         }
       >
         {upcoming.length === 0 ? (
-          <div>
-            <p className="font-serif text-4xl leading-none tracking-tight text-ink">
-              {loaded ? 'Nothing due.' : 'Loading…'}
-            </p>
-            {loaded && (
-              <>
-                <p className="mt-3 max-w-xs text-sm text-ink-muted">
-                  Add a deadline and you can download a card for it, ready to share.
-                </p>
-                <Button size="sm" variant="secondary" className="mt-4" onClick={openAdd}>
-                  Add a deadline
-                </Button>
-              </>
-            )}
-          </div>
+          loaded ? (
+            <div>
+              <p className="font-serif text-4xl leading-none tracking-tight text-ink">Nothing due.</p>
+              <p className="mt-3 max-w-xs text-sm text-ink-muted">
+                Add a deadline and you can download a card for it, ready to share.
+              </p>
+              <Button size="sm" variant="secondary" className="mt-4" onClick={openAdd}>
+                Add a deadline
+              </Button>
+            </div>
+          ) : (
+            <PageLoader label="Loading deadlines" />
+          )
         ) : (
           renderRows(upcoming)
         )}

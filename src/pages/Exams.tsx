@@ -6,10 +6,12 @@ import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LiveCountdown } from '@/components/ui/LiveCountdown';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
 import { useOpenAddFromNavState } from '@/hooks/useOpenAddFromNavState';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { calculateScore } from '@/lib/scoring';
 import { describeCountdown, formatDate, isPast, parseISODate } from '@/lib/dates';
 import { targetTime } from '@/lib/countdown';
@@ -55,7 +57,7 @@ function NextExamBanner({ exam }: { exam: Exam }) {
           <p className="mt-2 truncate font-serif text-3xl leading-tight tracking-tight text-ink">{exam.name}</p>
           <p className="mt-1 text-sm text-ink-muted">
             {formatDate(exam.date)}
-            {exam.startTime ? ` \u00b7 ${formatTime12(exam.startTime)}` : ''}
+            {exam.startTime ? ` · ${formatTime12(exam.startTime)}` : ''}
           </p>
           {target !== null ? (
             <LiveCountdown target={target} variant="block" pastLabel="Started" pastSuffix=" ago" className="mt-4" />
@@ -70,6 +72,7 @@ function NextExamBanner({ exam }: { exam: Exam }) {
 
 export function Exams() {
   const { exams, hydrate } = useExamStore();
+  const firstLoad = useExamStore(isFirstLoad);
   const location = useLocation();
   const [filter, setFilter] = useState<ExamType | 'all'>(() => filterFromPath(location.pathname));
   const [formOpen, setFormOpen] = useState(false);
@@ -132,13 +135,17 @@ export function Exams() {
       </Rise>
 
       {filtered.length === 0 ? (
-        <Rise>
-          <p className="font-serif text-5xl leading-none tracking-tight text-ink">No exams yet.</p>
-          <p className="mt-3 max-w-xs text-ink-muted">Your exam history will appear here once you add your first exam.</p>
-          <Button className="mt-5" onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4" /> Add your first exam
-          </Button>
-        </Rise>
+        firstLoad ? (
+          <PageLoader label="Loading exams" />
+        ) : (
+          <Rise>
+            <p className="font-serif text-5xl leading-none tracking-tight text-ink">No exams yet.</p>
+            <p className="mt-3 max-w-xs text-ink-muted">Your exam history will appear here once you add your first exam.</p>
+            <Button className="mt-5" onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4" /> Add your first exam
+            </Button>
+          </Rise>
+        )
       ) : (
         <ul className="space-y-2.5">
           {filtered.map((exam) => {
@@ -172,8 +179,8 @@ export function Exams() {
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs capitalize text-ink-muted">
                       <span className={clsx('h-2 w-2 rounded-full', TYPE_DOT[exam.type])} />
                       {exam.type}
-                      {!completed && ` \u00b7 ${exam.status}`}
-                      {exam.startTime && ` \u00b7 ${formatTime12(exam.startTime)}`}
+                      {!completed && ` · ${exam.status}`}
+                      {exam.startTime && ` · ${formatTime12(exam.startTime)}`}
                     </p>
                     {exam.status === 'upcoming' && exam.startTime && (
                       <p className="mt-1 text-xs font-semibold text-accent">
@@ -190,7 +197,7 @@ export function Exams() {
                   {completed && (
                     <div className="text-right">
                       <p className="font-serif text-3xl leading-none tracking-tight text-ink">
-                        {score.percentage !== null ? `${Math.round(score.percentage)}%` : '\u2014'}
+                        {score.percentage !== null ? `${Math.round(score.percentage)}%` : '—'}
                       </p>
                       <p className="mt-1 font-numeric text-xs tabular-nums text-ink-muted">
                         {score.finalScore} / {score.totalMarks}
