@@ -6,6 +6,7 @@ import { BottomNav } from './BottomNav';
 import { ToastStack } from './ToastStack';
 import { PageTransition } from './PageTransition';
 import { OfflineBanner } from './OfflineBanner';
+import { SyncIndicator } from './SyncIndicator';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
 import { UpdatePrompt } from '@/components/features/update/UpdatePrompt';
@@ -97,6 +98,7 @@ export function AppShell() {
         </div>
         <BottomNav />
         <ToastStack />
+        <SyncIndicator />
         <OnboardingOverlay />
         <UpdatePrompt />
         {celebrating && <ConfettiBurst onDone={finishCelebrating} />}

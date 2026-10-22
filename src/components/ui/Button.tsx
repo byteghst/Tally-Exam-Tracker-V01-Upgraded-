@@ -1,5 +1,6 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
+import { TallyLoader } from './TallyLoader';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -7,6 +8,8 @@ type Size = 'sm' | 'md' | 'lg';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
+  /** Shows the Tally loader before the label and disables the button. */
+  loading?: boolean;
 }
 
 // Solid or softly tinted fills only: no outlines.
@@ -24,9 +27,11 @@ const sizeClasses: Record<Size, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', className, ...props }, ref) => (
+  ({ variant = 'primary', size = 'md', loading = false, disabled, className, children, ...props }, ref) => (
     <button
       ref={ref}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-[transform,background-color,filter] duration-150',
         'active:scale-[0.97]',
@@ -37,7 +42,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className
       )}
       {...props}
-    />
+    >
+      {loading && (
+        <TallyLoader size={26} tone={variant === 'primary' || variant === 'danger' ? 'onAccent' : 'default'} />
+      )}
+      {children}
+    </button>
   )
 );
 Button.displayName = 'Button';

@@ -6,6 +6,7 @@ import { useId } from 'react';
 // showing the finished mark with no movement.
 const CSS = `
 .tl-b{fill:rgb(var(--ink));transform-box:fill-box;transform-origin:bottom;transform:scaleY(0)}
+.tl-on .tl-b{fill:rgb(var(--on-accent))}
 .tl-b1{animation:tl-b1 2.8s cubic-bezier(.2,.8,.2,1) infinite}
 .tl-b2{animation:tl-b2 2.8s cubic-bezier(.2,.8,.2,1) infinite}
 .tl-b3{animation:tl-b3 2.8s cubic-bezier(.2,.8,.2,1) infinite}
@@ -25,12 +26,14 @@ interface TallyLoaderProps {
   /** Width in pixels. */
   size?: number;
   label?: string;
+  /** 'onAccent' draws the mark for use on top of a persimmon fill (white bars, dark slash). */
+  tone?: 'default' | 'onAccent';
 }
 
-export function TallyLoader({ size = 96, label = 'Loading' }: TallyLoaderProps) {
+export function TallyLoader({ size = 96, label = 'Loading', tone = 'default' }: TallyLoaderProps) {
   const maskId = 'tl' + useId().replace(/:/g, '');
   return (
-    <div role="status" aria-label={label} style={{ width: size }}>
+    <div role="status" aria-label={label} className={tone === 'onAccent' ? 'tl-on' : undefined} style={{ width: size }}>
       <style>{CSS}</style>
       <svg viewBox="227 295 800 652" className="tl-g" aria-hidden="true" style={{ display: 'block', width: '100%' }}>
         <defs>
@@ -45,7 +48,7 @@ export function TallyLoader({ size = 96, label = 'Loading' }: TallyLoaderProps) 
         <polygon
           points="247,701 1007,374 1007,475 247,801"
           mask={`url(#${maskId})`}
-          style={{ fill: 'rgb(var(--accent))' }}
+          style={{ fill: tone === 'onAccent' ? 'rgb(var(--ink))' : 'rgb(var(--accent))' }}
         />
       </svg>
     </div>

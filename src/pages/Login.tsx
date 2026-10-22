@@ -78,7 +78,7 @@ export function Login() {
               />
               {error && <p className="text-sm text-danger">{error}</p>}
               {notice && <p className="text-sm font-medium text-forest">{notice}</p>}
-              <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+              <Button type="submit" size="lg" className="w-full" loading={submitting}>
                 {submitting ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Create account'}
               </Button>
             </form>
