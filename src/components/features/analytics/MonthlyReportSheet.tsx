@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Share2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Share2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
+import { TallyLoader } from '@/components/ui/TallyLoader';
 import { useUIStore } from '@/store/uiStore';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -198,19 +199,13 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
       title="Monthly report"
       footer={
         <div className="flex items-center justify-end gap-2">
-          {busy && (
-            <span className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
-              <Loader2 size={12} className="animate-spin" />
-              {busy === 'share' ? 'Preparing PDF…' : 'Creating PDF…'}
-            </span>
-          )}
-          <Button onClick={handleDownload} disabled={disabled}>
-            <Download size={16} />
+          <Button onClick={handleDownload} loading={busy === 'download'} disabled={disabled}>
+            {busy !== 'download' && <Download size={16} />}
             Download PDF
           </Button>
           {canShareFiles && (
-            <Button variant="secondary" onClick={handleShare} disabled={disabled}>
-              <Share2 size={16} />
+            <Button variant="secondary" onClick={handleShare} loading={busy === 'share'} disabled={disabled}>
+              {busy !== 'share' && <Share2 size={16} />}
               Share
             </Button>
           )}
@@ -243,9 +238,9 @@ export function MonthlyReportSheet({ open, onClose }: MonthlyReportSheetProps) {
             Nothing recorded in {report.label} yet. Use the arrows to pick a month with exams, tasks or study time.
           </p>
         ) : !layout ? (
-          <p className="flex items-center gap-2 py-8 text-sm text-ink-muted">
-            <Loader2 size={14} className="animate-spin" /> Preparing report…
-          </p>
+          <div className="flex justify-center py-10">
+            <TallyLoader size={84} label="Preparing report" />
+          </div>
         ) : (
           <>
             <p className="text-xs text-ink-faint">
