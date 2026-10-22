@@ -3,6 +3,7 @@ import { Award, BarChart3, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Badge';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamScoreTrendChart } from '@/components/features/analytics/ExamScoreTrendChart';
 import { TaskCompletionTrendChart } from '@/components/features/analytics/TaskCompletionTrendChart';
@@ -10,6 +11,7 @@ import { MonthlyReportSheet } from '@/components/features/analytics/MonthlyRepor
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useStudyStore } from '@/store/studyStore';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { calculateScore } from '@/lib/scoring';
 import { computeMilestones } from '@/lib/milestones';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -17,6 +19,8 @@ import { useCountUp } from '@/hooks/useCountUp';
 export function Analytics() {
   const { exams, hydrate: hydrateExams } = useExamStore();
   const { tasks, hydrate: hydrateTasks } = useTaskStore();
+  const examsFirstLoad = useExamStore(isFirstLoad);
+  const tasksFirstLoad = useTaskStore(isFirstLoad);
   const studySessions = useStudyStore((s) => s.sessions);
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -64,13 +68,17 @@ export function Analytics() {
           <p className="eyebrow">Insights</p>
           <h1 className="mt-3 font-serif text-6xl leading-[0.9] tracking-tight text-ink">Analytics</h1>
         </Rise>
-        <Rise>
-          <EmptyState
-            title="Not enough data yet"
-            description="Analytics build up automatically from exams and tasks you record. Nothing is estimated."
-            icon={BarChart3}
-          />
-        </Rise>
+        {examsFirstLoad || tasksFirstLoad ? (
+          <PageLoader label="Loading analytics" />
+        ) : (
+          <Rise>
+            <EmptyState
+              title="Not enough data yet"
+              description="Analytics build up automatically from exams and tasks you record. Nothing is estimated."
+              icon={BarChart3}
+            />
+          </Rise>
+        )}
       </Stagger>
     );
   }
@@ -136,7 +144,7 @@ function Metric({ label, value, suffix }: { label: string; value: number | null;
     <GlassCard className="p-4">
       <p className="eyebrow">{label}</p>
       <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">
-        {value === null ? '\u2014' : `${animated}${suffix ?? ''}`}
+        {value === null ? '—' : `${animated}${suffix ?? ''}`}
       </p>
     </GlassCard>
   );

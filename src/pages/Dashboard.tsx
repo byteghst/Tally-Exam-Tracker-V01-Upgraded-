@@ -8,10 +8,12 @@ import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
 import { PrayerFab } from '@/components/widgets/PrayerFab';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { isPast, todayISO } from '@/lib/dates';
 import { getVisibleOrderedIds } from '@/lib/dashboardWidgets';
 import { sortExamsByDateTime } from '@/lib/examSort';
@@ -19,6 +21,7 @@ import { computeDailyMission } from '@/lib/dailyMission';
 
 export function Dashboard() {
   const { exams, hydrate: hydrateExams } = useExamStore();
+  const examsFirstLoad = useExamStore(isFirstLoad);
   const { tasks, hydrate: hydrateTasks, toggleComplete } = useTaskStore();
   const { settings, updateSettings } = useSettingsStore();
 
@@ -48,8 +51,14 @@ export function Dashboard() {
       <DashboardGreeting userName={settings.userName} exams={exams} tasks={tasks} />
 
       {/* Always shown, above the customizable widgets below — not part of the
-          show/hide/reorder list, so it can't be hidden or moved. */}
-      <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
+          show/hide/reorder list, so it can't be hidden or moved. While the very
+          first read is still running, the loader stands in so the "add an exam"
+          prompt doesn't flash before the exams arrive. */}
+      {!nextExam && examsFirstLoad ? (
+        <PageLoader label="Loading exams" />
+      ) : (
+        <ExamCountdownHero exam={nextExam} onAddExam={() => setExamFormOpen(true)} />
+      )}
 
       {showMission && (
         <DailyMission

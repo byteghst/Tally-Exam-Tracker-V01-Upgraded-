@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LiveCountdown } from '@/components/ui/LiveCountdown';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamForm } from '@/components/features/exams/ExamForm';
 import { useExamStore } from '@/store/examStore';
 import { useUIStore } from '@/store/uiStore';
 import { useCountUp } from '@/hooks/useCountUp';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { calculateScore } from '@/lib/scoring';
 import { compareToPrevious } from '@/lib/examComparison';
 import { formatDate } from '@/lib/dates';
@@ -42,10 +44,12 @@ export function ExamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { exams, hydrate, deleteExam, duplicateExam } = useExamStore();
+  const firstLoad = useExamStore(isFirstLoad);
   const { pushToast } = useUIStore();
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
     if (exams.length === 0) hydrate();
@@ -57,7 +61,11 @@ export function ExamDetail() {
     return (
       <div className="space-y-6 py-8">
         <BackButton />
-        <p className="font-serif text-4xl leading-none tracking-tight text-ink">Exam not found.</p>
+        {firstLoad ? (
+          <PageLoader label="Loading exam" />
+        ) : (
+          <p className="font-serif text-4xl leading-none tracking-tight text-ink">Exam not found.</p>
+        )}
       </div>
     );
   }
@@ -78,9 +86,14 @@ export function ExamDetail() {
   const comparison = exam.status === 'completed' ? compareToPrevious(exam, exams) : undefined;
 
   async function handleDuplicate() {
-    await duplicateExam(exam!.id);
-    pushToast('Exam duplicated');
-    navigate('/exams');
+    setDuplicating(true);
+    try {
+      await duplicateExam(exam!.id);
+      pushToast('Exam duplicated');
+      navigate('/exams');
+    } finally {
+      setDuplicating(false);
+    }
   }
 
   async function handleDelete() {
@@ -119,7 +132,7 @@ export function ExamDetail() {
           <Button size="sm" onClick={() => setEditOpen(true)}>
             Edit
           </Button>
-          <Button size="sm" variant="secondary" onClick={handleDuplicate}>
+          <Button size="sm" variant="secondary" onClick={handleDuplicate} loading={duplicating}>
             Duplicate
           </Button>
           <Button size="sm" variant="secondary" className="text-danger" onClick={() => setDeleteConfirmOpen(true)}>

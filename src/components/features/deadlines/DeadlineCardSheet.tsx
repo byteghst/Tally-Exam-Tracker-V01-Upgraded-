@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, Share2, Loader2 } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Sheet } from '@/components/ui/Sheet';
@@ -210,19 +210,13 @@ export function DeadlineCardSheet({ deadline, onClose }: DeadlineCardSheetProps)
       title="Deadline card"
       footer={
         <div className="flex items-center justify-end gap-2">
-          {busy && (
-            <span className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
-              <Loader2 size={12} className="animate-spin" />
-              {busyAction === 'share' ? 'Preparing…' : 'Saving…'}
-            </span>
-          )}
-          <Button variant="secondary" onClick={handleDownload} disabled={busy}>
-            <Download size={16} />
+          <Button variant="secondary" onClick={handleDownload} loading={busyAction === 'download'} disabled={busy}>
+            {busyAction !== 'download' && <Download size={16} />}
             Download
           </Button>
           {canShareFiles && (
-            <Button onClick={handleShare} disabled={busy}>
-              <Share2 size={16} />
+            <Button onClick={handleShare} loading={busyAction === 'share'} disabled={busy}>
+              {busyAction !== 'share' && <Share2 size={16} />}
               Share
             </Button>
           )}
