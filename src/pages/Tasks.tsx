@@ -4,12 +4,14 @@ import { Pencil, Trash2, Repeat, Plus, ChevronDown, Share2 } from 'lucide-react'
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { TaskForm } from '@/components/features/tasks/TaskForm';
 import { ShareTaskCard } from '@/components/features/tasks/ShareTaskCard';
 import { useTaskStore } from '@/store/taskStore';
 import { useOpenAddFromNavState } from '@/hooks/useOpenAddFromNavState';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { parseISODate, todayISO } from '@/lib/dates';
 import { EASE_OUT } from '@/lib/motion';
 import { subtaskProgress } from '@/lib/subtasks';
@@ -24,6 +26,7 @@ const PRIORITY_DOT: Record<string, string> = {
 
 export function Tasks() {
   const { tasks, hydrate, toggleComplete, toggleSubtask, deleteTask } = useTaskStore();
+  const firstLoad = useTaskStore(isFirstLoad);
   const [formOpen, setFormOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [editing, setEditing] = useState<Task | undefined>(undefined);
@@ -86,13 +89,17 @@ export function Tasks() {
         }
       >
         {today.length === 0 ? (
-          <GlassCard className="p-5">
-            <p className="font-serif text-4xl leading-none tracking-tight text-ink">You're clear.</p>
-            <p className="mt-3 text-sm text-ink-muted">Nothing needs your attention today.</p>
-            <Button size="sm" variant="secondary" className="mt-4" onClick={openAdd}>
-              Add a task
-            </Button>
-          </GlassCard>
+          firstLoad ? (
+            <PageLoader label="Loading tasks" />
+          ) : (
+            <GlassCard className="p-5">
+              <p className="font-serif text-4xl leading-none tracking-tight text-ink">You're clear.</p>
+              <p className="mt-3 text-sm text-ink-muted">Nothing needs your attention today.</p>
+              <Button size="sm" variant="secondary" className="mt-4" onClick={openAdd}>
+                Add a task
+              </Button>
+            </GlassCard>
+          )
         ) : (
           <ul className="space-y-2">
             {today.map((task) => (

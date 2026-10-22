@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Sheet } from '@/components/ui/Sheet';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { StudyHeatmap } from '@/components/features/study/StudyHeatmap';
 import { useStudyStore, elapsedMs, type StudySubject } from '@/store/studyStore';
+import { isFirstLoad } from '@/lib/firstLoad';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
 
@@ -137,8 +139,8 @@ function SubjectEditor({ subject, onClose }: { subject: StudySubject | null; onC
       <SubjectCover subject={preview} className="mb-4 h-36 w-full rounded-card" />
 
       <div className="mb-5 flex flex-wrap gap-2">
-        <Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>
-          <ImagePlus className="h-4 w-4" /> {busy ? 'Loading...' : image ? 'Change picture' : 'Add picture'}
+        <Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()} loading={busy}>
+          {!busy && <ImagePlus className="h-4 w-4" />} {image ? 'Change picture' : 'Add picture'}
         </Button>
         {image && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setImage(undefined)}>
@@ -186,6 +188,7 @@ export function Study() {
   const subjects = useStudyStore((s) => s.subjects);
   const sessions = useStudyStore((s) => s.sessions);
   const active = useStudyStore((s) => s.active);
+  const firstLoad = useStudyStore(isFirstLoad);
   const start = useStudyStore((s) => s.start);
   const pause = useStudyStore((s) => s.pause);
   const resume = useStudyStore((s) => s.resume);
@@ -297,15 +300,19 @@ export function Study() {
 
       <Section label="Subjects">
         {subjects.length === 0 ? (
-          <div>
-            <p className="font-serif text-4xl leading-none tracking-tight text-ink">No subjects yet.</p>
-            <p className="mt-3 max-w-xs text-sm text-ink-muted">
-              Add the subjects you study, with a picture if you like, then track time on each one.
-            </p>
-            <Button className="mt-4" onClick={() => setEditing('new')}>
-              <Plus className="h-4 w-4" /> Add your first subject
-            </Button>
-          </div>
+          firstLoad ? (
+            <PageLoader label="Loading subjects" />
+          ) : (
+            <div>
+              <p className="font-serif text-4xl leading-none tracking-tight text-ink">No subjects yet.</p>
+              <p className="mt-3 max-w-xs text-sm text-ink-muted">
+                Add the subjects you study, with a picture if you like, then track time on each one.
+              </p>
+              <Button className="mt-4" onClick={() => setEditing('new')}>
+                <Plus className="h-4 w-4" /> Add your first subject
+              </Button>
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {subjects.map((subject) => {
