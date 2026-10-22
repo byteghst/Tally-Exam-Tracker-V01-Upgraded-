@@ -26,8 +26,8 @@ export function UpdateCard() {
       <p className="font-serif text-4xl leading-none tracking-tight text-ink">Build {INSTALLED_BUILD}</p>
       <p className="mt-2 text-sm text-ink-muted">{status}</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant="secondary" disabled={checking} onClick={() => void check({ manual: true })}>
-          <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} /> Check for updates
+        <Button size="sm" variant="secondary" loading={checking} onClick={() => void check({ manual: true })}>
+          {!checking && <RefreshCw className="h-4 w-4" />} Check for updates
         </Button>
         {phase === 'available' && update && (
           <Button size="sm" onClick={openPrompt}>

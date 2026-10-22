@@ -78,7 +78,7 @@ export function DeadlineForm({ deadline, onClose }: DeadlineFormProps) {
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={submitting}>
+          <Button onClick={handleSave} loading={submitting}>
             {isEdit ? 'Save changes' : 'Add deadline'}
           </Button>
         </div>
