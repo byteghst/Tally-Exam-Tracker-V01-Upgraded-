@@ -9,6 +9,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
 import { UpdatePrompt } from '@/components/features/update/UpdatePrompt';
+import { TallyLoader } from '@/components/ui/TallyLoader';
 import { useAuthStore } from '@/store/authStore';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -71,7 +72,7 @@ export function AppShell() {
   if (initializing) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-surface">
-        <p className="eyebrow">Loading</p>
+        <TallyLoader size={120} />
       </div>
     );
   }
