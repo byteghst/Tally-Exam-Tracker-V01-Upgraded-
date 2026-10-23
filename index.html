@@ -15,9 +15,45 @@
          Fraunces           - display headings (editorial serif)
          Space Grotesk      - numerals, scores, countdowns, stats
          Instrument Serif   - large editorial type (greetings, big numbers, italic taglines) -->
+    <!-- Boot screen: shown while the app's code loads, before React starts. React
+         replaces it as soon as it mounts. Same motion as the in-app TallyLoader. -->
+    <style>
+      .boot{--bg:#F6F1E8;--ink:#1C1814;--ac:#D94F2D;position:fixed;inset:0;display:grid;place-items:center;background:var(--bg)}
+      @media (prefers-color-scheme:dark){.boot{--bg:#100E0C;--ink:#F5EEE3;--ac:#FF7A54}}
+      .boot svg{width:120px;display:block;animation:bf 2.8s linear infinite}
+      .boot .b{fill:var(--ink);transform-box:fill-box;transform-origin:bottom;transform:scaleY(0)}
+      .boot .b1{animation:b1 2.8s cubic-bezier(.2,.8,.2,1) infinite}
+      .boot .b2{animation:b2 2.8s cubic-bezier(.2,.8,.2,1) infinite}
+      .boot .b3{animation:b3 2.8s cubic-bezier(.2,.8,.2,1) infinite}
+      .boot .b4{animation:b4 2.8s cubic-bezier(.2,.8,.2,1) infinite}
+      .boot .w{stroke:#fff;stroke-width:520;fill:none;stroke-dasharray:1;stroke-dashoffset:1;animation:bw 2.8s cubic-bezier(.3,.7,.2,1) infinite}
+      .boot polygon{fill:var(--ac)}
+      @keyframes b1{0%{transform:scaleY(0)}22%,100%{transform:scaleY(1)}}
+      @keyframes b2{0%,3%{transform:scaleY(0)}25%,100%{transform:scaleY(1)}}
+      @keyframes b3{0%,6%{transform:scaleY(0)}28%,100%{transform:scaleY(1)}}
+      @keyframes b4{0%,9%{transform:scaleY(0)}31%,100%{transform:scaleY(1)}}
+      @keyframes bw{0%,38%{stroke-dashoffset:1}62%,100%{stroke-dashoffset:0}}
+      @keyframes bf{0%,88%{opacity:1}97%,100%{opacity:0}}
+      @media (prefers-reduced-motion:reduce){.boot svg{animation:none}.boot .b{transform:none;animation:none}.boot .w{animation:none;stroke-dashoffset:0}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" role="status" aria-label="Loading">
+        <svg viewBox="227 295 800 652" aria-hidden="true">
+          <defs>
+            <mask id="bm" maskUnits="userSpaceOnUse" x="0" y="0" width="1254" height="1254">
+              <path class="w" d="M1050 411 210 773" pathLength="1" />
+            </mask>
+          </defs>
+          <rect class="b b1" x="376" y="315" width="92" height="612" />
+          <rect class="b b2" x="515" y="315" width="90" height="612" />
+          <rect class="b b3" x="651" y="315" width="89" height="612" />
+          <rect class="b b4" x="787" y="315" width="92" height="612" />
+          <polygon points="247,701 1007,374 1007,475 247,801" mask="url(#bm)" />
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
