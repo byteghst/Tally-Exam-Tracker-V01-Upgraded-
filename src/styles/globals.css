@@ -13,9 +13,9 @@
      Fields are filled, not underlined. No blur, no translucency.
 
    Type
-   - No serif faces. Plus Jakarta Sans for text, Instrument Sans for large and
-     display type (the `font-serif` / `font-display` classes), Space Grotesk for
-     numerals.
+   - Grotesque throughout. Hanken Grotesk for text, Schibsted Grotesk for large
+     and display type (the `font-serif` / `font-display` classes), Space Grotesk
+     for numerals. Hind Siliguri for Bengali.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
@@ -124,10 +124,10 @@ body,
   height: 100%;
 }
 
-/* Bengali letters are not in Plus Jakarta Sans, so they fall through to Hind Siliguri. */
+/* Bengali letters are not in Hanken Grotesk, so they fall through to Hind Siliguri. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', 'Hind Siliguri', system-ui, sans-serif;
 }
 
 /* Large display type is set a touch heavier and tighter than body text, so
@@ -136,7 +136,7 @@ body {
 @layer base {
   .font-serif {
     font-weight: 500;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 }
 
@@ -148,9 +148,9 @@ body {
 
 /* Numerals for anything showing scores/stats: tabular figures in a
    dedicated numeric face (Space Grotesk) so digits line up and read as
-   data, distinct from body text and serif headings. */
+   data, distinct from body text and display headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Hind Siliguri', 'Hanken Grotesk', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 

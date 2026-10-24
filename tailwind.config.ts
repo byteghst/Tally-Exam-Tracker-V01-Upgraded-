@@ -31,20 +31,21 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // No serif faces anywhere. Every stack ends with Hind Siliguri before the
-      // generic fallbacks: the Latin fonts have no Bengali letters, so the browser
-      // picks Hind Siliguri (a sans Bengali face) for any Bengali text, whichever
-      // font the surrounding text uses.
+      // English type is all grotesque: Hanken Grotesk for text, Schibsted Grotesk
+      // for large and display type, Space Grotesk for numerals. Every stack ends
+      // with Hind Siliguri before the generic fallbacks: the Latin fonts have no
+      // Bengali letters, so the browser picks Hind Siliguri (a sans Bengali face)
+      // for any Bengali text, whichever font the surrounding text uses.
       fontFamily: {
         // UI + body text
-        sans: ['"Plus Jakarta Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        sans: ['"Hanken Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // small headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Instrument Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        display: ['"Schibsted Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // numerals: scores, countdowns, stats
         numeric: ['"Space Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // Large editorial type: greetings, page titles, big numbers, italic taglines.
-        // The class is still called `font-serif` in the markup; it is Instrument Sans now.
-        serif: ['"Instrument Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
+        // The class is still called `font-serif` in the markup; it is Schibsted Grotesk now.
+        serif: ['"Schibsted Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',
