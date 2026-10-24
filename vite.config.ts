@@ -53,7 +53,9 @@ export default defineConfig({
       workbox: {
         mode: 'development',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallbackDenylist: [/^\/api/]
+        navigateFallbackDenylist: [/^\/api/],
+        // Adds the notification-tap handler (public/notification-sw.js) to the worker.
+        importScripts: ['notification-sw.js']
       }
     })
   ],

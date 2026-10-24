@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { FileSpreadsheet, ListChecks, SlidersHorizontal, CalendarDays, RefreshCw } from 'lucide-react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { PopupFrame } from '@/components/ui/Popup';
 import { TallyMark } from '@/components/ui/TallyMark';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -21,8 +21,12 @@ const HIGHLIGHTS = [
   { icon: RefreshCw, title: 'Synced', body: 'Everything you enter here shows up instantly on your other signed-in devices too.' }
 ];
 
+/** Lets the closing animation play before the "seen" flag is saved (which removes this popup). */
+const CLOSE_MS = 340;
+
 export function OnboardingOverlay() {
   const { settings, updateSettings, loaded } = useSettingsStore();
+  const [closing, setClosing] = useState(false);
 
   // Wait until the real saved settings are known. Before that, `settings` only
   // holds placeholder defaults (where "intro seen" is false), which is what made
@@ -30,28 +34,26 @@ export function OnboardingOverlay() {
   if (!loaded || settings.onboardingCompleted) return null;
 
   function finish() {
-    updateSettings({ onboardingCompleted: true });
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(() => updateSettings({ onboardingCompleted: true }), CLOSE_MS);
   }
 
-  return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/50 p-4" role="presentation">
-      <GlassCard
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="onboarding-title"
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto p-6 shadow-sheet"
-      >
-        <div className="flex items-center gap-2">
-          <TallyMark size={26} className="text-ink" />
+  return (
+    <PopupFrame open={!closing} labelledBy="onboarding-title" className="max-w-md">
+      <div className="p-6">
+        <div className="flex items-center gap-2.5">
+          <TallyMark size={30} />
           <span className="font-display text-lg font-semibold text-ink">
             Tally<span className="text-accent">.</span>
           </span>
         </div>
 
-        <h1 id="onboarding-title" className="mt-4 font-serif text-4xl leading-none tracking-tight text-ink">
+        <p className="eyebrow mt-6">First time here</p>
+        <h1 id="onboarding-title" className="mt-2 font-serif text-[2.6rem] leading-[0.95] tracking-tight text-ink">
           Welcome to Tally
         </h1>
-        <p className="mt-2 text-sm text-ink-muted">
+        <p className="mt-3 text-sm text-ink-muted">
           Your exams and tasks are entered manually and synced securely to your account.
         </p>
 
@@ -72,8 +74,7 @@ export function OnboardingOverlay() {
         <Button onClick={finish} size="lg" className="mt-6 w-full">
           Get started
         </Button>
-      </GlassCard>
-    </div>,
-    document.body
+      </div>
+    </PopupFrame>
   );
 }

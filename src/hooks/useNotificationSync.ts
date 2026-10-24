@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '@/store/authStore';
@@ -14,15 +14,10 @@ import {
   syncNativeReminders
 } from '@/lib/notifications/nativeScheduler';
 import { planPrayerNotifications } from '@/lib/notifications/prayerPlan';
-import { checkAndFireWebReminders } from '@/lib/notifications/webChecker';
-import type { Exam, Task } from '@/types';
+import { MAX_REMEMBERED, checkAndFireWebReminders } from '@/lib/notifications/webChecker';
 
 const WEB_CHECK_INTERVAL_MS = 60_000;
 const SYNC_DEBOUNCE_MS = 400;
-
-// Stable empty lists (a fresh `[]` every render would re-trigger the effects below).
-const NO_EXAMS: Exam[] = [];
-const NO_TASKS: Task[] = [];
 
 /**
  * Keeps scheduled reminders in sync with current exam/task data, and with the
@@ -36,8 +31,10 @@ const NO_TASKS: Task[] = [];
  * about", which would cancel every scheduled reminder.
  *
  * Web: re-checks on an interval and whenever the tab regains visibility,
- * since that's the only time web notifications can act at all. (Prayer
- * reminders are Android-only: a web page can't wake up at prayer time.)
+ * since that's the only time web notifications can act at all. Notifications
+ * are shown through the service worker (phones refuse the plain constructor),
+ * and tapping one brings this window forward and opens the matching screen.
+ * (Prayer reminders are Android-only: a web page can't wake up at prayer time.)
  */
 export function useNotificationSync() {
   const navigate = useNavigate();
@@ -67,6 +64,17 @@ export function useNotificationSync() {
   useEffect(() => {
     if (!isNative) return;
     registerNotificationTapHandler((path) => navigateRef.current(path));
+  }, [isNative]);
+
+  // ---- Web: tapping a notification opens the matching screen ----
+  useEffect(() => {
+    if (isNative || !('serviceWorker' in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: string; path?: unknown } | null;
+      if (data?.type === 'tally-open' && typeof data.path === 'string') navigateRef.current(data.path);
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
   }, [isNative]);
 
   // ---- Native: re-plan when the app returns to the foreground or Settings asks ----
@@ -114,20 +122,23 @@ export function useNotificationSync() {
   }, [isNative, ready, exams, tasks, prefs, resyncTick, cityName, remindStart, remindEnding, remindProhibited, prayerLog]);
 
   // ---- Web: check while the app is open ----
-  const eligibleExams = useMemo(() => (prefs.exams ? exams : NO_EXAMS), [prefs.exams, exams]);
-  const eligibleTasks = useMemo(() => (prefs.tasks ? tasks : NO_TASKS), [prefs.tasks, tasks]);
-
   useEffect(() => {
     // Wait for settings too: the list of already-shown reminders lives there,
     // and checking before it loads would show old reminders a second time.
     if (isNative || !settingsLoaded) return;
 
     function check() {
-      checkAndFireWebReminders(eligibleExams, eligibleTasks, settingsRef.current.notifiedReminderIds, (firedIds) => {
-        updateSettings({
-          notifiedReminderIds: [...settingsRef.current.notifiedReminderIds, ...firedIds]
-        });
-      });
+      void checkAndFireWebReminders(
+        exams,
+        tasks,
+        settingsRef.current.notificationPrefs,
+        settingsRef.current.notifiedReminderIds,
+        (firedIds) => {
+          updateSettings({
+            notifiedReminderIds: [...settingsRef.current.notifiedReminderIds, ...firedIds].slice(-MAX_REMEMBERED)
+          });
+        }
+      );
     }
 
     check();
@@ -138,5 +149,5 @@ export function useNotificationSync() {
       document.removeEventListener('visibilitychange', check);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNative, settingsLoaded, eligibleExams, eligibleTasks]);
+  }, [isNative, settingsLoaded, exams, tasks, prefs]);
 }

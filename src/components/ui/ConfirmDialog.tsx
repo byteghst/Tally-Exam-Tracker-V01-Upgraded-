@@ -1,11 +1,14 @@
-import { Sheet } from './Sheet';
-import { Button } from './Button';
+import { AlertTriangle, type LucideIcon } from 'lucide-react';
+import { Popup, type PopupTone } from './Popup';
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
   description: string;
   confirmLabel?: string;
+  cancelLabel?: string;
+  icon?: LucideIcon;
+  tone?: PopupTone;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -15,32 +18,31 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  icon = AlertTriangle,
+  tone = 'danger',
   onConfirm,
   onClose
 }: ConfirmDialogProps) {
   return (
-    <Sheet
+    <Popup
       open={open}
       onClose={onClose}
+      icon={icon}
+      tone={tone}
+      eyebrow="Please confirm"
       title={title}
-      footer={
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-          >
-            {confirmLabel}
-          </Button>
-        </div>
-      }
+      primary={{
+        label: confirmLabel,
+        variant: tone === 'danger' ? 'danger' : 'primary',
+        onClick: () => {
+          onConfirm();
+          onClose();
+        }
+      }}
+      secondary={{ label: cancelLabel, onClick: onClose }}
     >
-      <p className="text-sm text-ink-muted">{description}</p>
-    </Sheet>
+      {description}
+    </Popup>
   );
 }
