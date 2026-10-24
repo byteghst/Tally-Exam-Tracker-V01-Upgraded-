@@ -7,8 +7,9 @@ import { LiveCountdown } from '@/components/ui/LiveCountdown';
 import { Rise } from '@/components/motion/Reveal';
 import { maskUp } from '@/lib/motion';
 import { useCountUp } from '@/hooks/useCountUp';
+import { useNow } from '@/hooks/useNow';
 import { daysBetween, todayISO, formatDate } from '@/lib/dates';
-import { targetTime } from '@/lib/countdown';
+import { remainingParts, targetTime } from '@/lib/countdown';
 import { formatTime12 } from '@/lib/deadlineFormat';
 import type { Exam } from '@/types';
 
@@ -18,7 +19,16 @@ interface ExamCountdownHeroProps {
 }
 
 export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
-  const days = exam ? Math.max(daysBetween(todayISO(), exam.date), 0) : 0;
+  const now = useNow();
+
+  // With a start time, the big number counts whole 24-hour days actually left, so it
+  // always agrees with the live clock below it (14 hours left is 0 days, not 1).
+  // Without a start time, it falls back to calendar days.
+  const calendarDays = exam ? Math.max(daysBetween(todayISO(), exam.date), 0) : 0;
+  const days = exam?.startTime
+    ? remainingParts(targetTime(exam.date, exam.startTime), now).days
+    : calendarDays;
+  const isToday = exam ? daysBetween(todayISO(), exam.date) <= 0 : false;
   const animatedDays = useCountUp(days, 1400);
 
   if (!exam) {
@@ -37,6 +47,7 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
   }
 
   const hasScore = exam.mcqCorrect !== undefined || exam.manualScoreOverride !== undefined;
+  const label = days > 1 ? 'Days to go' : days === 1 ? 'Day to go' : isToday ? 'Today' : 'Less than a day to go';
 
   return (
     <Rise>
@@ -59,7 +70,7 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
 
         <div className="mt-3 flex items-center gap-2">
           {days === 0 && <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />}
-          <p className="eyebrow !text-ink-muted">{days === 0 ? 'Today' : days === 1 ? 'Day to go' : 'Days to go'}</p>
+          <p className="eyebrow !text-ink-muted">{label}</p>
         </div>
 
         {/* Live clock to the exact start time, when the exam has one. */}
