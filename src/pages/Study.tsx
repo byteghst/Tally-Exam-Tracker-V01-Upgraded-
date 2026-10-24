@@ -243,8 +243,10 @@ export function Study() {
         </Button>
       </Rise>
 
-      <Rise>
-        {active && activeSubject ? (
+      {/* The timer card only exists while a session is on. When idle there is nothing to show:
+          the subject tiles below are the way to start one. */}
+      {active && activeSubject && (
+        <Rise>
           <GlassCard accented={running} className="p-5">
             <div className="flex items-center justify-between">
               <p className="eyebrow">{running ? 'Studying now' : 'Paused'}</p>
@@ -278,14 +280,8 @@ export function Study() {
               The timer keeps running if you switch apps or close Tally.
             </p>
           </GlassCard>
-        ) : (
-          <GlassCard className="p-5">
-            <p className="eyebrow">Timer</p>
-            <p className="mt-4 font-serif text-5xl leading-none tracking-tight text-ink">Ready when you are.</p>
-            <p className="mt-3 text-ink-muted">Tap a subject below to start the clock.</p>
-          </GlassCard>
-        )}
-      </Rise>
+        </Rise>
+      )}
 
       <Rise className="grid grid-cols-2 gap-3">
         <GlassCard className="p-4">
@@ -314,60 +310,63 @@ export function Study() {
             </div>
           )
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {subjects.map((subject) => {
-              const isActive = active?.subjectId === subject.id;
-              return (
-                <GlassCard
-                  key={subject.id}
-                  interactive
-                  accented={isActive}
-                  className="overflow-hidden"
-                  onClick={() => (isActive && running ? pause() : start(subject.id))}
-                >
-                  <div className="relative">
-                    <SubjectCover subject={subject} className="h-28 w-full" />
-                    {isActive && (
-                      <span className="absolute left-2 top-2 rounded-full bg-ink px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-surface">
-                        {running ? 'Studying' : 'Paused'}
+          <>
+            {!active && <p className="mb-3 text-sm text-ink-muted">Tap a subject to start the timer.</p>}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {subjects.map((subject) => {
+                const isActive = active?.subjectId === subject.id;
+                return (
+                  <GlassCard
+                    key={subject.id}
+                    interactive
+                    accented={isActive}
+                    className="overflow-hidden"
+                    onClick={() => (isActive && running ? pause() : start(subject.id))}
+                  >
+                    <div className="relative">
+                      <SubjectCover subject={subject} className="h-28 w-full" />
+                      {isActive && (
+                        <span className="absolute left-2 top-2 rounded-full bg-ink px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-surface">
+                          {running ? 'Studying' : 'Paused'}
+                        </span>
+                      )}
+                      <span className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-ink text-surface">
+                        {isActive && running ? <Pause size={14} /> : <Play size={14} />}
                       </span>
-                    )}
-                    <span className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-ink text-surface">
-                      {isActive && running ? <Pause size={14} /> : <Play size={14} />}
-                    </span>
-                  </div>
-                  <div className="space-y-1 p-3">
-                    <p className="truncate font-display text-sm font-semibold text-ink">{subject.name}</p>
-                    <p className="tabular-nums text-xs text-ink-muted">
-                      Today {formatShort(live(totals.today, subject.id))} · Total {formatShort(live(totals.all, subject.id))}
-                    </p>
-                    <div className="flex justify-end gap-1 pt-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditing(subject);
-                        }}
-                        aria-label={`Edit ${subject.name}`}
-                        className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(subject);
-                        }}
-                        aria-label={`Delete ${subject.name}`}
-                        className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-danger"
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </div>
-                  </div>
-                </GlassCard>
-              );
-            })}
-          </div>
+                    <div className="space-y-1 p-3">
+                      <p className="truncate font-display text-sm font-semibold text-ink">{subject.name}</p>
+                      <p className="tabular-nums text-xs text-ink-muted">
+                        Today {formatShort(live(totals.today, subject.id))} · Total {formatShort(live(totals.all, subject.id))}
+                      </p>
+                      <div className="flex justify-end gap-1 pt-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditing(subject);
+                          }}
+                          aria-label={`Edit ${subject.name}`}
+                          className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(subject);
+                          }}
+                          aria-label={`Delete ${subject.name}`}
+                          className="rounded-control p-1.5 text-ink-muted hover:bg-ink/5 hover:text-danger"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </GlassCard>
+                );
+              })}
+            </div>
+          </>
         )}
       </Section>
 
