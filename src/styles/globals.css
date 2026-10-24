@@ -13,9 +13,9 @@
      Fields are filled, not underlined. No blur, no translucency.
 
    Type
-   - Grotesque throughout. Hanken Grotesk for text, Schibsted Grotesk for large
-     and display type (the `font-serif` / `font-display` classes), Space Grotesk
-     for numerals. Hind Siliguri for Bengali.
+   - Figtree for text, Bricolage Grotesque for large and display type (the
+     `font-serif` / `font-display` classes), Space Grotesk for numerals. Hind
+     Siliguri for Bengali.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
@@ -124,19 +124,19 @@ body,
   height: 100%;
 }
 
-/* Bengali letters are not in Hanken Grotesk, so they fall through to Hind Siliguri. */
+/* Bengali letters are not in Figtree, so they fall through to Hind Siliguri. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'Hanken Grotesk', 'Hind Siliguri', system-ui, sans-serif;
+  font-family: 'Figtree', 'Hind Siliguri', system-ui, sans-serif;
 }
 
-/* Large display type is set a touch heavier and tighter than body text, so
-   headings and big numbers have presence. Utilities such as `font-semibold`
-   and `tracking-tight` still win over this (base layer comes first). */
+/* Large display type is set heavier and tighter than body text, so headings
+   and big numbers have presence. Utilities such as `font-semibold` and
+   `tracking-tight` still win over this (base layer comes first). */
 @layer base {
   .font-serif {
-    font-weight: 500;
-    letter-spacing: -0.025em;
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 }
 
@@ -150,7 +150,7 @@ body {
    dedicated numeric face (Space Grotesk) so digits line up and read as
    data, distinct from body text and display headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Hind Siliguri', 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Hind Siliguri', 'Figtree', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
