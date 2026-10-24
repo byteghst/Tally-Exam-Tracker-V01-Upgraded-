@@ -12,6 +12,11 @@
      deeper page), a gentle diffuse shadow, rounded corners and whitespace.
      Fields are filled, not underlined. No blur, no translucency.
 
+   Type
+   - No serif faces. Plus Jakarta Sans for text, Instrument Sans for large and
+     display type (the `font-serif` / `font-display` classes), Space Grotesk for
+     numerals.
+
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
 :root {
@@ -119,10 +124,20 @@ body,
   height: 100%;
 }
 
-/* Bengali letters are not in Plus Jakarta Sans, so they fall through to Tiro Bangla. */
+/* Bengali letters are not in Plus Jakarta Sans, so they fall through to Hind Siliguri. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif;
+}
+
+/* Large display type is set a touch heavier and tighter than body text, so
+   headings and big numbers have presence. Utilities such as `font-semibold`
+   and `tracking-tight` still win over this (base layer comes first). */
+@layer base {
+  .font-serif {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
 }
 
 /* No visible borders by default; a border only shows where a screen gives it
@@ -135,7 +150,7 @@ body {
    dedicated numeric face (Space Grotesk) so digits line up and read as
    data, distinct from body text and serif headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Tiro Bangla', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 

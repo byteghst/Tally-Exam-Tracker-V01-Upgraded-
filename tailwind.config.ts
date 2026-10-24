@@ -31,18 +31,20 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // Every stack ends with Tiro Bangla before the generic fallbacks. The Latin
-      // fonts have no Bengali letters, so the browser picks Tiro Bangla for any
-      // Bengali text, whichever font the surrounding text uses.
+      // No serif faces anywhere. Every stack ends with Hind Siliguri before the
+      // generic fallbacks: the Latin fonts have no Bengali letters, so the browser
+      // picks Hind Siliguri (a sans Bengali face) for any Bengali text, whichever
+      // font the surrounding text uses.
       fontFamily: {
         // UI + body text
-        sans: ['"Plus Jakarta Sans"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
-        // headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Fraunces"', '"Tiro Bangla"', 'Georgia', 'serif'],
+        sans: ['"Plus Jakarta Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        // small headings (existing `font-display` usages pick this up everywhere)
+        display: ['"Instrument Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // numerals: scores, countdowns, stats
-        numeric: ['"Space Grotesk"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
-        // large editorial type: greetings, big numbers, italic taglines
-        serif: ['"Instrument Serif"', '"Tiro Bangla"', 'Georgia', 'serif']
+        numeric: ['"Space Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        // Large editorial type: greetings, page titles, big numbers, italic taglines.
+        // The class is still called `font-serif` in the markup; it is Instrument Sans now.
+        serif: ['"Instrument Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',
