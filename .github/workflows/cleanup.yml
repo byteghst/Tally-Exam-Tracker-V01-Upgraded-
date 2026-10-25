@@ -1,0 +1,31 @@
+name: Clean up releases and runs
+on: workflow_dispatch
+permissions:
+  contents: write
+  actions: write
+jobs:
+  releases:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all releases except the newest build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          latest=$(gh release list --limit 500 --json tagName --jq '[.[].tagName | select(startswith("build-")) | ltrimstr("build-") | tonumber] | max')
+          [ -z "$latest" ] || [ "$latest" = "null" ] && exit 0
+          echo "Keeping build-$latest"
+          gh release list --limit 500 --json tagName --jq '.[].tagName' | while read -r tag; do
+            [ "$tag" != "build-$latest" ] && gh release delete "$tag" --cleanup-tag --yes
+          done
+  runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete finished workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh run list --limit 1000 --json databaseId,status --jq '.[] | select(.status=="completed") | .databaseId' | while read -r id; do
+            gh run delete "$id"
+          done
