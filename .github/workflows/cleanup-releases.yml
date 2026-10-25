@@ -1,0 +1,19 @@
+name: Clean up old releases
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all releases except the newest build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          latest=$(gh release list --limit 500 --json tagName --jq '[.[].tagName | select(startswith("build-")) | ltrimstr("build-") | tonumber] | max')
+          [ -z "$latest" ] || [ "$latest" = "null" ] && exit 0
+          echo "Keeping build-$latest"
+          gh release list --limit 500 --json tagName --jq '.[].tagName' | while read -r tag; do
+            [ "$tag" != "build-$latest" ] && gh release delete "$tag" --cleanup-tag --yes
+          done
