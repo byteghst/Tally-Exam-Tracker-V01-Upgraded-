@@ -38,21 +38,15 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Tapping anywhere outside the open bar closes it. */}
       <AnimatePresence>{moreOpen && <Scrim key="more-scrim" onClick={() => setMoreOpen(false)} />}</AnimatePresence>
 
-      {/* Soft raised bar fixed to the bottom edge: lighter than the page, a
-          gentle shadow above it and no outline. The active tab gets a soft
-          tinted pill behind its icon that slides between tabs. */}
       <nav
         className={clsx(
-          'fixed inset-x-0 bottom-0 z-40 bg-surface-raised pb-safe-bottom shadow-sheet md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 w-full max-w-full overflow-visible bg-surface-raised pb-safe-bottom shadow-sheet md:hidden',
           !moreOpen && 'rounded-t-[24px]'
         )}
         aria-label="Primary"
       >
-        {/* "More" grows upward out of the bar itself. Each row starts at the
-            left edge: icon first, then the name. */}
         <AnimatePresence initial={false}>
           {moreOpen && (
             <motion.div
@@ -93,7 +87,7 @@ export function BottomNav() {
           )}
         </AnimatePresence>
 
-        <div className="mx-auto flex max-w-md items-stretch">
+        <div className="mx-auto flex w-full max-w-md items-stretch">
           {primary.map((item) => (
             <NavLink
               key={item.path}
@@ -101,7 +95,7 @@ export function BottomNav() {
               onClick={() => setMoreOpen(false)}
               className={({ isActive }) =>
                 clsx(
-                  'relative flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight transition-colors duration-200',
+                  'relative flex min-w-0 flex-1 flex-col items-center gap-1 px-0.5 pb-1 pt-3 text-[10px] font-semibold leading-tight tracking-tight transition-colors duration-200 sm:px-1 sm:text-[11px]',
                   isActive ? 'text-ink' : 'text-ink-faint active:text-ink'
                 )
               }
@@ -112,15 +106,15 @@ export function BottomNav() {
                     <motion.span
                       layoutId="bottom-nav-indicator"
                       transition={spring}
-                      className="absolute inset-x-0 top-1.5 mx-auto h-8 w-14 rounded-full bg-accent-soft"
+                      className="absolute inset-x-0 top-1.5 mx-auto h-8 w-12 max-w-full rounded-full bg-accent-soft"
                     />
                   )}
                   <item.icon
                     size={21}
                     strokeWidth={isActive ? 2.2 : 1.7}
-                    className={clsx('relative', isActive && 'text-accent')}
+                    className={clsx('relative shrink-0', isActive && 'text-accent')}
                   />
-                  <span className="relative">{item.label}</span>
+                  <span className="relative block max-w-full whitespace-nowrap">{item.label}</span>
                 </>
               )}
             </NavLink>
@@ -132,17 +126,17 @@ export function BottomNav() {
             aria-controls="more-bar"
             aria-label="More"
             className={clsx(
-              'relative flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight transition-colors duration-200',
+              'relative flex min-w-0 flex-1 flex-col items-center gap-1 px-0.5 pb-1 pt-3 text-[10px] font-semibold leading-tight tracking-tight transition-colors duration-200 sm:px-1 sm:text-[11px]',
               moreOpen ? 'text-ink' : 'text-ink-faint active:text-ink'
             )}
           >
-            {moreOpen && <span className="absolute inset-x-0 top-1.5 mx-auto h-8 w-14 rounded-full bg-accent-soft" />}
+            {moreOpen && <span className="absolute inset-x-0 top-1.5 mx-auto h-8 w-12 max-w-full rounded-full bg-accent-soft" />}
             <MoreHorizontal
               size={21}
               strokeWidth={moreOpen ? 2.2 : 1.7}
-              className={clsx('relative', moreOpen && 'text-accent')}
+              className={clsx('relative shrink-0', moreOpen && 'text-accent')}
             />
-            <span className="relative">More</span>
+            <span className="relative block max-w-full whitespace-nowrap">More</span>
           </button>
         </div>
       </nav>
