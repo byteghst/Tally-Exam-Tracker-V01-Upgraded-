@@ -31,20 +31,19 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // Technor for English, FN Shorif Shadhin for Bengali (both served from
-      // public/fonts, see lib/appFonts.ts). Technor has no Bengali letters, so the
-      // browser takes Bengali from Shorif Shadhin. Patrick Hand, Caveat and Atma
-      // stay at the end of each stack as the fallback until the files are uploaded.
+      // JetBrains Mono for English, Tiro Bangla for Bengali. The mono font has no
+      // Bengali letters, so the browser takes Bengali from Tiro Bangla. Numerals
+      // (scores, countdowns, stats) stay in Space Grotesk.
       fontFamily: {
         // UI + body text
-        sans: ['"Technor"', '"Shorif Shadhin"', '"Patrick Hand"', '"Atma"', 'cursive', 'sans-serif'],
+        sans: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace'],
         // small headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Technor"', '"Shorif Shadhin"', '"Patrick Hand"', '"Atma"', 'cursive', 'sans-serif'],
+        display: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace'],
         // numerals: scores, countdowns, stats
-        numeric: ['"Space Grotesk"', '"Shorif Shadhin"', '"Atma"', 'system-ui', 'sans-serif'],
+        numeric: ['"Space Grotesk"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
         // Large headings: greetings, page titles, big numbers.
-        // The class is still called `font-serif` in the markup; it is Technor now.
-        serif: ['"Technor"', '"Shorif Shadhin"', '"Caveat"', '"Atma"', 'cursive', 'sans-serif']
+        // The class is still called `font-serif` in the markup; it is the mono font now.
+        serif: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace']
       },
       borderRadius: {
         card: 'var(--radius-card)',
