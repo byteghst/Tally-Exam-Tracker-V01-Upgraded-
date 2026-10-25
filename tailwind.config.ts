@@ -31,21 +31,22 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // Figtree for text (friendly, round-ish), Bricolage Grotesque for large and
-      // display type (playful, a little quirky), Space Grotesk for numerals. Every
-      // stack ends with Hind Siliguri before the generic fallbacks: the Latin fonts
-      // have no Bengali letters, so the browser picks Hind Siliguri (a sans Bengali
-      // face) for any Bengali text, whichever font the surrounding text uses.
+      // DM Sans for text and italics, Outfit for large and display type (light,
+      // round, friendly), Space Grotesk for numerals. Every stack ends with Hind
+      // Siliguri before the generic fallbacks: the Latin fonts have no Bengali
+      // letters, so the browser picks Hind Siliguri (a sans Bengali face) for any
+      // Bengali text, whichever font the surrounding text uses.
       fontFamily: {
         // UI + body text
-        sans: ['"Figtree"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // small headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Bricolage Grotesque"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        display: ['"Outfit"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
         // numerals: scores, countdowns, stats
         numeric: ['"Space Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
-        // Large editorial type: greetings, page titles, big numbers, taglines.
-        // The class is still called `font-serif` in the markup; it is Bricolage Grotesque now.
-        serif: ['"Bricolage Grotesque"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
+        // Large editorial type: greetings, page titles, big numbers.
+        // The class is still called `font-serif` in the markup; it is Outfit now.
+        // (Italic text in this class switches to DM Sans, see globals.css.)
+        serif: ['"Outfit"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',

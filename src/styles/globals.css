@@ -13,9 +13,10 @@
      Fields are filled, not underlined. No blur, no translucency.
 
    Type
-   - Figtree for text, Bricolage Grotesque for large and display type (the
+   - DM Sans for text and italics, Outfit for large and display type (the
      `font-serif` / `font-display` classes), Space Grotesk for numerals. Hind
-     Siliguri for Bengali.
+     Siliguri for Bengali. Bold is kept for small labels and buttons; large
+     type stays at a regular weight.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
@@ -124,20 +125,35 @@ body,
   height: 100%;
 }
 
-/* Bengali letters are not in Figtree, so they fall through to Hind Siliguri. */
+/* Bengali letters are not in DM Sans, so they fall through to Hind Siliguri.
+   `overflow-wrap: anywhere` lets a long unbroken string (an email address, say)
+   wrap inside its card instead of running out past the edge. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'Figtree', 'Hind Siliguri', system-ui, sans-serif;
+  font-family: 'DM Sans', 'Hind Siliguri', system-ui, sans-serif;
+  overflow-wrap: anywhere;
 }
 
-/* Large display type is set heavier and tighter than body text, so headings
-   and big numbers have presence. Utilities such as `font-semibold` and
-   `tracking-tight` still win over this (base layer comes first). */
+/* Large display type stays at a regular weight with slightly tight spacing.
+   Utilities such as `font-semibold` and `tracking-tight` still win over this
+   (the base layer comes first). */
 @layer base {
   .font-serif {
-    font-weight: 600;
-    letter-spacing: -0.03em;
+    font-weight: 400;
+    letter-spacing: -0.02em;
   }
+}
+
+/* Italic display text (taglines, exam names, the account email) is set in DM
+   Sans italic: Outfit has no italic of its own. */
+.font-serif.italic,
+.font-display.italic,
+em.font-serif,
+i.font-serif,
+.italic > .font-serif {
+  font-family: 'DM Sans', 'Hind Siliguri', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 /* No visible borders by default; a border only shows where a screen gives it
@@ -150,7 +166,7 @@ body {
    dedicated numeric face (Space Grotesk) so digits line up and read as
    data, distinct from body text and display headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Hind Siliguri', 'Figtree', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Hind Siliguri', 'DM Sans', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
