@@ -27,9 +27,11 @@
     "@capacitor/android": "^6.1.2",
     "@capacitor/local-notifications": "^6.1.0",
     "@capacitor/filesystem": "^6.0.1",
-    "@fontsource/jetbrains-mono": "^5.0.0",
-    "@fontsource/tiro-bangla": "^5.0.0",
-    "@fontsource/space-grotesk": "^5.0.0"
+    "@fontsource/plus-jakarta-sans": "^5.0.0",
+    "@fontsource/fraunces": "^5.0.0",
+    "@fontsource/instrument-serif": "^5.0.0",
+    "@fontsource/space-grotesk": "^5.0.0",
+    "@fontsource/tiro-bangla": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",

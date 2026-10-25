@@ -13,9 +13,9 @@
      Fields are filled, not underlined. No blur, no translucency.
 
    Type
-   - JetBrains Mono for English, Tiro Bangla for Bengali, Space Grotesk for
-     numerals. Tiro Bangla has a single weight, so `font-synthesis-weight: none`
-     keeps the browser from faking bold for it.
+   - Plus Jakarta Sans for text, Fraunces for small headings, Instrument Serif
+     for large editorial type (the `font-serif` class), Space Grotesk for
+     numerals, Tiro Bangla for Bengali.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
@@ -124,26 +124,13 @@ body,
   height: 100%;
 }
 
-/* A mono font is wide, so everything is set a touch tighter than normal, and
+/* Bengali letters are not in Plus Jakarta Sans, so they fall through to Tiro Bangla.
    `overflow-wrap: anywhere` lets a long unbroken string (an email address, say)
-   wrap inside its card instead of running out past the edge. Bengali letters
-   are not in the mono font, so they come from Tiro Bangla. */
+   wrap inside its card instead of running out past the edge. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'JetBrains Mono', 'Tiro Bangla', ui-monospace, monospace;
-  font-synthesis-weight: none;
-  letter-spacing: -0.02em;
+  font-family: 'Plus Jakarta Sans', 'Tiro Bangla', system-ui, sans-serif;
   overflow-wrap: anywhere;
-}
-
-/* Large headings: a medium weight, tighter still so they fit narrow screens.
-   Utilities such as `font-semibold` and `tracking-tight` still win over this
-   (the base layer comes first). */
-@layer base {
-  .font-serif {
-    font-weight: 500;
-    letter-spacing: -0.045em;
-  }
 }
 
 /* No visible borders by default; a border only shows where a screen gives it
@@ -154,9 +141,9 @@ body {
 
 /* Numerals for anything showing scores/stats: tabular figures in a
    dedicated numeric face (Space Grotesk) so digits line up and read as
-   data, distinct from the mono text. */
+   data, distinct from body text and serif headings. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Tiro Bangla', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Tiro Bangla', 'Plus Jakarta Sans', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 

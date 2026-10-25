@@ -31,19 +31,18 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // JetBrains Mono for English, Tiro Bangla for Bengali. The mono font has no
-      // Bengali letters, so the browser takes Bengali from Tiro Bangla. Numerals
-      // (scores, countdowns, stats) stay in Space Grotesk.
+      // The original combination: Plus Jakarta Sans for text, Fraunces for small
+      // headings, Instrument Serif for large editorial type, Space Grotesk for
+      // numerals. Tiro Bangla supplies Bengali letters, which the Latin fonts lack.
       fontFamily: {
         // UI + body text
-        sans: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace'],
+        sans: ['"Plus Jakarta Sans"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
         // small headings (existing `font-display` usages pick this up everywhere)
-        display: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace'],
+        display: ['"Fraunces"', '"Tiro Bangla"', 'Georgia', 'serif'],
         // numerals: scores, countdowns, stats
         numeric: ['"Space Grotesk"', '"Tiro Bangla"', 'system-ui', 'sans-serif'],
-        // Large headings: greetings, page titles, big numbers.
-        // The class is still called `font-serif` in the markup; it is the mono font now.
-        serif: ['"JetBrains Mono"', '"Tiro Bangla"', 'ui-monospace', 'monospace']
+        // Large editorial type: greetings, page titles, big numbers, italic taglines.
+        serif: ['"Instrument Serif"', '"Tiro Bangla"', 'Georgia', 'serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',

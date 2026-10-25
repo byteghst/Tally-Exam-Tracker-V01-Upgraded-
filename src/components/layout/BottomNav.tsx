@@ -43,8 +43,7 @@ export function BottomNav() {
 
       {/* Soft raised bar fixed to the bottom edge: lighter than the page, a
           gentle shadow above it and no outline. The active tab gets a soft
-          tinted pill behind its icon that slides between tabs. Labels are small
-          and tightly spaced so the six names fit side by side in a mono font. */}
+          tinted pill behind its icon that slides between tabs. */}
       <nav
         className={clsx(
           'fixed inset-x-0 bottom-0 z-40 bg-surface-raised pb-safe-bottom shadow-sheet md:hidden',
@@ -102,7 +101,7 @@ export function BottomNav() {
               onClick={() => setMoreOpen(false)}
               className={({ isActive }) =>
                 clsx(
-                  'relative flex min-w-0 flex-1 flex-col items-center gap-1 px-0 pb-1 pt-3 text-[10px] font-semibold tracking-[-0.06em] transition-colors duration-200',
+                  'relative flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight transition-colors duration-200',
                   isActive ? 'text-ink' : 'text-ink-faint active:text-ink'
                 )
               }
@@ -133,7 +132,7 @@ export function BottomNav() {
             aria-controls="more-bar"
             aria-label="More"
             className={clsx(
-              'relative flex min-w-0 flex-1 flex-col items-center gap-1 px-0 pb-1 pt-3 text-[10px] font-semibold tracking-[-0.06em] transition-colors duration-200',
+              'relative flex flex-1 flex-col items-center gap-1 px-1 pb-1 pt-3 text-[11px] font-semibold tracking-tight transition-colors duration-200',
               moreOpen ? 'text-ink' : 'text-ink-faint active:text-ink'
             )}
           >
