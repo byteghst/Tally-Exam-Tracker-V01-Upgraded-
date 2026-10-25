@@ -27,10 +27,10 @@
     "@capacitor/android": "^6.1.2",
     "@capacitor/local-notifications": "^6.1.0",
     "@capacitor/filesystem": "^6.0.1",
-    "@fontsource/dm-sans": "^5.0.0",
-    "@fontsource/outfit": "^5.0.0",
+    "@fontsource/patrick-hand": "^5.0.0",
+    "@fontsource/caveat": "^5.0.0",
     "@fontsource/space-grotesk": "^5.0.0",
-    "@fontsource/hind-siliguri": "^5.0.0"
+    "@fontsource/atma": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",

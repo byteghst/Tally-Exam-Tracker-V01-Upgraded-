@@ -31,22 +31,21 @@ export default {
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
       },
-      // DM Sans for text and italics, Outfit for large and display type (light,
-      // round, friendly), Space Grotesk for numerals. Every stack ends with Hind
-      // Siliguri before the generic fallbacks: the Latin fonts have no Bengali
-      // letters, so the browser picks Hind Siliguri (a sans Bengali face) for any
-      // Bengali text, whichever font the surrounding text uses.
+      // Handwritten type: Patrick Hand for text and small headings (easy to read,
+      // compact), Caveat for large headings, Space Grotesk for numerals. Every
+      // stack ends with Atma, a casual hand-drawn Bengali face: the Latin fonts
+      // have no Bengali letters, so the browser picks Atma for any Bengali text.
       fontFamily: {
         // UI + body text
-        sans: ['"DM Sans"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        sans: ['"Patrick Hand"', '"Atma"', 'cursive', 'sans-serif'],
         // small headings (existing `font-display` usages pick this up everywhere)
-        display: ['"Outfit"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
+        display: ['"Patrick Hand"', '"Atma"', 'cursive', 'sans-serif'],
         // numerals: scores, countdowns, stats
-        numeric: ['"Space Grotesk"', '"Hind Siliguri"', 'system-ui', 'sans-serif'],
-        // Large editorial type: greetings, page titles, big numbers.
-        // The class is still called `font-serif` in the markup; it is Outfit now.
-        // (Italic text in this class switches to DM Sans, see globals.css.)
-        serif: ['"Outfit"', '"Hind Siliguri"', 'system-ui', 'sans-serif']
+        numeric: ['"Space Grotesk"', '"Atma"', 'system-ui', 'sans-serif'],
+        // Large headings: greetings, page titles, big numbers.
+        // The class is still called `font-serif` in the markup; it is Caveat now.
+        // (Italic text in this class switches to Patrick Hand, see globals.css.)
+        serif: ['"Caveat"', '"Atma"', 'cursive', 'sans-serif']
       },
       borderRadius: {
         card: 'var(--radius-card)',

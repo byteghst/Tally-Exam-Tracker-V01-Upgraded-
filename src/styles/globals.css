@@ -13,10 +13,10 @@
      Fields are filled, not underlined. No blur, no translucency.
 
    Type
-   - DM Sans for text and italics, Outfit for large and display type (the
-     `font-serif` / `font-display` classes), Space Grotesk for numerals. Hind
-     Siliguri for Bengali. Bold is kept for small labels and buttons; large
-     type stays at a regular weight.
+   - Handwritten. Patrick Hand for text and small headings, Caveat for large
+     headings (the `font-serif` class), Space Grotesk for numerals, Atma for
+     Bengali. Patrick Hand has one weight, so `font-synthesis: none` keeps the
+     browser from faking bold or italic.
 
    The old glass tokens are kept but neutralised (0px blur, fully opaque) so a
    screen that has not been redesigned yet still renders flat. */
@@ -125,35 +125,41 @@ body,
   height: 100%;
 }
 
-/* Bengali letters are not in DM Sans, so they fall through to Hind Siliguri.
+/* Bengali letters are not in Patrick Hand, so they fall through to Atma.
    `overflow-wrap: anywhere` lets a long unbroken string (an email address, say)
    wrap inside its card instead of running out past the edge. */
 body {
   @apply bg-surface text-ink antialiased;
-  font-family: 'DM Sans', 'Hind Siliguri', system-ui, sans-serif;
+  font-family: 'Patrick Hand', 'Atma', cursive, sans-serif;
+  font-synthesis: none;
   overflow-wrap: anywhere;
 }
 
-/* Large display type stays at a regular weight with slightly tight spacing.
-   Utilities such as `font-semibold` and `tracking-tight` still win over this
-   (the base layer comes first). */
+/* Large headings: Caveat at a medium-heavy weight, with a little extra size
+   because handwriting sits small for its point size. Utilities such as
+   `font-semibold` and `tracking-tight` still win over this (the base layer
+   comes first). */
 @layer base {
   .font-serif {
-    font-weight: 400;
-    letter-spacing: -0.02em;
+    font-weight: 600;
+    letter-spacing: 0;
+    font-size-adjust: 0.5;
   }
 }
 
-/* Italic display text (taglines, exam names, the account email) is set in DM
-   Sans italic: Outfit has no italic of its own. */
+/* Italic display text (taglines, exam names, the account email) is set upright
+   in Patrick Hand: handwriting fonts have no italic, and a slanted fake one
+   looks wrong. */
 .font-serif.italic,
 .font-display.italic,
 em.font-serif,
 i.font-serif,
 .italic > .font-serif {
-  font-family: 'DM Sans', 'Hind Siliguri', system-ui, sans-serif;
+  font-family: 'Patrick Hand', 'Atma', cursive, sans-serif;
+  font-style: normal;
   font-weight: 400;
-  letter-spacing: -0.01em;
+  font-size-adjust: none;
+  letter-spacing: 0;
 }
 
 /* No visible borders by default; a border only shows where a screen gives it
@@ -164,9 +170,9 @@ i.font-serif,
 
 /* Numerals for anything showing scores/stats: tabular figures in a
    dedicated numeric face (Space Grotesk) so digits line up and read as
-   data, distinct from body text and display headings. */
+   data, distinct from the handwritten text. */
 .tabular-nums {
-  font-family: 'Space Grotesk', 'Hind Siliguri', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Space Grotesk', 'Atma', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 

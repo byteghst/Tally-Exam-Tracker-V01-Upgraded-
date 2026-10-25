@@ -9,26 +9,19 @@ import { restoreSnapshots, startSnapshotPersistence } from './lib/snapshotSync';
 import { registerCardFonts } from './lib/cardFonts';
 import { AppDownloadPrompt } from './components/features/update/AppDownloadPrompt';
 // Bundled fonts (work offline inside the Android app)
-import '@fontsource/dm-sans/400.css';
-import '@fontsource/dm-sans/500.css';
-import '@fontsource/dm-sans/600.css';
-import '@fontsource/dm-sans/700.css';
-import '@fontsource/dm-sans/400-italic.css';
-import '@fontsource/dm-sans/500-italic.css';
-import '@fontsource/outfit/300.css';
-import '@fontsource/outfit/400.css';
-import '@fontsource/outfit/500.css';
-import '@fontsource/outfit/600.css';
-import '@fontsource/outfit/700.css';
+import '@fontsource/patrick-hand/400.css';
+import '@fontsource/caveat/400.css';
+import '@fontsource/caveat/500.css';
+import '@fontsource/caveat/600.css';
+import '@fontsource/caveat/700.css';
 import '@fontsource/space-grotesk/500.css';
 import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
 // Bengali: the Latin fonts above have no Bengali letters, so anything typed in
-// Bengali falls through to Hind Siliguri (see the font stacks in tailwind.config.ts).
-import '@fontsource/hind-siliguri/400.css';
-import '@fontsource/hind-siliguri/500.css';
-import '@fontsource/hind-siliguri/600.css';
-import '@fontsource/hind-siliguri/700.css';
+// Bengali falls through to Atma (see the font stacks in tailwind.config.ts).
+import '@fontsource/atma/400.css';
+import '@fontsource/atma/500.css';
+import '@fontsource/atma/600.css';
 import './styles/globals.css';
 
 setupServiceWorker();
