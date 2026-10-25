@@ -1,7 +1,14 @@
 name: Clean up old releases
-on: workflow_dispatch
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 00:00 UTC (06:00 Bangladesh time)
+    - cron: "0 0 * * *"
+
 permissions:
   contents: write
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -10,10 +17,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+        shell: bash
         run: |
-          latest=$(gh release list --limit 500 --json tagName --jq '[.[].tagName | select(startswith("build-")) | ltrimstr("build-") | tonumber] | max')
-          [ -z "$latest" ] || [ "$latest" = "null" ] && exit 0
-          echo "Keeping build-$latest"
-          gh release list --limit 500 --json tagName --jq '.[].tagName' | while read -r tag; do
-            [ "$tag" != "build-$latest" ] && gh release delete "$tag" --cleanup-tag --yes
+          set -euo pipefail
+
+          # Find the highest numeric build-N release. If none exist, delete no releases.
+          latest=$(gh release list --limit 1000 --json tagName --jq '[.[].tagName | select(startswith("build-")) | ltrimstr("build-") | select(test("^[0-9]+$")) | tonumber] | if length == 0 then "" else max end')
+
+          if [[ -z "$latest" ]]; then
+            echo "No build-N releases found; skipping release cleanup."
+            exit 0
+          fi
+
+          keep="build-$latest"
+          echo "Keeping newest build release: $keep"
+
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' |
+          while IFS= read -r tag; do
+            [[ -z "$tag" || "$tag" == "$keep" ]] && continue
+            echo "Deleting release and associated tag: $tag"
+            gh release delete "$tag" --cleanup-tag --yes
           done
