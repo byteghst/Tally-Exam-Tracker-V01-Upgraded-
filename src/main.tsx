@@ -6,9 +6,13 @@ import { ThemeProvider } from './ThemeProvider';
 import { setupServiceWorker } from './setupServiceWorker';
 import { useAuthStore } from './store/authStore';
 import { restoreSnapshots, startSnapshotPersistence } from './lib/snapshotSync';
+import { registerAppFonts } from './lib/appFonts';
 import { registerCardFonts } from './lib/cardFonts';
 import { AppDownloadPrompt } from './components/features/update/AppDownloadPrompt';
-// Bundled fonts (work offline inside the Android app)
+// Technor (English) and FN Shorif Shadhin (Bengali) come from public/fonts and are
+// registered in lib/appFonts. The bundled fonts below are the fallbacks: they are
+// used for any character those two don't have, and for everything until the two
+// font files are in public/fonts. They work offline inside the Android app.
 import '@fontsource/patrick-hand/400.css';
 import '@fontsource/caveat/400.css';
 import '@fontsource/caveat/500.css';
@@ -17,14 +21,13 @@ import '@fontsource/caveat/700.css';
 import '@fontsource/space-grotesk/500.css';
 import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
-// Bengali: the Latin fonts above have no Bengali letters, so anything typed in
-// Bengali falls through to Atma (see the font stacks in tailwind.config.ts).
 import '@fontsource/atma/400.css';
 import '@fontsource/atma/500.css';
 import '@fontsource/atma/600.css';
 import './styles/globals.css';
 
 setupServiceWorker();
+registerAppFonts();
 registerCardFonts();
 useAuthStore.getState().init();
 

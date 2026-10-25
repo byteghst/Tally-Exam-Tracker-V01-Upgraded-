@@ -1,30 +1,36 @@
+import { BENGALI_RANGE, FONT_FILES } from './appFonts';
+
 /**
  * The share cards (deadline, task, exam trend, monthly report) draw on a canvas
  * with font names written before the font changes: 'Instrument Serif' for big
  * type, 'Plus Jakarta Sans' for text and 'Tiro Bangla' for Bengali. Rather than
  * touch every card, those names are registered here as aliases for the current
- * faces (Caveat, Patrick Hand, Atma), so the cards pick them up automatically.
- * Patrick Hand has a single weight, so it is registered under every weight the
- * cards ask for (no smeared fake bold), and its upright cut stands in for italic.
+ * faces, so the cards pick them up automatically:
+ *
+ *   big type, text   -> Technor (public/fonts), italic requests use the upright cut
+ *   Bengali          -> FN Shorif Shadhin (public/fonts)
+ *
+ * If a font file in public/fonts is missing, the alias falls back to the
+ * handwritten faces bundled from npm (Caveat, Patrick Hand, Atma), so cards
+ * still render.
  *
  * Plain text-drawing code only: nothing here affects the on-screen UI, which uses
- * the font stacks in tailwind.config.ts. If a font file can't be found the card
- * simply falls back to the browser's default for that name.
+ * the font stacks in tailwind.config.ts.
  */
 
-const display = import.meta.glob('/node_modules/@fontsource/caveat/files/caveat-latin-600-normal.woff2', {
+const caveat = import.meta.glob('/node_modules/@fontsource/caveat/files/caveat-latin-600-normal.woff2', {
   query: '?url',
   import: 'default',
   eager: true
 }) as Record<string, string>;
 
-const text = import.meta.glob('/node_modules/@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff2', {
+const patrick = import.meta.glob('/node_modules/@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff2', {
   query: '?url',
   import: 'default',
   eager: true
 }) as Record<string, string>;
 
-const bengali = import.meta.glob('/node_modules/@fontsource/atma/files/atma-bengali-500-normal.woff2', {
+const atma = import.meta.glob('/node_modules/@fontsource/atma/files/atma-bengali-500-normal.woff2', {
   query: '?url',
   import: 'default',
   eager: true
@@ -35,23 +41,29 @@ function first(files: Record<string, string>): string | undefined {
   return key ? files[key] : undefined;
 }
 
-function add(family: string, url: string | undefined, descriptors: FontFaceDescriptors): void {
-  if (!url) return;
+function add(family: string, url: string, descriptors: FontFaceDescriptors, fallbackUrl?: string): void {
   new FontFace(family, `url(${url})`, descriptors)
     .load()
     .then((face) => document.fonts.add(face))
     .catch(() => {
-      // cosmetic only: the card falls back to a default font
+      if (!fallbackUrl) return;
+      new FontFace(family, `url(${fallbackUrl})`, descriptors)
+        .load()
+        .then((face) => document.fonts.add(face))
+        .catch(() => {
+          // cosmetic only: the card falls back to a default font
+        });
     });
 }
 
 export function registerCardFonts(): void {
   if (typeof document === 'undefined' || !('fonts' in document) || typeof FontFace === 'undefined') return;
-  const big = first(display);
-  add('Instrument Serif', big, { weight: '400', style: 'normal' });
-  add('Instrument Serif', first(text), { weight: '400', style: 'italic' });
-  for (const weight of ['400', '500', '600', '700']) {
-    add('Plus Jakarta Sans', first(text), { weight, style: 'normal' });
-  }
-  add('Tiro Bangla', first(bengali), { weight: '100 900', style: 'normal' });
+  const big = first(caveat);
+  const body = first(patrick);
+  const bn = first(atma);
+
+  add('Instrument Serif', FONT_FILES.technor, { weight: '400', style: 'normal' }, big);
+  add('Instrument Serif', FONT_FILES.technor, { weight: '400', style: 'italic' }, body);
+  add('Plus Jakarta Sans', FONT_FILES.technor, { weight: '200 900', style: 'normal' }, body);
+  add('Tiro Bangla', FONT_FILES.shorif, { weight: '100 900', style: 'normal', unicodeRange: BENGALI_RANGE }, bn);
 }
