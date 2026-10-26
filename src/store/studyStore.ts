@@ -14,12 +14,21 @@ export interface StudySubject {
   createdAt: number;
 }
 
+/** A label for a session, like "Self study", "Class" or "Practice". Added and deleted by the user. */
+export interface StudyTag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+}
+
 export interface StudySession {
   id: string;
   subjectId: string;
   start: number;
   end: number;
   durationMs: number;
+  tagId?: string;
 }
 
 /**
@@ -39,6 +48,8 @@ export interface ActiveTimer {
   accumulatedMs: number;
   /** epoch ms when this study session first started */
   sessionStart: number;
+  /** optional tag the session will be saved with */
+  tagId?: string;
 }
 
 export function elapsedMs(timer: ActiveTimer, now: number = Date.now()): number {
@@ -87,6 +98,7 @@ const safeStateStorage: StateStorage = {
 interface StudyStore {
   subjects: StudySubject[];
   sessions: StudySession[];
+  tags: StudyTag[];
   active: ActiveTimer | null;
 
   /** The account this device's study data belongs to. */
@@ -94,13 +106,21 @@ interface StudyStore {
   /** Changes made on this device that are not on the server yet (or deletions still to be sent). */
   dirtySubjects: string[];
   dirtySessions: string[];
+  dirtyTags: string[];
   deletedSubjects: string[];
   deletedSessions: string[];
+  deletedTags: string[];
+  /** True once this account has its starting tags (so deleting them all does not bring them back). */
+  tagsSeeded: boolean;
   subscribed: boolean;
 
   addSubject: (name: string, color: string, image?: string) => string;
   updateSubject: (id: string, changes: Partial<Pick<StudySubject, 'name' | 'color' | 'image'>>) => void;
   removeSubject: (id: string) => void;
+
+  addTag: (name: string, color: string) => string;
+  /** Deletes the tag. Sessions that had it are kept, just untagged. */
+  removeTag: (id: string) => void;
 
   /** Starts studying a subject. If another subject is running, it is saved first. */
   start: (subjectId: string) => void;
@@ -110,6 +130,10 @@ interface StudyStore {
   stop: () => void;
   /** Throws the current session away without saving. */
   discard: () => void;
+  /** Sets or clears the tag of the running session. */
+  setActiveTag: (tagId: string | undefined) => void;
+  /** Adds a finished session by hand. */
+  addSession: (input: { subjectId: string; start: number; end: number; tagId?: string }) => string;
   removeSession: (id: string) => void;
 
   /** Loads this account's subjects, pictures and history from Supabase. */
@@ -130,6 +154,12 @@ const BUCKET = 'subject-images';
 const PAGE = 1000;
 const STALE_MS = 5 * 60_000;
 
+const DEFAULT_TAGS = [
+  { name: 'Self study', color: '#2F7D5B' },
+  { name: 'Class', color: '#C98B12' },
+  { name: 'Practice', color: '#D94F2D' }
+];
+
 interface SubjectRow {
   id: string;
   name: string;
@@ -145,6 +175,14 @@ interface SessionRow {
   started_at: string;
   ended_at: string;
   duration_ms: number | string;
+  tag_id: string | null;
+}
+
+interface TagRow {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
 }
 
 function imagePath(userId: string, subjectId: string): string {
@@ -157,7 +195,8 @@ function sessionFromRow(r: SessionRow): StudySession {
     subjectId: r.subject_id,
     start: Date.parse(r.started_at),
     end: Date.parse(r.ended_at),
-    durationMs: Number(r.duration_ms)
+    durationMs: Number(r.duration_ms),
+    tagId: r.tag_id ?? undefined
   };
 }
 
@@ -169,13 +208,19 @@ async function fetchSubjects(): Promise<SubjectRow[] | null> {
   return data as SubjectRow[];
 }
 
+async function fetchTags(): Promise<TagRow[] | null> {
+  const { data, error } = await supabase.from('study_tags').select('id,name,color,created_at');
+  if (error || !data) return null;
+  return data as TagRow[];
+}
+
 // Supabase returns at most 1000 rows per request, so read the history in pages.
 async function fetchSessions(): Promise<SessionRow[] | null> {
   const all: SessionRow[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from('study_sessions')
-      .select('id,subject_id,started_at,ended_at,duration_ms')
+      .select('id,subject_id,started_at,ended_at,duration_ms,tag_id')
       .order('ended_at', { ascending: true })
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1);
@@ -250,6 +295,50 @@ function applySubjects(rows: SubjectRow[]): void {
   void downloadImages(downloads);
 }
 
+/** Merges the server's tags into the device copy. Unsent local changes win. */
+function applyTags(rows: TagRow[]): void {
+  const st = useStudyStore.getState();
+  const dirty = new Set(st.dirtyTags);
+  const deleted = new Set(st.deletedTags);
+  const localById = new Map(st.tags.map((t) => [t.id, t] as const));
+  const remoteIds = new Set(rows.map((r) => r.id));
+  const merged: StudyTag[] = [];
+
+  for (const row of rows) {
+    if (deleted.has(row.id)) continue;
+    const mine = localById.get(row.id);
+    merged.push(
+      mine && dirty.has(row.id)
+        ? mine
+        : { id: row.id, name: row.name, color: row.color, createdAt: Date.parse(row.created_at) }
+    );
+  }
+  for (const t of st.tags) {
+    if (dirty.has(t.id) && !remoteIds.has(t.id)) merged.push(t);
+  }
+  merged.sort((a, b) => a.createdAt - b.createdAt);
+
+  // a tag deleted on another device leaves its sessions untagged here too
+  const ids = new Set(merged.map((t) => t.id));
+  useStudyStore.setState((s) => ({
+    tags: merged,
+    sessions: s.sessions.map((x) => (x.tagId && !ids.has(x.tagId) ? { ...x, tagId: undefined } : x)),
+    active: s.active?.tagId && !ids.has(s.active.tagId) ? { ...s.active, tagId: undefined } : s.active
+  }));
+}
+
+/** Gives a new account its three starting tags (it can delete or add to them freely). */
+function seedDefaultTags(): void {
+  const now = Date.now();
+  const tags: StudyTag[] = DEFAULT_TAGS.map((t, i) => ({ id: uid(), name: t.name, color: t.color, createdAt: now + i }));
+  useStudyStore.setState((s) => ({
+    tags: [...s.tags, ...tags],
+    dirtyTags: [...s.dirtyTags, ...tags.map((t) => t.id)],
+    tagsSeeded: true
+  }));
+  void runFlush();
+}
+
 /** Merges the server's history into the device copy. Unsent local changes win. */
 function applySessions(rows: SessionRow[]): void {
   const st = useStudyStore.getState();
@@ -292,6 +381,13 @@ async function flushOnce(): Promise<void> {
       useStudyStore.setState((s) => ({ deletedSubjects: s.deletedSubjects.filter((x) => x !== id) }));
     }
   }
+  for (const id of [...useStudyStore.getState().deletedTags]) {
+    // sessions that used the tag stay; the database just clears their tag
+    const { error } = await supabase.from('study_tags').delete().eq('id', id);
+    if (!error) {
+      useStudyStore.setState((s) => ({ deletedTags: s.deletedTags.filter((x) => x !== id) }));
+    }
+  }
 
   // 2. Subjects (and their pictures)
   for (const id of [...useStudyStore.getState().dirtySubjects]) {
@@ -324,7 +420,24 @@ async function flushOnce(): Promise<void> {
     }));
   }
 
-  // 3. Sessions (the history), in batches
+  // 3. Tags (before sessions, which point at them)
+  {
+    const ts = useStudyStore.getState();
+    const dirtyTagIds = new Set(ts.dirtyTags);
+    const pendingTags = ts.tags.filter((t) => dirtyTagIds.has(t.id));
+    if (pendingTags.length > 0) {
+      const { error } = await supabase.from('study_tags').upsert(
+        pendingTags.map((t) => ({ id: t.id, user_id: userId, name: t.name, color: t.color })),
+        { onConflict: 'id' }
+      );
+      if (!error) {
+        const sent = new Set(pendingTags.map((t) => t.id));
+        useStudyStore.setState((s) => ({ dirtyTags: s.dirtyTags.filter((x) => !sent.has(x)) }));
+      }
+    }
+  }
+
+  // 4. Sessions (the history), in batches
   const st = useStudyStore.getState();
   const dirtyIds = new Set(st.dirtySessions);
   const pending = st.sessions.filter((s) => dirtyIds.has(s.id));
@@ -342,7 +455,8 @@ async function flushOnce(): Promise<void> {
         subject_id: s.subjectId,
         started_at: new Date(s.start).toISOString(),
         ended_at: new Date(s.end).toISOString(),
-        duration_ms: Math.round(s.durationMs)
+        duration_ms: Math.round(s.durationMs),
+        tag_id: s.tagId ?? null
       })),
       { onConflict: 'id' }
     );
@@ -376,12 +490,21 @@ async function runFlush(): Promise<void> {
 let lastHydrateAt = 0;
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let refreshTimer: number | undefined;
+let tagsRefreshTimer: number | undefined;
 
 function scheduleSubjectsRefresh(): void {
   window.clearTimeout(refreshTimer);
   refreshTimer = window.setTimeout(async () => {
     const rows = await fetchSubjects();
     if (rows) applySubjects(rows);
+  }, 400);
+}
+
+function scheduleTagsRefresh(): void {
+  window.clearTimeout(tagsRefreshTimer);
+  tagsRefreshTimer = window.setTimeout(async () => {
+    const rows = await fetchTags();
+    if (rows) applyTags(rows);
   }, 400);
 }
 
@@ -399,8 +522,10 @@ function onVisible(): void {
 const EMPTY_SYNC = {
   dirtySubjects: [] as string[],
   dirtySessions: [] as string[],
+  dirtyTags: [] as string[],
   deletedSubjects: [] as string[],
-  deletedSessions: [] as string[]
+  deletedSessions: [] as string[],
+  deletedTags: [] as string[]
 };
 
 /** Study data saved on this device before accounts synced it: make it this account's and queue it for upload. */
@@ -436,9 +561,11 @@ export const useStudyStore = create<StudyStore>()(
     (set, get) => ({
       subjects: [],
       sessions: [],
+      tags: [],
       active: null,
       ownerId: null,
       ...EMPTY_SYNC,
+      tagsSeeded: false,
       subscribed: false,
 
       addSubject: (name, color, image) => {
@@ -471,6 +598,28 @@ export const useStudyStore = create<StudyStore>()(
             deletedSubjects: addUnique(state.deletedSubjects, id)
           };
         });
+        void get().flush();
+      },
+
+      addTag: (name, color) => {
+        const id = uid();
+        set((state) => ({
+          tags: [...state.tags, { id, name, color, createdAt: Date.now() }],
+          dirtyTags: addUnique(state.dirtyTags, id),
+          tagsSeeded: true
+        }));
+        void get().flush();
+        return id;
+      },
+
+      removeTag: (id) => {
+        set((state) => ({
+          tags: state.tags.filter((t) => t.id !== id),
+          sessions: state.sessions.map((s) => (s.tagId === id ? { ...s, tagId: undefined } : s)),
+          active: state.active?.tagId === id ? { ...state.active, tagId: undefined } : state.active,
+          dirtyTags: state.dirtyTags.filter((x) => x !== id),
+          deletedTags: addUnique(state.deletedTags, id)
+        }));
         void get().flush();
       },
 
@@ -515,7 +664,8 @@ export const useStudyStore = create<StudyStore>()(
             subjectId: current.subjectId,
             start: current.sessionStart,
             end: now,
-            durationMs: duration
+            durationMs: duration,
+            tagId: current.tagId
           };
           set((state) => ({
             sessions: [...state.sessions, session],
@@ -529,6 +679,23 @@ export const useStudyStore = create<StudyStore>()(
       },
 
       discard: () => set({ active: null }),
+
+      setActiveTag: (tagId) => {
+        const current = get().active;
+        if (!current) return;
+        set({ active: { ...current, tagId } });
+      },
+
+      addSession: ({ subjectId, start, end, tagId }) => {
+        const id = uid();
+        const session: StudySession = { id, subjectId, start, end, durationMs: Math.max(0, end - start), tagId };
+        set((state) => ({
+          sessions: [...state.sessions, session].sort((a, b) => a.end - b.end),
+          dirtySessions: addUnique(state.dirtySessions, id)
+        }));
+        void get().flush();
+        return id;
+      },
 
       removeSession: (id) => {
         set((state) => ({
@@ -547,12 +714,21 @@ export const useStudyStore = create<StudyStore>()(
           adoptLegacy(uidNow);
         } else if (owner !== uidNow) {
           // another account used this device before: never mix their data in
-          set({ subjects: [], sessions: [], active: null, ownerId: uidNow, ...EMPTY_SYNC });
+          set({ subjects: [], sessions: [], tags: [], tagsSeeded: false, active: null, ownerId: uidNow, ...EMPTY_SYNC });
         }
         await runFlush();
-        const [subjects, sessions] = await Promise.all([fetchSubjects(), fetchSessions()]);
+        const [subjects, sessions, tagRows] = await Promise.all([fetchSubjects(), fetchSessions(), fetchTags()]);
         // a failed read (offline, expired session) must not look like "no subjects"
         if (!subjects || !sessions) return;
+        if (tagRows) {
+          applyTags(tagRows);
+          const st = get();
+          if (st.tags.length > 0) {
+            if (!st.tagsSeeded) set({ tagsSeeded: true });
+          } else if (!st.tagsSeeded) {
+            seedDefaultTags();
+          }
+        }
         applySubjects(subjects);
         applySessions(sessions);
         lastHydrateAt = Date.now();
@@ -567,6 +743,7 @@ export const useStudyStore = create<StudyStore>()(
           .on('postgres_changes', { event: '*', schema: 'public', table: 'study_subjects' }, () =>
             scheduleSubjectsRefresh()
           )
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'study_tags' }, () => scheduleTagsRefresh())
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_sessions' }, (payload) => {
             const row = payload.new as unknown as SessionRow;
             const st = get();
@@ -593,13 +770,14 @@ export const useStudyStore = create<StudyStore>()(
         if (channel) supabase.removeChannel(channel);
         channel = null;
         window.clearTimeout(refreshTimer);
+        window.clearTimeout(tagsRefreshTimer);
         window.removeEventListener('online', onOnline);
         document.removeEventListener('visibilitychange', onVisible);
         set({ subscribed: false });
       },
 
       reset: () => {
-        set({ subjects: [], sessions: [], active: null, ownerId: null, ...EMPTY_SYNC });
+        set({ subjects: [], sessions: [], tags: [], tagsSeeded: false, active: null, ownerId: null, ...EMPTY_SYNC });
       }
     }),
     {
@@ -608,22 +786,29 @@ export const useStudyStore = create<StudyStore>()(
       storage: createJSONStorage(() => safeStateStorage),
       // v1 kept everything on the device only; v2 adds the account link and the
       // queue of changes waiting to be sent. Old data is adopted by the first
-      // account that signs in (see adoptLegacy).
+      // account that signs in (see adoptLegacy). Tags were added later without a
+      // version bump: older saved state simply lacks them and gets the defaults.
       migrate: (persisted: unknown) =>
         ({
           ownerId: null,
+          tags: [],
+          tagsSeeded: false,
           ...EMPTY_SYNC,
           ...((persisted as Record<string, unknown>) ?? {})
         }) as unknown as StudyStore,
       partialize: (state) => ({
         subjects: state.subjects,
         sessions: state.sessions,
+        tags: state.tags,
         active: state.active,
         ownerId: state.ownerId,
+        tagsSeeded: state.tagsSeeded,
         dirtySubjects: state.dirtySubjects,
         dirtySessions: state.dirtySessions,
+        dirtyTags: state.dirtyTags,
         deletedSubjects: state.deletedSubjects,
-        deletedSessions: state.deletedSessions
+        deletedSessions: state.deletedSessions,
+        deletedTags: state.deletedTags
       })
     }
   )

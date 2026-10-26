@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Pause, Square, Plus, Pencil, Trash2, ImagePlus, X } from 'lucide-react';
+import { Play, Pause, Square, Plus, Pencil, Trash2, ImagePlus, X, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
@@ -9,12 +9,14 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { StudyHeatmap } from '@/components/features/study/StudyHeatmap';
-import { useStudyStore, elapsedMs, type StudySubject } from '@/store/studyStore';
+import { LogSessionSheet, TagChip, TagEditor, TagPicker } from '@/components/features/study/StudyLogSheets';
+import { useStudyStore, elapsedMs, type StudySubject, type StudyTag } from '@/store/studyStore';
 import { isFirstLoad } from '@/lib/firstLoad';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
 
 const DAY_MS = 86_400_000;
+const RECENT_LIMIT = 8;
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -187,6 +189,7 @@ function SubjectEditor({ subject, onClose }: { subject: StudySubject | null; onC
 export function Study() {
   const subjects = useStudyStore((s) => s.subjects);
   const sessions = useStudyStore((s) => s.sessions);
+  const tags = useStudyStore((s) => s.tags);
   const active = useStudyStore((s) => s.active);
   const firstLoad = useStudyStore(isFirstLoad);
   const start = useStudyStore((s) => s.start);
@@ -194,12 +197,19 @@ export function Study() {
   const resume = useStudyStore((s) => s.resume);
   const stop = useStudyStore((s) => s.stop);
   const discard = useStudyStore((s) => s.discard);
+  const setActiveTag = useStudyStore((s) => s.setActiveTag);
   const removeSubject = useStudyStore((s) => s.removeSubject);
   const removeSession = useStudyStore((s) => s.removeSession);
+  const removeTag = useStudyStore((s) => s.removeTag);
 
   const [editing, setEditing] = useState<StudySubject | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StudySubject | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [tagEditorOpen, setTagEditorOpen] = useState(false);
+  const [tagDeleteTarget, setTagDeleteTarget] = useState<StudyTag | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
+  const [showAll, setShowAll] = useState(false);
 
   const now = useNow(active !== null);
   const running = active !== null && active.startedAt !== null;
@@ -214,12 +224,16 @@ export function Study() {
     const today: Record<string, number> = {};
     const week: Record<string, number> = {};
     const all: Record<string, number> = {};
+    const weekByTag: Record<string, number> = {};
     for (const s of sessions) {
       all[s.subjectId] = (all[s.subjectId] ?? 0) + s.durationMs;
-      if (s.end >= weekFrom) week[s.subjectId] = (week[s.subjectId] ?? 0) + s.durationMs;
+      if (s.end >= weekFrom) {
+        week[s.subjectId] = (week[s.subjectId] ?? 0) + s.durationMs;
+        if (s.tagId) weekByTag[s.tagId] = (weekByTag[s.tagId] ?? 0) + s.durationMs;
+      }
       if (s.end >= todayFrom) today[s.subjectId] = (today[s.subjectId] ?? 0) + s.durationMs;
     }
-    return { today, week, all };
+    return { today, week, all, weekByTag };
   }, [sessions]);
 
   function live(map: Record<string, number>, subjectId: string): number {
@@ -229,7 +243,13 @@ export function Study() {
   const todayTotal = subjects.reduce((sum, s) => sum + live(totals.today, s.id), 0);
   const weekTotal = subjects.reduce((sum, s) => sum + live(totals.week, s.id), 0);
 
-  const recent = useMemo(() => [...sessions].sort((a, b) => b.end - a.end).slice(0, 8), [sessions]);
+  // a filter pointing at a tag that has since been deleted shows everything
+  const activeFilter = tagFilter && tags.some((t) => t.id === tagFilter) ? tagFilter : undefined;
+  const filtered = useMemo(() => {
+    const sorted = [...sessions].sort((a, b) => b.end - a.end);
+    return activeFilter ? sorted.filter((s) => s.tagId === activeFilter) : sorted;
+  }, [sessions, activeFilter]);
+  const recent = showAll ? filtered : filtered.slice(0, RECENT_LIMIT);
 
   return (
     <Stagger className="space-y-8 py-8">
@@ -256,6 +276,11 @@ export function Study() {
               <SubjectCover subject={activeSubject} className="h-12 w-12 shrink-0 rounded-control" />
               <p className="truncate font-serif text-3xl italic leading-none text-ink">{activeSubject.name}</p>
             </div>
+            {tags.length > 0 && (
+              <div className="mt-4">
+                <TagPicker tags={tags} value={active.tagId} onChange={setActiveTag} />
+              </div>
+            )}
             <p className="mt-6 text-center font-numeric text-[clamp(3.5rem,19vw,6.5rem)] font-medium leading-none tracking-tight tabular-nums text-ink">
               {formatClock(activeMs)}
             </p>
@@ -293,6 +318,14 @@ export function Study() {
           <p className="mt-2 font-serif text-5xl leading-none tracking-tight text-ink">{formatShort(weekTotal)}</p>
         </GlassCard>
       </Rise>
+
+      {subjects.length > 0 && (
+        <Rise>
+          <Button variant="secondary" className="w-full" onClick={() => setLogOpen(true)}>
+            <Clock className="h-4 w-4" /> Log a session
+          </Button>
+        </Rise>
+      )}
 
       <Section label="Subjects">
         {subjects.length === 0 ? (
@@ -370,47 +403,104 @@ export function Study() {
         )}
       </Section>
 
+      <Section label="Tags">
+        <p className="mb-3 text-sm text-ink-muted">Mark what kind of studying a session was. Time shown is the last 7 days.</p>
+        {tags.length > 0 && (
+          <ul className="space-y-2">
+            {tags.map((tag) => (
+              <li key={tag.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-4 py-3">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: toneColor(tag.color) }} />
+                <p className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{tag.name}</p>
+                <span className="tabular-nums text-sm font-semibold text-ink">
+                  {formatShort(totals.weekByTag[tag.id] ?? 0)}
+                </span>
+                <button
+                  onClick={() => setTagDeleteTarget(tag)}
+                  aria-label={`Delete tag ${tag.name}`}
+                  className="rounded-control p-1.5 text-ink-faint hover:bg-ink/5 hover:text-danger"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Button variant="secondary" size="sm" className={tags.length > 0 ? 'mt-3' : undefined} onClick={() => setTagEditorOpen(true)}>
+          <Plus className="h-4 w-4" /> New tag
+        </Button>
+      </Section>
+
       <Section label="Activity">
         <StudyHeatmap sessions={sessions} subjects={subjects} />
       </Section>
 
-      {recent.length > 0 && (
+      {sessions.length > 0 && (
         <Section label="Recent sessions">
-          <ul className="space-y-2">
-            {recent.map((session) => {
-              const subject = subjects.find((s) => s.id === session.subjectId);
-              return (
-                <li key={session.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-4 py-3">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: subject ? toneColor(subject.color) : '#7A7165' }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">{subject?.name ?? 'Deleted subject'}</p>
-                    <p className="text-xs text-ink-muted">
-                      {new Date(session.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })},{' '}
-                      {new Date(session.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} to{' '}
-                      {new Date(session.end).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  <span className="tabular-nums text-sm font-semibold text-ink">{formatShort(session.durationMs)}</span>
-                  <button
-                    onClick={() => removeSession(session.id)}
-                    aria-label="Delete session"
-                    className="rounded-control p-1.5 text-ink-faint hover:bg-ink/5 hover:text-danger"
-                  >
-                    <X size={14} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          {tags.length > 0 && (
+            <div className="mb-3">
+              <TagPicker
+                tags={tags}
+                value={activeFilter}
+                onChange={(id) => {
+                  setTagFilter(id);
+                  setShowAll(false);
+                }}
+                noneLabel="All"
+                label="Filter by tag"
+              />
+            </div>
+          )}
+          {recent.length === 0 ? (
+            <p className="text-sm text-ink-muted">No sessions with this tag yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {recent.map((session) => {
+                const subject = subjects.find((s) => s.id === session.subjectId);
+                const tag = session.tagId ? tags.find((t) => t.id === session.tagId) : undefined;
+                return (
+                  <li key={session.id} className="flex items-center gap-3 rounded-control bg-ink/[0.04] px-4 py-3">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: subject ? toneColor(subject.color) : '#7A7165' }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium text-ink">{subject?.name ?? 'Deleted subject'}</p>
+                        {tag && <TagChip tag={tag} className="shrink-0" />}
+                      </div>
+                      <p className="text-xs text-ink-muted">
+                        {new Date(session.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })},{' '}
+                        {new Date(session.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} to{' '}
+                        {new Date(session.end).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <span className="tabular-nums text-sm font-semibold text-ink">{formatShort(session.durationMs)}</span>
+                    <button
+                      onClick={() => removeSession(session.id)}
+                      aria-label="Delete session"
+                      className="rounded-control p-1.5 text-ink-faint hover:bg-ink/5 hover:text-danger"
+                    >
+                      <X size={14} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {filtered.length > RECENT_LIMIT && (
+            <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'Show less' : `Show all ${filtered.length}`}
+            </Button>
+          )}
         </Section>
       )}
 
       {editing !== null && (
         <SubjectEditor subject={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
       )}
+
+      {logOpen && <LogSessionSheet onClose={() => setLogOpen(false)} />}
+      {tagEditorOpen && <TagEditor onClose={() => setTagEditorOpen(false)} />}
 
       <ConfirmDialog
         open={deleteTarget !== null}
@@ -421,6 +511,18 @@ export function Study() {
         }}
         title={`Delete ${deleteTarget?.name ?? 'subject'}?`}
         description="This also removes all study time logged for this subject."
+        confirmLabel="Delete"
+      />
+
+      <ConfirmDialog
+        open={tagDeleteTarget !== null}
+        onClose={() => setTagDeleteTarget(null)}
+        onConfirm={() => {
+          if (tagDeleteTarget) removeTag(tagDeleteTarget.id);
+          setTagDeleteTarget(null);
+        }}
+        title={`Delete the ${tagDeleteTarget?.name ?? ''} tag?`}
+        description="Sessions with this tag are kept. They just lose the tag."
         confirmLabel="Delete"
       />
 
