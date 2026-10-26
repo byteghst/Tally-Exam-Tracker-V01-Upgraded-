@@ -7,6 +7,7 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { ExamScoreTrendChart } from '@/components/features/analytics/ExamScoreTrendChart';
 import { TaskCompletionTrendChart } from '@/components/features/analytics/TaskCompletionTrendChart';
+import { StudyHoursChart } from '@/components/features/analytics/StudyHoursChart';
 import { MonthlyReportSheet } from '@/components/features/analytics/MonthlyReportSheet';
 import { useExamStore } from '@/store/examStore';
 import { useTaskStore } from '@/store/taskStore';
@@ -115,6 +116,10 @@ export function Analytics() {
       <Rise className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ExamScoreTrendChart exams={completedExams} />
         <TaskCompletionTrendChart tasks={tasks} />
+      </Rise>
+
+      <Rise>
+        <StudyHoursChart />
       </Rise>
 
       {milestones.length > 0 && (
