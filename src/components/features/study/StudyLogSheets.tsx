@@ -4,11 +4,12 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useStudyStore, type StudyTag } from '@/store/studyStore';
+import { useStudyStore, type StudySession, type StudyTag } from '@/store/studyStore';
 import { useUIStore } from '@/store/uiStore';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
 
 const DAY_MS = 86_400_000;
+const MINUTE_MS = 60_000;
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -18,8 +19,13 @@ function localDateISO(d: Date = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function clockOf(ms: number): string {
+  const d = new Date(ms);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function durationLabel(ms: number): string {
-  const mins = Math.round(ms / 60_000);
+  const mins = Math.round(ms / MINUTE_MS);
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -104,21 +110,34 @@ export function TagPicker({ tags, value, onChange, label, noneLabel = 'None' }: 
   );
 }
 
-/** Add a study session by hand: subject, date, from, to, and an optional tag. */
-export function LogSessionSheet({ onClose }: { onClose: () => void }) {
+/**
+ * Add a study session by hand (subject, date, from, to, optional tag), or edit
+ * a saved one when `session` is given.
+ */
+export function LogSessionSheet({ onClose, session }: { onClose: () => void; session?: StudySession }) {
   const subjects = useStudyStore((s) => s.subjects);
   const tags = useStudyStore((s) => s.tags);
   const addSession = useStudyStore((s) => s.addSession);
+  const updateSession = useStudyStore((s) => s.updateSession);
   const { pushToast } = useUIStore();
+  const isEdit = !!session;
 
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? '');
-  const [date, setDate] = useState(() => localDateISO());
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [tagId, setTagId] = useState<string | undefined>(undefined);
+  const [subjectId, setSubjectId] = useState(session?.subjectId ?? subjects[0]?.id ?? '');
+  const [date, setDate] = useState(() => localDateISO(session ? new Date(session.start) : new Date()));
+  const [from, setFrom] = useState(session ? clockOf(session.start) : '');
+  const [to, setTo] = useState(session ? clockOf(session.end) : '');
+  const [tagId, setTagId] = useState<string | undefined>(session?.tagId);
   const [error, setError] = useState<string | null>(null);
 
   const range = useMemo(() => computeRange(date, from, to), [date, from, to]);
+
+  // The times shown are only minute-accurate, and a timer session's length can be shorter than
+  // end minus start (pauses). If the times were left alone, keep the saved start, end and length exactly.
+  const timesUnchanged =
+    !!session &&
+    !!range &&
+    Math.floor(range.start / MINUTE_MS) === Math.floor(session.start / MINUTE_MS) &&
+    Math.floor(range.end / MINUTE_MS) === Math.floor(session.end / MINUTE_MS);
 
   function change<T>(setter: (v: T) => void) {
     return (v: T) => {
@@ -136,6 +155,12 @@ export function LogSessionSheet({ onClose }: { onClose: () => void }) {
       setError('Pick the date and both times.');
       return;
     }
+    if (session && timesUnchanged) {
+      updateSession(session.id, { subjectId, tagId });
+      pushToast('Session updated');
+      onClose();
+      return;
+    }
     if (range.durationMs <= 0) {
       setError('The start and end times are the same.');
       return;
@@ -144,23 +169,36 @@ export function LogSessionSheet({ onClose }: { onClose: () => void }) {
       setError('That session ends in the future.');
       return;
     }
-    addSession({ subjectId, start: range.start, end: range.end, tagId });
-    pushToast('Session logged');
+    if (session) {
+      updateSession(session.id, {
+        subjectId,
+        tagId,
+        start: range.start,
+        end: range.end,
+        durationMs: range.durationMs
+      });
+      pushToast('Session updated');
+    } else {
+      addSession({ subjectId, start: range.start, end: range.end, tagId });
+      pushToast('Session logged');
+    }
     onClose();
   }
+
+  const shownDuration = session && timesUnchanged ? session.durationMs : (range?.durationMs ?? 0);
 
   return (
     <Sheet
       open
       onClose={onClose}
-      title="Log a session"
+      title={isEdit ? 'Edit session' : 'Log a session'}
       footer={
         <div className="flex gap-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
           <Button type="button" className="flex-1" onClick={handleSave}>
-            Log session
+            {isEdit ? 'Save changes' : 'Log session'}
           </Button>
         </div>
       }
@@ -187,11 +225,11 @@ export function LogSessionSheet({ onClose }: { onClose: () => void }) {
           <Input label="To" type="time" value={to} onChange={(e) => change(setTo)(e.target.value)} />
         </div>
 
-        {range && range.durationMs > 0 && (
+        {range && shownDuration > 0 && (
           <div className="rounded-card bg-accent-soft p-4">
             <p className="eyebrow !text-accent">Duration</p>
             <p className="mt-1 font-serif text-5xl leading-none tracking-tight text-ink">
-              {durationLabel(range.durationMs)}
+              {durationLabel(shownDuration)}
             </p>
             {range.nextDay && <p className="mt-2 text-xs text-ink-muted">Ends the next day.</p>}
           </div>

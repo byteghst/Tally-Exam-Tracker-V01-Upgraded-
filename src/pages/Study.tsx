@@ -10,7 +10,7 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { StudyHeatmap } from '@/components/features/study/StudyHeatmap';
 import { LogSessionSheet, TagChip, TagEditor, TagPicker } from '@/components/features/study/StudyLogSheets';
-import { useStudyStore, elapsedMs, type StudySubject, type StudyTag } from '@/store/studyStore';
+import { useStudyStore, elapsedMs, type StudySession, type StudySubject, type StudyTag } from '@/store/studyStore';
 import { isFirstLoad } from '@/lib/firstLoad';
 import { fileToResizedDataUrl } from '@/lib/imageResize';
 import { SUBJECT_COLORS, toneColor } from '@/lib/palette';
@@ -206,6 +206,7 @@ export function Study() {
   const [deleteTarget, setDeleteTarget] = useState<StudySubject | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [tagDeleteTarget, setTagDeleteTarget] = useState<StudyTag | null>(null);
   const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
@@ -463,7 +464,12 @@ export function Study() {
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: subject ? toneColor(subject.color) : '#7A7165' }}
                     />
-                    <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingSession(session)}
+                      aria-label="Edit session"
+                      className="min-w-0 flex-1 text-left"
+                    >
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium text-ink">{subject?.name ?? 'Deleted subject'}</p>
                         {tag && <TagChip tag={tag} className="shrink-0" />}
@@ -473,8 +479,15 @@ export function Study() {
                         {new Date(session.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} to{' '}
                         {new Date(session.end).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                       </p>
-                    </div>
+                    </button>
                     <span className="tabular-nums text-sm font-semibold text-ink">{formatShort(session.durationMs)}</span>
+                    <button
+                      onClick={() => setEditingSession(session)}
+                      aria-label="Edit session"
+                      className="rounded-control p-1.5 text-ink-faint hover:bg-ink/5 hover:text-ink"
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       onClick={() => removeSession(session.id)}
                       aria-label="Delete session"
@@ -500,6 +513,7 @@ export function Study() {
       )}
 
       {logOpen && <LogSessionSheet onClose={() => setLogOpen(false)} />}
+      {editingSession && <LogSessionSheet session={editingSession} onClose={() => setEditingSession(null)} />}
       {tagEditorOpen && <TagEditor onClose={() => setTagEditorOpen(false)} />}
 
       <ConfirmDialog

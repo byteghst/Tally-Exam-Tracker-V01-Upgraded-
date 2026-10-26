@@ -134,6 +134,11 @@ interface StudyStore {
   setActiveTag: (tagId: string | undefined) => void;
   /** Adds a finished session by hand. */
   addSession: (input: { subjectId: string; start: number; end: number; tagId?: string }) => string;
+  /** Edits a saved session. Passing `tagId: undefined` clears its tag. */
+  updateSession: (
+    id: string,
+    changes: Partial<Pick<StudySession, 'subjectId' | 'start' | 'end' | 'durationMs' | 'tagId'>>
+  ) => void;
   removeSession: (id: string) => void;
 
   /** Loads this account's subjects, pictures and history from Supabase. */
@@ -344,13 +349,16 @@ function applySessions(rows: SessionRow[]): void {
   const st = useStudyStore.getState();
   const dirty = new Set(st.dirtySessions);
   const deleted = new Set(st.deletedSessions);
-  const remoteIds = new Set(rows.map((r) => r.id));
+  const localById = new Map(st.sessions.map((s) => [s.id, s] as const));
   const merged: StudySession[] = [];
 
   for (const r of rows) {
     if (deleted.has(r.id)) continue;
-    merged.push(sessionFromRow(r));
+    // an edit made here that has not reached the server yet wins over the server's older copy
+    const mine = localById.get(r.id);
+    merged.push(mine && dirty.has(r.id) ? mine : sessionFromRow(r));
   }
+  const remoteIds = new Set(rows.map((r) => r.id));
   for (const s of st.sessions) {
     if (dirty.has(s.id) && !remoteIds.has(s.id)) merged.push(s);
   }
@@ -697,6 +705,14 @@ export const useStudyStore = create<StudyStore>()(
         return id;
       },
 
+      updateSession: (id, changes) => {
+        set((state) => ({
+          sessions: state.sessions.map((s) => (s.id === id ? { ...s, ...changes } : s)).sort((a, b) => a.end - b.end),
+          dirtySessions: addUnique(state.dirtySessions, id)
+        }));
+        void get().flush();
+      },
+
       removeSession: (id) => {
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== id),
@@ -753,6 +769,14 @@ export const useStudyStore = create<StudyStore>()(
               return;
             }
             const next = [...st.sessions, sessionFromRow(row)].sort((a, b) => a.end - b.end);
+            set({ sessions: next });
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_sessions' }, (payload) => {
+            // an edit made on another device
+            const row = payload.new as unknown as SessionRow;
+            const st = get();
+            if (st.dirtySessions.includes(row.id) || !st.sessions.some((s) => s.id === row.id)) return;
+            const next = st.sessions.map((s) => (s.id === row.id ? sessionFromRow(row) : s)).sort((a, b) => a.end - b.end);
             set({ sessions: next });
           })
           .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_sessions' }, (payload) => {
