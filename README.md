@@ -17,7 +17,8 @@
 [Features](#features) ·
 [Design system](#design-system) ·
 [Development](#development) ·
-[Releases](#releases-and-updates)
+[Releases](#releases-and-updates) ·
+[License](#license)
 
 </div>
 
@@ -41,14 +42,17 @@ All data is entered manually. Nothing is auto-graded, ranked or inferred. Derive
 | **Tasks** | One-off and recurring (daily, weekdays, weekly, custom days) tasks with subtasks, priority, category, notes and reminders. |
 | **Deadlines** | Due dates with an optional time, priority and a live countdown. Each deadline can be exported as a shareable card. |
 | **Calendar** | Month grid with exam and task markers and a per-day agenda. |
-| **Study** | Per-subject timers with custom colours and pictures. Elapsed time is derived from stored timestamps, so timing continues with the screen off or the app closed. |
+| **Study** | Per-subject timers with custom colours and pictures. Elapsed time is derived from stored timestamps, so timing continues with the screen off or the app closed. Sessions can also be logged manually with start and end times, labelled with user-managed tags (for example self study, class, practice), and edited afterwards. |
 | **Prayer times** | Daily prayer windows and prohibited times by Bangladeshi district (Islamic Foundation Bangladesh method), a prayer tracker with streak, and start, ending and prohibited-time reminders. |
 | **Analytics** | Totals, averages and completion rate; exam score trend with highest and lowest results marked; task completion chart; milestones; downloadable monthly report; shareable score-trend image. |
 | **Settings** | Theme (light, dark, system), dashboard layout and density, notification preferences, account and update controls. |
 | **Reminders** | Native Android notifications that fire while the app is closed, with optional evening-before and morning briefings. |
+| **Offline use** | The app opens without a connection and shows the last known data. Changes to exams, tasks and deadlines made offline are queued on the device and synchronised in order when a connection returns. |
 | **Updates** | In-app detection of newer builds with one-step installation. |
 
 **Data scope.** Exams, tasks, configs, deadlines, study subjects (with pictures) and sessions, and settings synchronise through Supabase. A running study timer exists on the device only until it is stopped and saved.
+
+**Offline behaviour.** Exams, tasks, configs and deadlines are cached on the device after each successful read and cleared on sign-out. Study data and settings keep their own device copy. Offline edits are held in a local outbox, merged per row, and sent oldest first; a pending-changes banner shows what is waiting. A change the server rejects is dropped with a notice so it cannot block the rest of the queue.
 
 ---
 
@@ -100,7 +104,7 @@ Framer Motion. Screens reveal sequentially, counters animate, and the active nav
 
 ### Identity
 
-The logo, Android adaptive-icon layers and launch screen are generated from a single drawing by `scripts/build-icons.mjs` before each build. On Android the system bars follow the app's surface colour and invert for dark mode.
+The logo, Android adaptive-icon layers and launch screen are generated from a single drawing by `scripts/build-icons.mjs` before each build. On Android the system bars follow the app's surface colour and invert for dark mode. The animated Tally mark serves as the loading indicator, including the boot screen shown before the app's code has loaded.
 
 ---
 
@@ -132,7 +136,8 @@ src/
     widgets/             dashboard blocks and the prayer popup
   store/                 Zustand stores
   lib/                   scoring, dates, countdown, momentum, milestones, prayer,
-                         notifications, report and share-card rendering, update check
+                         notifications, offline cache and outbox, report and
+                         share-card rendering, update check
   hooks/                 theme, system bars, shared clock, notification sync
 scripts/build-icons.mjs  icon and launch-screen generation
 ci/force-signing.sh      native Android patches applied in CI
@@ -203,4 +208,10 @@ Retain an offline backup of the keystore. If it is lost, installed copies can no
 
 ## Notifications
 
-Reminders can be set on exams and tasks, with prayer reminders configured in the prayer popup. On Android these are scheduled as local notifications and are delivered while the app is closed. In a browser, notifications fire only while the tab or installed web app is open; this is a platform limitation.
+Reminders can be set on exams and tasks, with prayer reminders configured in the prayer popup. On Android these are scheduled as local notifications and are delivered while the app is closed. In a browser, notifications are shown through the service worker and fire only while the tab or installed web app is open; this is a platform limitation.
+
+---
+
+## License
+
+The source code is released under the [MIT License](LICENSE). The Tally name, logo and branding are not covered by that license; see [BRANDING.md](BRANDING.md).
