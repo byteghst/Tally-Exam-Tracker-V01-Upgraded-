@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, Trash2, Repeat, Plus, ChevronDown, Share2 } from 'lucide-react';
+import { Pencil, Trash2, Repeat, Plus, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -8,7 +8,6 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { CheckButton, StrikeText } from '@/components/motion/Check';
 import { TaskForm } from '@/components/features/tasks/TaskForm';
-import { ShareTaskCard } from '@/components/features/tasks/ShareTaskCard';
 import { useTaskStore } from '@/store/taskStore';
 import { useOpenAddFromNavState } from '@/hooks/useOpenAddFromNavState';
 import { isFirstLoad } from '@/lib/firstLoad';
@@ -28,7 +27,6 @@ export function Tasks() {
   const { tasks, hydrate, toggleComplete, toggleSubtask, deleteTask } = useTaskStore();
   const firstLoad = useTaskStore(isFirstLoad);
   const [formOpen, setFormOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [editing, setEditing] = useState<Task | undefined>(undefined);
 
   useOpenAddFromNavState(() => {
@@ -72,20 +70,11 @@ export function Tasks() {
       <Section
         label="Today"
         aside={
-          <div className="flex items-center gap-3">
-            {today.length > 0 && (
-              <span className="font-numeric text-sm tabular-nums text-ink-muted">
-                {todayDone} of {today.length}
-              </span>
-            )}
-            {/* Share is always there: it also makes yesterday's and the week's cards */}
-            <button
-              onClick={() => setShareOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-accent"
-            >
-              <Share2 size={14} /> Share
-            </button>
-          </div>
+          today.length > 0 ? (
+            <span className="font-numeric text-sm tabular-nums text-ink-muted">
+              {todayDone} of {today.length}
+            </span>
+          ) : undefined
         }
       >
         {today.length === 0 ? (
@@ -135,7 +124,6 @@ export function Tasks() {
       )}
 
       <TaskForm open={formOpen} onClose={() => setFormOpen(false)} task={editing} />
-      <ShareTaskCard open={shareOpen} onClose={() => setShareOpen(false)} tasks={tasks} />
     </Stagger>
   );
 }
