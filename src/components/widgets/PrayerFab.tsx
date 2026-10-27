@@ -574,8 +574,8 @@ function PrayerOverlay({
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="eyebrow">Prayed today</p>
-                <p className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink">
-                  <span className="font-numeric tabular-nums">{prayedToday}</span>
+                <p className="mt-1 font-numeric text-4xl leading-none tabular-nums tracking-tight text-ink">
+                  {prayedToday}
                   <span className="text-ink-faint">/5</span>
                 </p>
               </div>
