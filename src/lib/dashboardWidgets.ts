@@ -3,13 +3,14 @@ import type { WidgetConfig } from '@/types';
 // 'upcoming-exam' is no longer part of this list: the Next Exam card is now
 // always shown, pinned above these customizable widgets (see Dashboard.tsx),
 // so it can no longer be hidden or reordered.
-export const DASHBOARD_WIDGET_IDS = ['todays-tasks', 'study-time'] as const;
+export const DASHBOARD_WIDGET_IDS = ['todays-tasks', 'study-time', 'ayah'] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
 export const WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'todays-tasks': "Today's tasks",
-  'study-time': 'Study time today'
+  'study-time': 'Study time today',
+  ayah: 'Ayah of the day'
 };
 
 function isKnownWidgetId(id: string): id is DashboardWidgetId {

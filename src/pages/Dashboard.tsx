@@ -7,6 +7,7 @@ import { DailyMission } from '@/components/features/dashboard/DailyMission';
 import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
+import { AyahWidget } from '@/components/widgets/AyahWidget';
 import { PrayerFab } from '@/components/widgets/PrayerFab';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Stagger } from '@/components/motion/Reveal';
@@ -88,6 +89,8 @@ export function Dashboard() {
                 );
               case 'study-time':
                 return <StudyTimeWidget key={id} />;
+              case 'ayah':
+                return <AyahWidget key={id} />;
               default:
                 return null;
             }
