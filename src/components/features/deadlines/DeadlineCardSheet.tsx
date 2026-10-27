@@ -11,7 +11,7 @@ import type { Deadline } from '@/store/deadlineStore';
 import { toISODate } from '@/lib/dates';
 import { fileSlug } from '@/lib/deadlineFormat';
 import { loadTallyLogo } from '@/lib/shareCard/drawExamTrendCard';
-import { prepareTaskCardFonts, taskCardSampleText } from '@/lib/shareCard/drawTaskCard';
+import { prepareCardFonts, cardSampleText } from '@/lib/shareCard/prepareFonts';
 import {
   drawDeadlineCard,
   DEADLINE_CARD_WIDTH,
@@ -103,8 +103,8 @@ export function DeadlineCardSheet({ deadline, onClose }: DeadlineCardSheetProps)
 
     async function run() {
       const d = dataRef.current;
-      const sample = taskCardSampleText([d.title, d.notes ?? '', d.category ?? ''], d.name);
-      const [logo] = await Promise.all([loadTallyLogo(), prepareTaskCardFonts(sample)]);
+      const sample = cardSampleText([d.title, d.notes ?? '', d.category ?? ''], d.name);
+      const [logo] = await Promise.all([loadTallyLogo(), prepareCardFonts(sample)]);
       if (cancelled) return;
       logoRef.current = logo;
 
