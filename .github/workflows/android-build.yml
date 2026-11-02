@@ -10,6 +10,7 @@ on:
       - 'public/**'
       - 'capacitor.config.ts'
       - 'package.json'
+      - 'ci/**'
       - '.github/workflows/android-build.yml'
 
 jobs:
@@ -19,6 +20,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Require Supabase build config
+        # The Supabase URL and publishable key are no longer committed (.env is
+        # untracked). They come from repository secrets; without them the app
+        # would build into a "Configuration error" screen, so fail fast here
+        # and publish nothing.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          : "${VITE_SUPABASE_URL:?Add the VITE_SUPABASE_URL repository secret}"
+          : "${VITE_SUPABASE_ANON_KEY:?Add the VITE_SUPABASE_ANON_KEY repository secret}"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -54,6 +67,8 @@ jobs:
         # in-app update check compares against the newest `build-N` release.
         env:
           APP_BUILD: ${{ github.run_number }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - name: Set up JDK
@@ -109,6 +124,10 @@ jobs:
           TALLY_KEY_ALIAS: ${{ secrets.TALLY_KEY_ALIAS }}
         run: bash ci/force-signing.sh
 
+      - name: Harden Android build
+        # Backups off, and a signed non-debuggable release variant.
+        run: bash ci/harden-android.sh
+
       - name: Stamp Android version
         # Android only lets an APK install over an existing one if its
         # versionCode is not lower, and the generated project always starts at
@@ -120,15 +139,15 @@ jobs:
           sed -i "s/versionName \"[^\"]*\"/versionName \"0.1.${{ github.run_number }}\"/" android/app/build.gradle
           grep -nE "versionCode|versionName" android/app/build.gradle
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: tally-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: tally-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Prepare release files
@@ -137,7 +156,7 @@ jobs:
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk tally.apk
+          cp android/app/build/outputs/apk/release/app-release.apk tally.apk
           if [ -n "$COMMIT_MSG" ]; then
             printf '%s\n' "$COMMIT_MSG" > release-notes.txt
           else
