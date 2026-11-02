@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https'
+  },
+  android: {
+    allowMixedContent: false,
+    webContentsDebuggingEnabled: false
   }
 };
 
