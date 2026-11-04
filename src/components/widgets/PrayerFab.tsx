@@ -440,14 +440,13 @@ function PrayerOverlay({
   const streak = fullDayStreak(logDays, todayKey);
   const week = lastDays(todayKey, 7);
 
-  // A prayer can only be marked while it is running: not before it starts, and
-  // not once its time is over. Checked against the live clock, so a popup left
-  // open past the end of a prayer cannot still tick it.
+  // A prayer can be marked once its time has started, including after its time
+  // is over (so a missed prayer can still be ticked as prayed, or a wrong tick
+  // taken back). Only a prayer that has not started yet stays locked. Checked
+  // against the live clock, so a popup left open cannot tick a prayer early.
   function canMark(w: PrayerWindow): boolean {
-    const t = Date.now();
     const start = w.key === 'isha' && beforeFajr ? day.prevIshaStart.getTime() : w.start.getTime();
-    const end = w.key === 'isha' && beforeFajr ? day.windows[0].start.getTime() : w.end.getTime();
-    return t >= start && t < end;
+    return Date.now() >= start;
   }
 
   function markPrayer(w: PrayerWindow): void {
@@ -617,8 +616,8 @@ function PrayerOverlay({
             {day.windows.map((w) => {
               const status = statusOf(w);
               const prayed = isPrayed(w.key);
-              // only the running prayer can be marked; a finished one is locked as it was
-              const markable = status === 'active';
+              // a prayer can be marked once it has started, even after its time is over
+              const markable = status !== 'upcoming';
               // time ended with no tick: missed or qada. Only judged once the log has
               // really loaded, so a failed read or being offline never shows false crosses.
               const missed = logLoaded && status === 'past' && !prayed;
@@ -639,11 +638,7 @@ function PrayerOverlay({
                       aria-label={
                         markable
                           ? `Mark ${w.name} as ${prayed ? 'not prayed' : 'prayed'}`
-                          : missed
-                            ? `${w.name} was missed: its time ended without being ticked`
-                            : status === 'past'
-                              ? `${w.name} time has ended, so it can no longer be changed`
-                              : `${w.name} has not started yet`
+                          : `${w.name} has not started yet`
                       }
                       className={clsx(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
@@ -652,8 +647,7 @@ function PrayerOverlay({
                           : missed
                             ? 'bg-danger/15 text-danger'
                             : 'bg-ink/10 text-transparent',
-                        !markable && 'cursor-not-allowed',
-                        !markable && !missed && (status === 'upcoming' || !prayed) && 'opacity-30'
+                        !markable && 'cursor-not-allowed opacity-30'
                       )}
                     >
                       {missed ? <X size={16} strokeWidth={3} /> : <Check size={16} strokeWidth={3} />}
