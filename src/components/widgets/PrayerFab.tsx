@@ -6,7 +6,7 @@ import { ArrowLeft, Ban, Check, ChevronDown, MapPin, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { clsx } from 'clsx';
 import { EASE_OUT } from '@/lib/motion';
-import { parseISODate, todayISO } from '@/lib/dates';
+import { todayISO } from '@/lib/dates';
 import { BD_CITIES, findCity, type BdCity } from '@/lib/prayer/cities';
 import { ENDING_WARNING_MINUTES } from '@/lib/notifications/prayerPlan';
 import {
@@ -19,7 +19,8 @@ import {
   type ProhibitedWindow
 } from '@/lib/prayer/times';
 import { usePrayerStore } from '@/store/prayerStore';
-import { fullDayStreak, lastDays, previousDayISO, PRAYER_KEYS, usePrayerLogStore } from '@/store/prayerLogStore';
+import { fullDayStreak, previousDayISO, PRAYER_KEYS, usePrayerLogStore } from '@/store/prayerLogStore';
+import { PrayerWeekStrip } from '@/components/widgets/PrayerWeekStrip';
 
 const SELECT_CLASS =
   'mt-3 h-12 w-full rounded-control border-0 bg-ink/[0.05] px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
@@ -438,7 +439,6 @@ function PrayerOverlay({
   const isPrayed = (key: PrayerKey): boolean => (logDays[dateFor(key)] ?? []).includes(key);
   const prayedToday = PRAYER_KEYS.filter((k) => (logDays[todayKey] ?? []).includes(k)).length;
   const streak = fullDayStreak(logDays, todayKey);
-  const week = lastDays(todayKey, 7);
 
   // A prayer can be marked once its time has started, including after its time
   // is over (so a missed prayer can still be ticked as prayed, or a wrong tick
@@ -586,28 +586,7 @@ function PrayerOverlay({
               </div>
             </div>
 
-            <div className="mt-5 flex items-end justify-between gap-2" aria-label="Prayers marked in the last seven days">
-              {week.map((date) => {
-                const count = logDays[date]?.length ?? 0;
-                const isToday = date === todayKey;
-                return (
-                  <div key={date} className="flex flex-1 flex-col items-center gap-1.5">
-                    <div className="flex h-10 w-full items-end justify-center">
-                      <div
-                        className={clsx(
-                          'w-2.5 rounded-full transition-[height] duration-500',
-                          count >= 5 ? 'bg-forest' : count > 0 ? 'bg-accent' : 'bg-ink/15'
-                        )}
-                        style={{ height: count > 0 ? `${Math.max(14, (count / 5) * 100)}%` : '6px' }}
-                      />
-                    </div>
-                    <span className={clsx('text-[11px] font-semibold', isToday ? 'text-ink' : 'text-ink-faint')}>
-                      {parseISODate(date).toLocaleDateString('en-US', { weekday: 'narrow' })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <PrayerWeekStrip logDays={logDays} todayKey={todayKey} day={day} onToggle={toggle} />
           </div>
         </Block>
 
