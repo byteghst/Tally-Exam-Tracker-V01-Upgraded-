@@ -44,12 +44,12 @@ export function UpdatePrompt() {
         label: 'Download update',
         icon: <Download className="h-4 w-4" />,
         onClick: () => {
-          openDownload();
+          openDownload(update.build);
           closePrompt(false);
         }
       }}
       secondary={{ label: 'Maybe later', onClick: () => closePrompt(true) }}
-      footnote="When the download finishes, open it and tap Install. Your exams and tasks live in your account, so nothing is lost. If Android asks, allow your browser to install apps."
+      footnote="On the page that opens, tap tally.apk under Assets. When the download finishes, open it and tap Install. Your exams and tasks live in your account, so nothing is lost. If Android asks, allow your browser to install apps."
     >
       <div className="space-y-3">
         <div className="flex items-center gap-2">

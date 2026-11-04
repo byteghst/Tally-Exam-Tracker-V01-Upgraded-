@@ -136,8 +136,15 @@ export async function checkForUpdate(opts: { force?: boolean } = {}): Promise<Ch
   return { status: 'available', update: latest };
 }
 
-// Opens the APK link in the phone's browser, which downloads it; tapping the
-// finished download then starts the normal Android install-over-existing flow.
-export function openDownload(): void {
-  window.open(APK_DOWNLOAD_URL, '_blank');
+/** The release page of one build, where its `tally.apk` is listed under Assets. */
+export function releasePageUrl(build: number): string {
+  return `https://github.com/${REPO}/releases/tag/build-${build}`;
+}
+
+// Opens the given build's release page (or, with no build, the direct APK link)
+// in the phone's browser. The release page always loads and shows exactly what
+// is attached, whereas the direct link is a bare 404 if the APK is missing.
+// Tapping the finished download starts the normal Android install-over-existing flow.
+export function openDownload(build?: number): void {
+  window.open(build ? releasePageUrl(build) : APK_DOWNLOAD_URL, '_blank');
 }
