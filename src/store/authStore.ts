@@ -4,6 +4,7 @@ import { clearStoredSession, readStoredSession, supabase } from '@/lib/supabase/
 import { clearSnapshots } from '@/lib/offlineCache';
 import { flushOutbox } from '@/lib/outbox';
 import { useStudyStore } from '@/store/studyStore';
+import { unregisterPush } from '@/lib/push';
 
 interface AuthStore {
   session: Session | null;
@@ -125,6 +126,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       ]);
     } catch {
       /* signing out matters more than a late sync */
+    }
+    // Stop the daily quote notification on this device while the session still exists.
+    try {
+      await Promise.race([unregisterPush(), new Promise<void>((resolve) => setTimeout(resolve, 3000))]);
+    } catch {
+      /* signing out matters more */
     }
     try {
       await Promise.race([supabase.auth.signOut(), new Promise<void>((resolve) => setTimeout(resolve, 4000))]);
