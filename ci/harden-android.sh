@@ -36,4 +36,7 @@ android {
 }
 EOF
 
+# 3. Firebase Cloud Messaging config (daily quote push notification)
+bash ci/firebase-android.sh
+
 echo "Android hardening applied: backups off, signed non-debuggable release variant"
