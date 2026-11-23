@@ -306,9 +306,10 @@ Deno.serve(async (req) => {
       .update({ status: 'sending', claimed_at: nowIso })
       .eq('status', 'scheduled')
       .lte('scheduled_at', nowIso)
-      .select('id, quote, author, card_path')
-      .order('scheduled_at')
+      .select('id, quote, author, card_path, scheduled_at')
     if (claimErr) throw new Error(`claim: ${claimErr.message}`)
+    // PostgREST cannot order an UPDATE ... RETURNING, so oldest-first is done here.
+    claimed?.sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)))
 
     if (claimed && claimed.length > 0) {
       let sa: ServiceAccount
