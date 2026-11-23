@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "314572258636",
+    "project_id": "tally-exam-tracker-26e62",
+    "storage_bucket": "tally-exam-tracker-26e62.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:314572258636:android:7566272fcb723b7610e3e9",
+        "android_client_info": {
+          "package_name": "com.tally.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUwE7u_lGE7nOyKxpNk3jtRNw7ypxszqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,7 +8,6 @@ import { TodaysTasksWidget } from '@/components/widgets/TodaysTasksWidget';
 import { ExamCountdownHero } from '@/components/widgets/ExamCountdownHero';
 import { StudyTimeWidget } from '@/components/widgets/StudyTimeWidget';
 import { PrayerFab } from '@/components/widgets/PrayerFab';
-import { QuranReflectionFab } from '@/components/widgets/QuranReflectionFab';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Stagger } from '@/components/motion/Reveal';
 import { useExamStore } from '@/store/examStore';
@@ -102,10 +101,6 @@ export function Dashboard() {
       {/* Prayer times: a floating button with the current prayer, opening a popup.
           It draws itself into document.body, so it is not part of this layout. */}
       <PrayerFab />
-
-      {/* Daily Quran reflection: a fixed round button at the bottom left, opening
-          a popup with today's ayah. Also drawn into document.body. */}
-      <QuranReflectionFab />
     </Stagger>
   );
 }

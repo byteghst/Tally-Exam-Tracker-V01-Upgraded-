@@ -2,10 +2,9 @@ import type { WidgetConfig } from '@/types';
 
 // 'upcoming-exam' is no longer part of this list: the Next Exam card is now
 // always shown, pinned above these customizable widgets (see Dashboard.tsx),
-// so it can no longer be hidden or reordered. 'ayah' is gone too: the daily
-// Quran reflection now lives in the fixed button on the dashboard
-// (QuranReflectionFab), so it is no longer a card. normalizeLayout drops any
-// saved entry for an id that is not listed here.
+// so it can no longer be hidden or reordered. 'ayah' is gone too (the Quran
+// feature was removed). normalizeLayout drops any saved entry for an id that
+// is not listed here.
 export const DASHBOARD_WIDGET_IDS = ['todays-tasks', 'study-time'] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];

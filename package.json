@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/verify-tanzil.mjs && node scripts/build-ayah-data.mjs && vite",
-    "build": "node scripts/build-icons.mjs && node scripts/verify-tanzil.mjs && node scripts/build-ayah-data.mjs && tsc -b && vite build",
+    "dev": "vite",
+    "build": "node scripts/build-icons.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -26,13 +26,13 @@
     "@capacitor/core": "^6.1.2",
     "@capacitor/android": "^6.1.2",
     "@capacitor/local-notifications": "^6.1.0",
+    "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/filesystem": "^6.0.1",
     "@fontsource/plus-jakarta-sans": "^5.0.0",
     "@fontsource/fraunces": "^5.0.0",
     "@fontsource/instrument-serif": "^5.0.0",
     "@fontsource/space-grotesk": "^5.0.0",
-    "@fontsource/tiro-bangla": "^5.0.0",
-    "@fontsource/amiri-quran": "^5.0.0"
+    "@fontsource/tiro-bangla": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
@@ -47,5 +47,8 @@
     "vite-plugin-pwa": "^0.20.5",
     "vitest": "^2.1.1",
     "@capacitor/cli": "^6.1.2"
+  },
+  "overrides": {
+    "csstype": "3.1.3"
   }
 }

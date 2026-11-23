@@ -10,6 +10,7 @@ import { SyncIndicator } from './SyncIndicator';
 import { OnboardingOverlay } from '@/components/features/onboarding/OnboardingOverlay';
 import { ConfettiBurst } from '@/components/features/celebration/ConfettiBurst';
 import { UpdatePrompt } from '@/components/features/update/UpdatePrompt';
+import { QuotePopup } from '@/components/features/quotes/QuotePopup';
 import { TallyLoader } from '@/components/ui/TallyLoader';
 import { useAuthStore } from '@/store/authStore';
 import { useExamStore } from '@/store/examStore';
@@ -20,6 +21,7 @@ import { useStudyStore } from '@/store/studyStore';
 import { useDeadlineStore } from '@/store/deadlineStore';
 import { useMilestoneCelebration } from '@/hooks/useMilestoneCelebration';
 import { useNotificationSync } from '@/hooks/useNotificationSync';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useReconnectSync } from '@/hooks/useReconnectSync';
 import { loadOutboxCount } from '@/lib/outbox';
 
@@ -35,6 +37,8 @@ export function AppShell() {
 
   const { celebrating, finishCelebrating } = useMilestoneCelebration();
   useNotificationSync();
+  // Daily quote: keeps this device registered for the morning notification and shows a new quote once.
+  usePushNotifications();
   // Send offline changes and re-read everything from the account when the connection comes back.
   useReconnectSync(Boolean(user));
 
@@ -101,6 +105,7 @@ export function AppShell() {
         <SyncIndicator />
         <OnboardingOverlay />
         <UpdatePrompt />
+        <QuotePopup />
         {celebrating && <ConfettiBurst onDone={finishCelebrating} />}
       </div>
     </MotionConfig>

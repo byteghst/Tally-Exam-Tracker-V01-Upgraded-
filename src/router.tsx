@@ -11,6 +11,7 @@ import { Study } from '@/pages/Study';
 import { Calendar } from '@/pages/Calendar';
 import { Analytics } from '@/pages/Analytics';
 import { Settings } from '@/pages/Settings';
+import { QuoteStudio } from '@/pages/QuoteStudio';
 import { NotFound } from '@/pages/NotFound';
 
 export const router = createBrowserRouter(
@@ -34,6 +35,8 @@ export const router = createBrowserRouter(
         { path: 'calendar', element: <Calendar /> },
         { path: 'analytics', element: <Analytics /> },
         { path: 'settings', element: <Settings /> },
+        // Not linked anywhere except for the one admin account (see Settings); the page itself also checks.
+        { path: 'studio/quotes', element: <QuoteStudio /> },
         { path: '*', element: <NotFound /> }
       ]
     }

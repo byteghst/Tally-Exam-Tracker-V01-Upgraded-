@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronUp, ChevronDown, Bell, BellOff, LogOut, AlertTriangle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Bell, BellOff, LogOut, AlertTriangle, Quote, PenLine } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,9 @@ import { UpdateCard } from '@/components/features/update/UpdateCard';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useQuoteStore } from '@/store/quoteStore';
+import { checkIsAdmin } from '@/lib/quotes/api';
+import { disableQuotePush, enableQuotePush, isQuotePushEnabled, pushSupported } from '@/lib/push';
 import { normalizeLayout, WIDGET_LABELS } from '@/lib/dashboardWidgets';
 import {
   RESYNC_EVENT,
@@ -92,6 +96,37 @@ export function Settings() {
   const [permission, setPermission] = useState<PermissionState>('unknown');
   const [native, setNative] = useState<NativeReminderStatus | null>(null);
   const isNative = Capacitor.isNativePlatform();
+  const navigate = useNavigate();
+  const openQuote = useQuoteStore((s) => s.openLatest);
+  const [quotePush, setQuotePush] = useState(isQuotePushEnabled);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const canPush = pushSupported();
+
+  useEffect(() => {
+    let cancelled = false;
+    void checkIsAdmin().then((ok) => {
+      if (!cancelled) setIsAdmin(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleQuotePushChange(on: boolean) {
+    if (!on) {
+      setQuotePush(false);
+      await disableQuotePush();
+      return;
+    }
+    const result = await enableQuotePush();
+    if (result === 'registered') {
+      setQuotePush(true);
+    } else if (result === 'denied') {
+      pushToast('Allow notifications for Tally in your phone settings first.', undefined, 'error');
+    } else {
+      pushToast("Couldn't turn on the quote notification. Try again in a moment.", undefined, 'error');
+    }
+  }
 
   useEffect(() => {
     if (isNative) {
@@ -364,6 +399,36 @@ export function Settings() {
             </p>
           </>
         )}
+      </Section>
+
+      <Section label="Daily quote" card>
+        <p className="text-sm text-ink-muted">
+          One motivational quote each morning, with a photo card you can download for 24 hours.
+        </p>
+        {canPush ? (
+          <div className="mt-4">
+            <ToggleRow
+              label="Daily quote notification"
+              hint="Around 9:30 AM"
+              checked={quotePush}
+              onChange={(on) => void handleQuotePushChange(on)}
+            />
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-ink-faint">
+            Quote notifications are available in the Android app. Here, today's quote opens when you open Tally.
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={() => void openQuote()}>
+            <Quote className="h-4 w-4" /> Today's quote
+          </Button>
+          {isAdmin && (
+            <Button size="sm" variant="secondary" onClick={() => navigate('/studio/quotes')}>
+              <PenLine className="h-4 w-4" /> Quote studio
+            </Button>
+          )}
+        </div>
       </Section>
 
       <UpdateCard />
