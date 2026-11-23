@@ -15,6 +15,7 @@
 
 **[Download for Android](https://github.com/byteghst/Tally-Exam-Tracker-V01-Upgraded-/releases/latest/download/tally.apk)** ·
 [Features](#features) ·
+[Daily quote](#daily-quote) ·
 [Design system](#design-system) ·
 [Development](#development) ·
 [Releases](#releases-and-updates) ·
@@ -46,7 +47,7 @@ All data is entered manually. Nothing is auto-graded, ranked or inferred. Derive
 | **Prayer times** | Daily prayer windows and prohibited times by Bangladeshi district (Islamic Foundation Bangladesh method), a prayer tracker with streak, and start, ending and prohibited-time reminders. |
 | **Analytics** | Totals, averages and completion rate; exam score trend with highest and lowest results marked; task completion chart; milestones; downloadable monthly report; shareable score-trend image. |
 | **Settings** | Theme (light, dark, system), dashboard layout and density, notification preferences, account and update controls. |
-| **Daily quote** | A scheduled morning push notification with a quote and an optional photo card. Opening it shows the card with a download button for 24 hours, then only the quote and author. Quotes are scheduled and sent from an admin-only screen. |
+| **Daily quote** | A morning push notification with a quote and an optional photo card. The card can be downloaded for 24 hours, after which only the quote and author remain. Quotes are scheduled and sent from an admin-only screen. |
 | **Reminders** | Native Android notifications that fire while the app is closed, with optional evening-before and morning briefings. |
 | **Offline use** | The app opens without a connection and shows the last known data. Changes to exams, tasks and deadlines made offline are queued on the device and synchronised in order when a connection returns. |
 | **Updates** | In-app detection of newer builds with one-step installation. |
@@ -120,7 +121,8 @@ The logo, Android adaptive-icon layers and launch screen are generated from a si
 | Data and auth | Supabase (Postgres with Row Level Security, storage, email and password authentication, realtime) |
 | Charts | Recharts |
 | Validation | Zod |
-| Native | Capacitor 6 (Android), local and push (Firebase Cloud Messaging) notifications |
+| Native | Capacitor 6 (Android), local notifications |
+| Push | Firebase Cloud Messaging (HTTP v1), sent by a Supabase Edge Function on a `pg_cron` schedule |
 | Web app | `vite-plugin-pwa` |
 | Build tooling | `sharp` for icon generation |
 
@@ -133,13 +135,13 @@ src/
     ui/                  design-system primitives
     motion/              shared reveal and check animations
     layout/              app shell, bottom bar, sidebar, toasts
-    features/            exams, tasks, deadlines, configs, calendar, analytics, update
+    features/            exams, tasks, deadlines, configs, calendar, analytics, quotes, update
     widgets/             dashboard blocks and the prayer popup
   store/                 Zustand stores
   lib/                   scoring, dates, countdown, momentum, milestones, prayer,
-                         notifications, offline cache and outbox, report and
+                         notifications, push, daily quote, offline cache and outbox, report and
                          share-card rendering, update check
-  hooks/                 theme, system bars, shared clock, notification sync
+  hooks/                 theme, system bars, shared clock, notification and push sync
 scripts/build-icons.mjs  icon and launch-screen generation
 ci/                      native Android patches applied in CI, Firebase client config
 supabase/                migrations and the dispatch-quotes Edge Function
@@ -210,13 +212,56 @@ Retain an offline backup of the keystore. If it is lost, installed copies can no
 
 ## Notifications
 
-Reminders can be set on exams and tasks, with prayer reminders configured in the prayer popup. On Android these are scheduled as local notifications and are delivered while the app is closed. In a browser, notifications are shown through the service worker and fire only while the tab or installed web app is open; this is a platform limitation.
+Reminders can be set on exams and tasks, with prayer reminders configured in the prayer popup. On Android these are scheduled as local notifications and are delivered while the app is closed. In a browser, notifications are shown through the service worker and fire only while the tab or installed web app is open; this is a platform limitation. The daily quote is the one remote notification; see below.
 
-### Daily quote
+---
 
-Quotes live in `daily_quotes`; devices register an FCM token through `register_push_token`. The `dispatch-quotes` Edge Function sends due quotes and deletes photo cards 24 hours after sending. A `pg_cron` job calls it every minute, only when something is due. Photo cards are stored in the public `quote-cards` bucket and are writable by admins only (`admins` table).
+## Daily quote
 
-Setup: apply `supabase/migrations/20261122000000_daily_quotes_push.sql`, deploy the function, set the `FIREBASE_SERVICE_ACCOUNT` secret to the Firebase service-account key JSON, add the admin user to `admins`, and schedule the cron job (see the end of the migration). `ci/google-services.json` is the Firebase client config and is copied into the Android project at build time. Push is Android only; the web version shows the quote popup on open.
+A motivational quote is pushed to Android devices each morning. Tapping the notification opens a popup with the photo card and a download button. Twenty-four hours after sending, the card is deleted from the server and the popup shows only the quote and its author. There is no history of earlier days.
+
+```mermaid
+flowchart LR
+  A["Quote studio (admin)"] --> B[("daily_quotes, quote-cards")]
+  C["pg_cron, every minute"] -->|"only when something is due"| D["dispatch-quotes Edge Function"]
+  B --> D
+  D -->|"FCM HTTP v1"| E["Android devices"]
+  E -->|"tap"| F["Popup: card and download"]
+  D -->|"24 h after sending"| G["Card deleted"]
+```
+
+### Quote studio
+
+Settings, then **Quote studio**. The entry is shown only to accounts listed in the `admins` table, and the route and database rules enforce the same restriction.
+
+| Field | Notes |
+|---|---|
+| Quote, Author | Shown to users. |
+| Source | Required. Book, speech or interview. Visible to the admin only, so each quote can be verified. |
+| Photo card | Optional. Portrait 4:5 (1080 × 1350) works best. Re-encoded under 900 KB so it fits inside the notification. |
+| Send at | Scheduled for a time, or **Send now**. |
+
+### Behaviour
+
+- Due quotes go out within a minute. A quote more than 12 hours overdue is marked failed instead of being sent late.
+- Users can switch the notification off in Settings. Signing out removes the device from the list; tokens that Firebase reports as invalid are removed automatically.
+- The web app has no push. It shows the popup when a new quote has arrived and the app is opened.
+
+### Security
+
+- Signed-in users can read only quotes that were already sent. Only admins can write quotes or upload cards.
+- Device tokens are reachable only through two `security definer` functions and the service role.
+- Cards are stored in a public bucket, because the notification image needs a plain URL, under random file names. Only admins can write to it.
+- The Edge Function takes no input and acts only on rows that are due or expired.
+
+### Setup
+
+1. Apply `supabase/migrations/20261122000000_daily_quotes_push.sql`.
+2. Deploy `supabase/functions/dispatch-quotes` with JWT verification off.
+3. Set the Edge Function secret `FIREBASE_SERVICE_ACCOUNT` to the Firebase service-account key JSON.
+4. Add the admin: `insert into public.admins (user_id) values ('<user id>');`
+5. Enable `pg_cron` and `pg_net`, then schedule the job (SQL at the end of the migration).
+6. Register an Android app with package `com.tally.app` in Firebase and commit its `google-services.json` as `ci/google-services.json`. CI copies it into the Android project at build time.
 
 ---
 
