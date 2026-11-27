@@ -1,20 +1,21 @@
 import type { ExamTrendPoint } from '@/lib/examTrend';
 import { formatDate } from '@/lib/dates';
+import { cardAccent, withAlpha } from '@/lib/accent';
 
 export const CARD_WIDTH = 1080;
 export const CARD_HEIGHT = 1350;
 
 // Brand tokens (kept as literal hex here rather than reading CSS variables,
 // since canvas drawing happens outside the CSS cascade entirely).
-// Warm paper and ink, persimmon accent, forest for the best result and rose for
-// the lowest. There is no blue anywhere.
+// Warm paper and ink, forest for the best result and rose for the lowest.
+// The accent is NOT in this list: it comes from the person's chosen accent
+// (see cardAccent in src/lib/accent.ts), persimmon by default.
 const COLOR = {
   bg: '#F6F1E8',
   ink: '#1C1814',
   inkMuted: '#686056',
   inkFaint: '#92897D',
-  accent: '#D94F2D',
-  accentSoft: '#F9E3D8',
+  accentSoft: '#F9E3D8', // default soft tint, used when no custom accent is set
   success: '#2F7D5B',
   low: '#C9486B',
   border: '#DDD5C7',
@@ -144,6 +145,7 @@ export function drawExamTrendCard(
 ) {
   const p = clamp01(rawProgress);
   const stats = computeCardStats(points);
+  const A = cardAccent('light', COLOR.bg, { soft: COLOR.accentSoft });
 
   // first occurrence of the highest / lowest result, marked on the line
   let highIndex = 0;
@@ -176,7 +178,7 @@ export function drawExamTrendCard(
   ctx.textBaseline = 'middle';
   ctx.fillText('Tally', wordX, headerMidY);
   const tallyWidth = ctx.measureText('Tally').width;
-  ctx.fillStyle = COLOR.accent;
+  ctx.fillStyle = A.ink;
   ctx.fillText('.', wordX + tallyWidth, headerMidY);
   ctx.restore();
 
@@ -199,7 +201,7 @@ export function drawExamTrendCard(
   const statsProgress = easeOutCubic(clamp01(p / 0.55));
   const statY = 330;
   const columns = [
-    { label: 'LATEST', value: stats.latest, color: COLOR.accent },
+    { label: 'LATEST', value: stats.latest, color: A.ink },
     { label: 'HIGHEST', value: stats.highest, color: COLOR.success },
     { label: 'LOWEST', value: stats.lowest, color: COLOR.low },
     { label: 'AVERAGE', value: stats.average, color: COLOR.ink }
@@ -300,8 +302,8 @@ export function drawExamTrendCard(
 
     // area fill
     const gradient = ctx.createLinearGradient(0, chartTop, 0, chartBottom);
-    gradient.addColorStop(0, COLOR.accentSoft);
-    gradient.addColorStop(1, 'rgba(249,227,216,0)');
+    gradient.addColorStop(0, A.soft);
+    gradient.addColorStop(1, withAlpha(A.soft, 0));
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(visiblePoints[0].x, chartBottom);
@@ -314,7 +316,7 @@ export function drawExamTrendCard(
 
     // line
     ctx.save();
-    ctx.strokeStyle = COLOR.accent;
+    ctx.strokeStyle = A.accent;
     ctx.lineWidth = 5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -333,7 +335,7 @@ export function drawExamTrendCard(
       const y = yFor(pt.percentage);
       const isHigh = hasSpread && i === highIndex;
       const isLow = hasSpread && i === lowIndex;
-      const ring = isHigh ? COLOR.success : isLow ? COLOR.low : COLOR.accent;
+      const ring = isHigh ? COLOR.success : isLow ? COLOR.low : A.accent;
       ctx.save();
       ctx.globalAlpha = dotProgress;
       ctx.beginPath();
