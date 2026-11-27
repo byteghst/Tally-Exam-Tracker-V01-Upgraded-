@@ -9,6 +9,8 @@
     <link rel="icon" type="image/png" href="%BASE_URL%icons/icon-192.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <!-- Paints the saved custom accent colour before first paint (no flash of the default). -->
+    <script src="%BASE_URL%accent-boot.js"></script>
     <!-- Fonts are bundled via @fontsource (see src/main.tsx), so they work offline.
          Roles:
          Plus Jakarta Sans  - UI + body text
@@ -18,6 +20,7 @@
     <!-- Boot screen: shown while the app's code loads, before React starts. React
          replaces it as soon as it mounts. Same motion as the in-app TallyLoader. -->
     <style>
+      /* --ac is the built-in default accent; a custom accent overrides it (see accent-boot.js / src/lib/accent.ts). */
       .boot{--bg:#F6F1E8;--ink:#1C1814;--ac:#D94F2D;position:fixed;inset:0;display:grid;place-items:center;background:var(--bg)}
       @media (prefers-color-scheme:dark){.boot{--bg:#100E0C;--ink:#F5EEE3;--ac:#FF7A54}}
       .boot svg{width:120px;display:block;animation:bf 2.8s linear infinite}

@@ -41,7 +41,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
               className={clsx(
                 'relative flex-1 rounded-[10px] px-3 py-2 text-sm font-semibold capitalize transition-colors duration-200',
                 'disabled:pointer-events-none disabled:opacity-35',
-                active ? (option.color ? 'text-accent-on' : 'text-ink') : 'text-ink-muted hover:text-ink'
+                active ? (option.color ? (option.color === 'bg-accent' ? 'text-accent-on' : 'text-solid-on') : 'text-ink') : 'text-ink-muted hover:text-ink'
               )}
             >
               {active && (

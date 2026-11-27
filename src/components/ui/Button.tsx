@@ -14,10 +14,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 // Solid or softly tinted fills only: no outlines.
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-accent text-accent-on hover:brightness-105 active:brightness-95',
+  primary: 'bg-accent text-accent-on hover:bg-accent-hover active:bg-accent-pressed',
   secondary: 'bg-ink/[0.07] text-ink hover:bg-ink/10 active:bg-ink/[0.14]',
   ghost: 'bg-transparent text-ink hover:bg-ink/5',
-  danger: 'bg-danger text-accent-on hover:brightness-105 active:brightness-95'
+  danger: 'bg-danger text-solid-on hover:brightness-105 active:brightness-95'
 };
 
 const sizeClasses: Record<Size, string> = {

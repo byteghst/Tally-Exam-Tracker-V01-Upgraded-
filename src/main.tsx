@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import { ThemeProvider } from './ThemeProvider';
 import { setupServiceWorker } from './setupServiceWorker';
+import { initAccent } from './lib/accent';
 import { useAuthStore } from './store/authStore';
 import { restoreSnapshots, startSnapshotPersistence } from './lib/snapshotSync';
 import { AppDownloadPrompt } from './components/features/update/AppDownloadPrompt';
@@ -27,6 +28,7 @@ import '@fontsource/space-grotesk/700.css';
 import '@fontsource/tiro-bangla/400.css';
 import './styles/globals.css';
 
+initAccent();
 setupServiceWorker();
 useAuthStore.getState().init();
 

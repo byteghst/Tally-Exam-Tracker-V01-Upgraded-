@@ -15,12 +15,21 @@ export default {
           muted: 'rgb(var(--ink-muted) / <alpha-value>)',
           faint: 'rgb(var(--ink-faint) / <alpha-value>)'
         },
-        // Persimmon: the main accent. `on` = text colour that sits on top of it.
+        // The accent (persimmon unless the person picks another colour). Every
+        // shade is a CSS variable set in globals.css or derived live by
+        // src/lib/accent.ts. `on` = text colour that sits on top of it.
+        // Note: `text-accent` is remapped to the readable `ink` shade below.
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           soft: 'rgb(var(--accent-soft) / <alpha-value>)',
-          on: 'rgb(var(--on-accent) / <alpha-value>)'
+          on: 'rgb(var(--on-accent) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover) / <alpha-value>)',
+          pressed: 'rgb(var(--accent-pressed) / <alpha-value>)',
+          border: 'rgb(var(--accent-border) / <alpha-value>)',
+          ink: 'rgb(var(--accent-ink) / <alpha-value>)'
         },
+        // Text on fixed-colour solids (danger, forest...); unlike accent-on it never follows the accent.
+        'solid-on': 'rgb(var(--on-solid) / <alpha-value>)',
         // Supporting accents, used for categories, charts and states.
         forest: 'rgb(var(--forest) / <alpha-value>)',
         saffron: 'rgb(var(--saffron) / <alpha-value>)',
@@ -30,6 +39,13 @@ export default {
         success: 'rgb(var(--forest) / <alpha-value>)',
         warning: 'rgb(var(--saffron) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)'
+      },
+      // Accent used as TEXT or an icon uses the readable shade, so a pale or very
+      // dark custom colour still reads on the page. Fills, rings and charts keep the exact colour.
+      textColor: {
+        accent: {
+          DEFAULT: 'rgb(var(--accent-ink) / <alpha-value>)'
+        }
       },
       // The original combination: Plus Jakarta Sans for text, Fraunces for small
       // headings, Instrument Serif for large editorial type, Space Grotesk for

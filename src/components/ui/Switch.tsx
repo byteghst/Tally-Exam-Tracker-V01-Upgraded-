@@ -25,7 +25,11 @@ export function Switch({ checked, onChange, label }: SwitchProps) {
     >
       <motion.span
         aria-hidden
-        className="absolute left-1 top-1 h-5 w-5 rounded-full bg-surface-raised"
+        className={clsx(
+          'absolute left-1 top-1 h-5 w-5 rounded-full transition-colors duration-300',
+          // on the accent track the knob takes the "on accent" colour, so it shows for any accent
+          checked ? 'bg-accent-on' : 'bg-surface-raised'
+        )}
         initial={false}
         animate={{ x: checked ? 20 : 0 }}
         transition={springBouncy}
