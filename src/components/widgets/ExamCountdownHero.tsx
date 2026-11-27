@@ -95,7 +95,7 @@ export function ExamCountdownHero({ exam, onAddExam }: ExamCountdownHeroProps) {
         {/* A real button: solid accent fill, full width, easy to hit with a thumb. */}
         <Link
           to={`/exams/${exam.id}`}
-          className="group mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-control bg-accent text-base font-semibold text-accent-on transition-[transform,filter] duration-150 hover:brightness-105 active:scale-[0.98] active:brightness-95"
+          className="group mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-control bg-accent text-base font-semibold text-accent-on transition-[transform,background-color] duration-150 hover:bg-accent-hover active:scale-[0.98] active:bg-accent-pressed"
         >
           Open exam
           <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
