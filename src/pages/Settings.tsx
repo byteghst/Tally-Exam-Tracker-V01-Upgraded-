@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Switch, ToggleRow } from '@/components/ui/Switch';
 import { Rise, Section, Stagger } from '@/components/motion/Reveal';
 import { UpdateCard } from '@/components/features/update/UpdateCard';
+import { AccentPicker } from '@/components/features/settings/AccentPicker';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -255,6 +256,11 @@ export function Settings() {
 
       <Section label="Appearance" card>
         <Choice options={THEME_OPTIONS} value={settings.theme} onChange={(theme) => updateSettings({ theme })} />
+        <p className="eyebrow mt-6">Accent color</p>
+        <div className="mt-3">
+          {/* re-plan reminders once a change settles, so notification icons pick up the new colour */}
+          <AccentPicker onCommit={() => window.dispatchEvent(new Event(RESYNC_EVENT))} />
+        </div>
       </Section>
 
       <Section label="Dashboard" card>
