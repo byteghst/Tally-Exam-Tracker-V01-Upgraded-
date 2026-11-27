@@ -38,7 +38,7 @@ export function ToastStack() {
             >
               <span
                 aria-hidden
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-accent-on ${isError ? 'bg-danger' : 'bg-forest'}`}
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-solid-on ${isError ? 'bg-danger' : 'bg-forest'}`}
               >
                 {isError ? <AlertTriangle size={16} strokeWidth={2.4} /> : <Check size={17} strokeWidth={2.8} />}
               </span>

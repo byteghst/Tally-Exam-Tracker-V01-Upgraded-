@@ -28,9 +28,18 @@
   --border: 221 213 199;
   --shadow: 70 45 20;
 
+  /* Accent family. These are the built-in persimmon defaults; a custom accent
+     replaces all of them at once (see src/lib/accent.ts). */
   --accent: 217 79 45;
+  --accent-hover: 228 83 47;
+  --accent-pressed: 206 75 43;
   --accent-soft: 249 227 216;
+  --accent-border: 239 186 170;
+  /* the accent as text or an icon on the page: readable on the surfaces */
+  --accent-ink: 217 79 45;
   --on-accent: 255 255 255;
+  /* text on fixed-colour solids (danger, forest...), independent of the accent */
+  --on-solid: 255 255 255;
 
   --forest: 47 125 91;
   --saffron: 201 139 18;
@@ -54,8 +63,13 @@
   --shadow: 0 0 0;
 
   --accent: 255 122 84;
+  --accent-hover: 255 128 88;
+  --accent-pressed: 242 116 80;
   --accent-soft: 62 33 24;
+  --accent-border: 143 75 54;
+  --accent-ink: 255 122 84;
   --on-accent: 30 18 12;
+  --on-solid: 30 18 12;
 
   --forest: 95 192 146;
   --saffron: 242 184 75;
@@ -87,6 +101,33 @@
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+}
+
+/* Accent-driven native bits: checkboxes, radios and sliders, the text caret and
+   text selection all follow the accent. The caret uses the readable "ink" shade
+   so it never vanishes into a field. */
+html {
+  accent-color: rgb(var(--accent));
+  caret-color: rgb(var(--accent-ink));
+}
+::selection {
+  background-color: rgb(var(--accent) / 0.3);
+}
+
+/* Smooth fade when the accent changes. The class is added for a moment by
+   src/lib/accent.ts; the reduced-motion rules above/below still win. */
+html.accent-transition,
+html.accent-transition *,
+html.accent-transition *::before,
+html.accent-transition *::after {
+  transition:
+    background-color 280ms ease,
+    color 280ms ease,
+    border-color 280ms ease,
+    fill 280ms ease,
+    stroke 280ms ease,
+    box-shadow 280ms ease,
+    outline-color 280ms ease;
 }
 
 @keyframes toast-in {
